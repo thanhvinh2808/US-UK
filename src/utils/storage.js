@@ -1,0 +1,398 @@
+// Spaced Repetition SM-2 Algorithm Implementation
+export function calculateSM2(grade, repetitions, previousInterval, previousEase) {
+  let ease = parseFloat(previousEase) || 2.5;
+  let reps = parseInt(repetitions) || 0;
+  let interval = 1;
+
+  // Handle grade = 1 (Again / Reset) to review immediately in current session
+  if (grade === 1) {
+    return {
+      repetitions: 0,
+      interval: 0,
+      easinessFactor: Math.max(1.3, ease - 0.2),
+      nextReviewDate: Date.now() // due immediately
+    };
+  }
+
+  if (grade >= 3) {
+    if (reps === 0) {
+      interval = 1;
+    } else if (reps === 1) {
+      interval = 6;
+    } else {
+      interval = Math.round(previousInterval * ease);
+    }
+    reps++;
+  } else {
+    reps = 0;
+    interval = 1;
+  }
+
+  // Adjust ease factor based on SM-2 formula
+  ease = ease + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
+  if (ease < 1.3) ease = 1.3;
+
+  return {
+    repetitions: reps,
+    interval: interval,
+    easinessFactor: ease,
+    nextReviewDate: Date.now() + interval * 24 * 60 * 60 * 1000
+  };
+}
+
+// Storage keys
+const KEY_VOCAB = "eng_app_saved_vocab";
+const KEY_STATS = "eng_app_user_stats";
+const KEY_TOPIC_PROGRESS = "eng_app_topic_progress";
+
+// Initialize default stats if not present
+const defaultStats = {
+  streak: 0,
+  points: 0,
+  level: "A1",
+  lastActive: null,
+  completedModules: 0
+};
+
+export const storage = {
+  getSavedVocab: () => {
+    try {
+      const data = localStorage.getItem(KEY_VOCAB);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Error reading vocab from localStorage", e);
+      return [];
+    }
+  },
+
+  saveWord: (wordObj) => {
+    try {
+      const list = storage.getSavedVocab();
+      // Avoid duplicate saves
+      if (list.some(item => item.word.toLowerCase() === wordObj.word.toLowerCase())) {
+        return list;
+      }
+      
+      const newWord = {
+        word: wordObj.word,
+        ipa: wordObj.ipa || "",
+        vietnamese: wordObj.vietnamese || "",
+        example: wordObj.example || "",
+        topic: wordObj.topic || "General",
+        // SM-2 fields
+        repetitions: 0,
+        interval: 1,
+        easinessFactor: 2.5,
+        nextReviewDate: Date.now(), // Ready to review immediately
+        status: "learning",
+        savedAt: Date.now()
+      };
+      
+      const updatedList = [newWord, ...list];
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      return updatedList;
+    } catch (e) {
+      console.error("Error saving word to localStorage", e);
+      return [];
+    }
+  },
+
+  deleteWord: (wordText) => {
+    try {
+      const list = storage.getSavedVocab();
+      const updatedList = list.filter(item => item.word.toLowerCase() !== wordText.toLowerCase());
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      return updatedList;
+    } catch (e) {
+      console.error("Error deleting word from localStorage", e);
+      return [];
+    }
+  },
+
+  updateWordProgress: (wordText, grade) => {
+    try {
+      const list = storage.getSavedVocab();
+      const updatedList = list.map(item => {
+        if (item.word.toLowerCase() === wordText.toLowerCase()) {
+          const sm2Result = calculateSM2(
+            grade,
+            item.repetitions,
+            item.interval,
+            item.easinessFactor
+          );
+          
+          return {
+            ...item,
+            ...sm2Result,
+            status: grade >= 4 ? "mastered" : "learning"
+          };
+        }
+        return item;
+      });
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      return updatedList;
+    } catch (e) {
+      console.error("Error updating word progress", e);
+      return [];
+    }
+  },
+
+  resetWord: (wordText) => {
+    try {
+      const list = storage.getSavedVocab();
+      const updatedList = list.map(item =>
+        item.word.toLowerCase() === wordText.toLowerCase()
+          ? {
+              ...item,
+              repetitions: 0,
+              interval: 1,
+              easinessFactor: 2.5,
+              nextReviewDate: Date.now(),
+              status: "learning"
+            }
+          : item
+      );
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      return updatedList;
+    } catch (e) {
+      console.error("Error resetting word", e);
+      return [];
+    }
+  },
+
+  getUserStats: () => {
+    try {
+      const data = localStorage.getItem(KEY_STATS);
+      let stats = data ? JSON.parse(data) : { ...defaultStats };
+      
+      // Automatic streak validation/update
+      const now = new Date();
+      if (stats.lastActive) {
+        const lastActiveDate = new Date(stats.lastActive);
+        
+        // Calculate difference in days
+        const diffTime = Math.abs(now.setHours(0,0,0,0) - lastActiveDate.setHours(0,0,0,0));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 1) {
+          // Reset streak if more than 1 day missed and save immediately to database
+          stats.streak = 0;
+          localStorage.setItem(KEY_STATS, JSON.stringify(stats));
+        }
+      }
+      
+      return stats;
+    } catch (e) {
+      console.error("Error getting user stats", e);
+      return { ...defaultStats };
+    }
+  },
+
+  updateUserStats: (updates) => {
+    try {
+      const current = storage.getUserStats();
+      const updated = {
+        ...current,
+        ...updates,
+        lastActive: Date.now()
+      };
+      localStorage.setItem(KEY_STATS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error updating user stats", e);
+      return { ...defaultStats };
+    }
+  },
+
+  recordActivity: () => {
+    try {
+      const stats = storage.getUserStats();
+      const now = new Date();
+      const todayString = now.toDateString();
+      
+      let updatedStats = { ...stats };
+      
+      if (!stats.lastActive) {
+        updatedStats.streak = 1;
+      } else {
+        const lastActiveDate = new Date(stats.lastActive);
+        const lastActiveString = lastActiveDate.toDateString();
+        
+        if (lastActiveString !== todayString) {
+          const diffTime = Math.abs(now.setHours(0,0,0,0) - lastActiveDate.setHours(0,0,0,0));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 1) {
+            updatedStats.streak += 1;
+          } else if (diffDays > 1) {
+            updatedStats.streak = 1;
+          }
+        }
+      }
+      
+      updatedStats.lastActive = Date.now();
+      localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+      return updatedStats;
+    } catch (e) {
+      console.error("Error recording user activity", e);
+      return { ...defaultStats };
+    }
+  },
+
+  getTopicProgress: () => {
+    try {
+      const data = localStorage.getItem(KEY_TOPIC_PROGRESS);
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      console.error("Error getting topic progress", e);
+      return {};
+    }
+  },
+
+  updateTopicProgress: (topicId, moduleKey, score) => {
+    try {
+      const progress = storage.getTopicProgress();
+      const topicProg = progress[topicId] || {
+        is_reading_completed: false,
+        max_speaking_score: 0,
+        max_listening_score: 0,
+        is_grammar_completed: false,
+        max_writing_score: 0
+      };
+
+      let pointsAdded = 0;
+      let completedModulesAdded = 0;
+
+      if (moduleKey === "reading") {
+        if (!topicProg.is_reading_completed) {
+          topicProg.is_reading_completed = true;
+          pointsAdded = 10;
+          completedModulesAdded = 1;
+        }
+      } else if (moduleKey === "speaking") {
+        const currentBest = topicProg.max_speaking_score || 0;
+        if (score > currentBest) {
+          topicProg.max_speaking_score = score;
+          pointsAdded = Math.round((score - currentBest) * 10);
+          if (currentBest === 0) {
+            completedModulesAdded = 1;
+          }
+        }
+      } else if (moduleKey === "listening") {
+        const currentBest = topicProg.max_listening_score || 0;
+        if (score > currentBest) {
+          topicProg.max_listening_score = score;
+          pointsAdded = Math.round((score - currentBest) * 10);
+          if (currentBest === 0) {
+            completedModulesAdded = 1;
+          }
+        }
+      } else if (moduleKey === "grammar") {
+        if (!topicProg.is_grammar_completed) {
+          topicProg.is_grammar_completed = true;
+          pointsAdded = 10;
+          completedModulesAdded = 1;
+        }
+      } else if (moduleKey === "writing") {
+        const currentBest = topicProg.max_writing_score || 0;
+        if (score > currentBest) {
+          topicProg.max_writing_score = score;
+          pointsAdded = Math.round((score - currentBest) * 10);
+          if (currentBest === 0) {
+            completedModulesAdded = 1;
+          }
+        }
+      }
+
+      const updatedProgress = {
+        ...progress,
+        [topicId]: topicProg
+      };
+      
+      localStorage.setItem(KEY_TOPIC_PROGRESS, JSON.stringify(updatedProgress));
+      
+      if (pointsAdded > 0 || completedModulesAdded > 0) {
+        const stats = storage.getUserStats();
+        storage.updateUserStats({
+          points: stats.points + pointsAdded,
+          completedModules: stats.completedModules + completedModulesAdded
+        });
+      }
+
+      return updatedProgress;
+    } catch (e) {
+      console.error("Error updating topic progress", e);
+      return {};
+    }
+  },
+
+  getCustomTopics: () => {
+    try {
+      const data = localStorage.getItem("eng_app_custom_topics");
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Error reading custom topics", e);
+      return [];
+    }
+  },
+
+  saveCustomTopic: (topicObj) => {
+    try {
+      const list = storage.getCustomTopics();
+      const filtered = list.filter(t => t.id !== topicObj.id);
+      const updated = [...filtered, topicObj];
+      localStorage.setItem("eng_app_custom_topics", JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error saving custom topic", e);
+      return [];
+    }
+  },
+
+  deleteCustomTopic: (topicId) => {
+    try {
+      const list = storage.getCustomTopics();
+      const updated = list.filter(t => t.id !== topicId);
+      localStorage.setItem("eng_app_custom_topics", JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error deleting custom topic", e);
+      return [];
+    }
+  },
+
+  getPendingTopics: () => {
+    try {
+      const data = localStorage.getItem("eng_app_pending_topics");
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Error reading pending topics", e);
+      return [];
+    }
+  },
+
+  savePendingTopic: (topicObj) => {
+    try {
+      const list = storage.getPendingTopics();
+      const filtered = list.filter(t => t.id !== topicObj.id);
+      const updated = [...filtered, topicObj];
+      localStorage.setItem("eng_app_pending_topics", JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error saving pending topic", e);
+      return [];
+    }
+  },
+
+  deletePendingTopic: (topicId) => {
+    try {
+      const list = storage.getPendingTopics();
+      const updated = list.filter(t => t.id !== topicId);
+      localStorage.setItem("eng_app_pending_topics", JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error deleting pending topic", e);
+      return [];
+    }
+  }
+};

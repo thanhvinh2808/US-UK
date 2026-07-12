@@ -1,0 +1,396 @@
+import React, { useState } from 'react';
+import { storage } from '../utils/storage';
+
+export default function VocabReader({ topic, onSavedVocabChange, onComplete, onNavigateBack }) {
+  const [selectedWord, setSelectedWord] = useState(null);
+  const [customTranslation, setCustomTranslation] = useState('');
+  const [savedWordsList, setSavedWordsList] = useState(() => storage.getSavedVocab().map(w => w.word.toLowerCase()));
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showFullTranslation, setShowFullTranslation] = useState(false);
+
+  // Split reading passage into words, stripping punctuation for translation lookups
+  const words = topic.reading_passage.split(/\s+/);
+
+  const handleWordClick = async (rawWord) => {
+    // Clean word for lookup
+    const cleanWord = rawWord.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
+    
+    // Set loading state first
+    setSelectedWord({
+      word: cleanWord,
+      ipa: "Loading...",
+      vietnamese: "Translating...",
+      example: "Loading example...",
+      isCustom: true,
+      isLoading: true
+    });
+    setCustomTranslation("Translating...");
+
+    // 1. Check if word is already saved in notebook
+    const savedEntry = storage.getSavedVocab().find(w => w.word.toLowerCase() === cleanWord);
+    if (savedEntry) {
+      setSelectedWord({
+        word: savedEntry.word,
+        ipa: savedEntry.ipa,
+        vietnamese: savedEntry.vietnamese,
+        example: savedEntry.example,
+        isCustom: true,
+        isSaved: true
+      });
+      setCustomTranslation(savedEntry.vietnamese);
+      return;
+    }
+
+    // 2. Find in default vocabs
+    const foundVocab = topic.default_vocabs.find(v => v.word.toLowerCase() === cleanWord);
+    if (foundVocab) {
+      setSelectedWord({
+        word: cleanWord,
+        ipa: foundVocab.ipa,
+        vietnamese: foundVocab.vietnamese,
+        example: foundVocab.example,
+        isCustom: false
+      });
+      return;
+    }
+
+    // 3. Fallback: Mock dictionary first, then query Google Translate + Dictionary API
+    const mockDict = {
+      seattle: "thành phố Seattle (Mỹ)",
+      famous: "nổi tiếng",
+      coffee: "cà phê",
+      culture: "văn hóa",
+      every: "mỗi, mọi",
+      morning: "buổi sáng",
+      millions: "hàng triệu",
+      people: "người, người dân",
+      visit: "ghé thăm, viếng thăm",
+      local: "địa phương",
+      grab: "lấy, mua nhanh",
+      drinks: "thức uống, đồ uống",
+      order: "gọi món, đặt hàng",
+      simple: "đơn giản",
+      black: "đen",
+      cappuccino: "cà phê cappuccino",
+      latte: "cà phê latte",
+      size: "kích cỡ, size",
+      small: "nhỏ, cỡ nhỏ",
+      medium: "trung bình, cỡ vừa",
+      large: "lớn, cỡ to",
+      add: "thêm vào",
+      croissant: "bánh sừng bò",
+      blueberry: "quả việt quất",
+      muffin: "bánh nướng muffin",
+      enjoy: "thưởng thức",
+      warm: "ấm áp",
+      drink: "đồ uống",
+      succeeding: "thành công, gặt hái thành công",
+      job: "công việc, việc làm",
+      interview: "cuộc phỏng vấn",
+      great: "tuyệt vời, to lớn",
+      showcase: "trình bày, trưng bày",
+      professional: "chuyên nghiệp",
+      skills: "các kỹ năng",
+      employers: "nhà tuyển dụng",
+      want: "muốn",
+      hire: "thuê, tuyển dụng",
+      candidates: "ứng viên",
+      motivated: "có động lực",
+      qualified: "đủ năng lực",
+      during: "trong suốt, trong khi",
+      describe: "mô tả",
+      strengths: "điểm mạnh",
+      previous: "trước đó",
+      work: "làm việc",
+      experience: "kinh nghiệm",
+      important: "quan trọng",
+      listen: "lắng nghe",
+      carefully: "cẩn thận",
+      questions: "các câu hỏi",
+      answer: "trả lời",
+      clearly: "rõ ràng",
+      thoughtful: "chu đáo, sâu sắc",
+      company: "công ty",
+      interest: "sự quan tâm, hứng thú",
+      remember: "ghi nhớ",
+      follow: "theo dõi, liên hệ lại",
+      afterward: "sau đó, về sau"
+    };
+
+    let translation = mockDict[cleanWord] || "";
+    let ipa = `/${cleanWord}/`;
+    let example = `This is a sentence containing "${cleanWord}".`;
+
+    if (translation) {
+      setSelectedWord({
+        word: cleanWord,
+        ipa: ipa,
+        vietnamese: translation,
+        example: example,
+        isCustom: true
+      });
+      setCustomTranslation(translation);
+      return;
+    }
+
+    // Query online APIs asynchronously
+    try {
+      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(cleanWord)}`)
+        .then(res => res.json())
+        .then(data => data && data[0] && data[0][0] && data[0][0][0] ? data[0][0][0] : "Từ mới");
+
+      const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data[0]) {
+            const phonetics = data[0].phonetics || [];
+            const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${cleanWord}/`;
+            const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
+            const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || `Used as: ${cleanWord}`;
+            return { ipa: foundIpa, example: `${meaning}. (E.g. ${sample})` };
+          }
+          return { ipa: `/${cleanWord}/`, example: `This is a sentence containing "${cleanWord}".` };
+        })
+        .catch(() => ({ ipa: `/${cleanWord}/`, example: `This is a sentence containing "${cleanWord}".` }));
+
+      const [fetchedTranslation, fetchedDict] = await Promise.all([transPromise, dictPromise]);
+
+      setSelectedWord({
+        word: cleanWord,
+        ipa: fetchedDict.ipa,
+        vietnamese: fetchedTranslation,
+        example: fetchedDict.example,
+        isCustom: true
+      });
+      setCustomTranslation(fetchedTranslation);
+    } catch (err) {
+      console.error("Live translation failed:", err);
+      setSelectedWord({
+        word: cleanWord,
+        ipa: ipa,
+        vietnamese: "Dịch lỗi (Kiểm tra kết nối mạng)",
+        example: example,
+        isCustom: true
+      });
+      setCustomTranslation("Dịch lỗi");
+    }
+  };
+
+  const handleSpeak = (word) => {
+    if ('speechSynthesis' in window) {
+      // Cancel ongoing speech
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85; // slightly slower for learners
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Text-to-speech is not supported on this browser.");
+    }
+  };
+
+  const handleSaveWord = () => {
+    if (!selectedWord) return;
+
+    const wordToSave = {
+      word: selectedWord.word,
+      ipa: selectedWord.ipa,
+      vietnamese: selectedWord.isCustom ? customTranslation : selectedWord.vietnamese,
+      example: selectedWord.example,
+      topic: topic.topic
+    };
+
+    const newList = storage.saveWord(wordToSave);
+    setSavedWordsList(newList.map(w => w.word.toLowerCase()));
+    
+    // Animate or alert save
+    setSelectedWord(prev => ({ ...prev, isSaved: true }));
+    onSavedVocabChange();
+  };
+
+  const handleMarkAsRead = () => {
+    storage.updateTopicProgress(topic.id, 'reading');
+    setIsCompleted(true);
+    if (onComplete) onComplete();
+  };
+
+  return (
+    <div className="vocab-reader-screen animate-slideup">
+      {/* Header and Back Button */}
+      <div className="screen-header mb-6">
+        <button className="btn-secondary" onClick={onNavigateBack}>
+          ← Back to Dashboard
+        </button>
+        <div className="topic-meta">
+          <span className="badge-level">{topic.level}</span>
+          <span className="topic-name">{topic.topic}</span>
+        </div>
+      </div>
+
+      <div className="reader-layout">
+        {/* Left Side: Reading Passage */}
+        <div className="passage-section glass p-6">
+          <h2 className="passage-title mb-4">{topic.title}</h2>
+          
+          <div className="reading-text-box mb-6">
+            {words.map((word, idx) => {
+              const clean = word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
+              const isSaved = savedWordsList.includes(clean);
+              const isTopicVocab = topic.default_vocabs.some(v => v.word.toLowerCase() === clean);
+
+              return (
+                <span 
+                  key={idx} 
+                  className={`readable-word ${isTopicVocab ? 'topic-vocab' : ''} ${isSaved ? 'saved-vocab' : ''}`}
+                  onClick={() => handleWordClick(word)}
+                >
+                  {word}{' '}
+                </span>
+              );
+            })}
+          </div>
+
+          <div className="passage-actions mb-6 flex flex-wrap gap-3">
+            <button 
+              className={`btn-secondary ${showFullTranslation ? 'pulse-border' : ''}`}
+              onClick={() => setShowFullTranslation(!showFullTranslation)}
+            >
+              {showFullTranslation ? "👁️ Hide Paragraph Translation" : "📝 Translate Entire Paragraph"}
+            </button>
+            
+            {!isCompleted ? (
+              <button className="btn-primary" onClick={handleMarkAsRead}>
+                📖 Mark as Read (+10 XP)
+              </button>
+            ) : (
+              <div className="completion-badge">
+                🎉 Reading completed! +10 XP awarded.
+              </div>
+            )}
+          </div>
+
+          {showFullTranslation && (
+            <div className="paragraph-translation-box glass p-5 mb-6 animate-slideup" style={{ borderLeft: '4px solid var(--color-secondary)' }}>
+              <h4 className="color-text-muted mb-2 text-sm">🇻🇳 Bản dịch nghĩa tiếng Việt:</h4>
+              <p className="color-text-main leading-relaxed" style={{ fontSize: '16.5px' }}>
+                {topic.reading_passage_translation}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Translation Details & Keyword Sidebar */}
+        <div className="sidebar-section">
+          {/* Word Translator Box */}
+          {selectedWord ? (
+            <div className="word-details-box glass-glow p-5 mb-6">
+              <div className="details-header mb-3">
+                <h3 className="word-title">{selectedWord.word}</h3>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word)} title="Listen pronunciation">
+                    🔊
+                  </button>
+                  <button 
+                    className="speak-btn close-details-btn" 
+                    onClick={() => setSelectedWord(null)} 
+                    title="Close details"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      color: 'var(--color-error)',
+                      borderColor: 'rgba(239, 68, 68, 0.2)',
+                      fontSize: '13px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="word-ipa mb-3">{selectedWord.ipa}</div>
+
+              {selectedWord.isCustom ? (
+                <div className="custom-translation-input mb-4">
+                  <label className="color-text-muted text-sm block mb-1">Edit Translation:</label>
+                  <input 
+                    type="text" 
+                    className="translation-text-input"
+                    value={customTranslation}
+                    onChange={(e) => setCustomTranslation(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <div className="word-translation mb-4">{selectedWord.vietnamese}</div>
+              )}
+
+              <div className="word-example mb-4">
+                <strong>Example:</strong>
+                <p className="color-text-muted mt-1 italic">"{selectedWord.example}"</p>
+              </div>
+
+              {savedWordsList.includes(selectedWord.word.toLowerCase()) || selectedWord.isSaved ? (
+                <button className="btn-secondary w-full justify-center" disabled>
+                  ✓ Saved to Notebook
+                </button>
+              ) : (
+                <button className="btn-primary w-full justify-center" onClick={handleSaveWord}>
+                  ⭐ Save to Notebook
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="word-details-box glass p-5 mb-6 text-center text-muted">
+              <span className="icon-huge">👆</span>
+              <p className="mt-3">Click on any word in the text to see its translation, pronunciation, and save it!</p>
+            </div>
+          )}
+
+          {/* Topic Vocabulary List */}
+          <div className="topic-vocab-list-box glass p-5">
+            <h3 className="mb-4">Key Vocabulary</h3>
+            <div className="vocab-list">
+              {topic.default_vocabs.map((vocab, index) => {
+                const isSaved = savedWordsList.includes(vocab.word.toLowerCase());
+                return (
+                  <div key={index} className="vocab-row">
+                    <div className="vocab-row-left" onClick={() => handleWordClick(vocab.word)}>
+                      <span className="vocab-row-word">{vocab.word}</span>
+                      <span className="vocab-row-ipa">{vocab.ipa}</span>
+                    </div>
+                    <div className="vocab-row-right">
+                      <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word)}>🔊</button>
+                      <button 
+                        className={`row-save-btn ${isSaved ? 'saved' : ''}`}
+                        onClick={() => {
+                          setSelectedWord({
+                            word: vocab.word,
+                            ipa: vocab.ipa,
+                            vietnamese: vocab.vietnamese,
+                            example: vocab.example,
+                            isCustom: false
+                          });
+                          storage.saveWord({
+                            word: vocab.word,
+                            ipa: vocab.ipa,
+                            vietnamese: vocab.vietnamese,
+                            example: vocab.example,
+                            topic: topic.topic
+                          });
+                          setSavedWordsList(storage.getSavedVocab().map(w => w.word.toLowerCase()));
+                          onSavedVocabChange();
+                        }}
+                        disabled={isSaved}
+                      >
+                        {isSaved ? '★' : '☆'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
