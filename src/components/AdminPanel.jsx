@@ -204,14 +204,20 @@ Quy tắc bắt buộc:
 8. ĐẶC BIỆT CHÚ Ý: Mọi dấu ngoặc kép (double quotes) xuất hiện bên trong các trường văn bản PHẢI được viết dưới dạng thoát ký tự: \\" (ví dụ: \\"fine\\" thay vì "fine"). Không được để dấu ngoặc kép trần làm hỏng cấu trúc JSON.
 9. Đảm bảo cấu trúc JSON hoàn chỉnh, không có dấu phẩy thừa (trailing commas) ở cuối các phần tử mảng hoặc thuộc tính đối tượng.`;
 
-    const userPrompt = `Hãy tạo một bài học tiếng Anh hoàn chỉnh với:
+    // Generate a random seed to enforce diverse output
+    const randomSeed = Math.random().toString(36).substring(7);
+
+    const userPrompt = `Hãy tạo một bài học tiếng Anh hoàn toàn MỚI, ĐỘC ĐÁO và KHÁC BIỆT (tránh trùng lặp nội dung với các lần tạo trước) cho:
 Chủ đề: ${form.topicName}
 Thì ngữ pháp trọng tâm: ${form.tense}
 Level: ${form.level}
+Mã số định danh sáng tạo ngẫu nhiên (Creative Seed): ${randomSeed}
+
+Hãy sáng tạo một cốt truyện bài đọc (reading_passage) và các câu thoại mới lạ lấy cảm hứng ngẫu nhiên dựa trên mã số định danh này để tạo tính đa dạng.
 
 Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không thêm chữ nào ngoài JSON):
 {
-  "id": "topic_custom_${Date.now()}",
+  "id": "topic_custom_${Date.now()}_${randomSeed}",
   "topic": "${form.topicName}",
   "level": "${form.level}",
   "title": "Tên tiêu đề tiếng Anh",
@@ -248,7 +254,8 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
         body: JSON.stringify({
           contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
           generationConfig: {
-            responseMimeType: "application/json"
+            responseMimeType: "application/json",
+            temperature: 1.0
           }
         })
       });
