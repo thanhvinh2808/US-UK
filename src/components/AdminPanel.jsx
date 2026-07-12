@@ -200,7 +200,9 @@ Quy tắc bắt buộc:
    - Bài 1: type "fill_blank", sentence_parts: [phần trước chỗ trống, phần sau chỗ trống], answer: động từ đã chia đúng thì, hint: gợi ý ngữ pháp.
    - Bài 2: type "sentence_ordering", words: mảng gồm các từ đơn lẻ xáo trộn, answer: câu hoàn chỉnh (nhớ dấu chấm ở cuối câu).
    - Bài 3: type "free_writing", prompt_vi: đề bài tiếng Việt yêu cầu người học tự viết 2 câu, required_keywords: mảng từ khóa, min_words: 8.
-7. ID của chủ đề (id) phải là duy nhất dạng: "topic_custom_xxxx" (ví dụ: topic_custom_travel_123).`;
+7. ID của chủ đề (id) phải là duy nhất dạng: "topic_custom_xxxx" (ví dụ: topic_custom_travel_123).
+8. ĐẶC BIỆT CHÚ Ý: Mọi dấu ngoặc kép (double quotes) xuất hiện bên trong các trường văn bản PHẢI được viết dưới dạng thoát ký tự: \\" (ví dụ: \\"fine\\" thay vì "fine"). Không được để dấu ngoặc kép trần làm hỏng cấu trúc JSON.
+9. Đảm bảo cấu trúc JSON hoàn chỉnh, không có dấu phẩy thừa (trailing commas) ở cuối các phần tử mảng hoặc thuộc tính đối tượng.`;
 
     const userPrompt = `Hãy tạo một bài học tiếng Anh hoàn chỉnh với:
 Chủ đề: ${form.topicName}
@@ -271,8 +273,31 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
       if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
         throw new Error("Không tìm thấy cấu trúc JSON hợp lệ trong câu trả lời từ Gemini.");
       }
-      const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-      const parsedData = JSON.parse(cleanJsonText);
+      let cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
+      
+      // Preprocess JSON to strip trailing commas which crash native JSON.parse
+      cleanJsonText = cleanJsonText.replace(/,\s*([\]}])/g, '$1');
+      
+      let parsedData;
+      try {
+        parsedData = JSON.parse(cleanJsonText);
+      } catch (parseErr) {
+        console.error("JSON Parse Error details:", parseErr);
+        // Extract context around syntax error position if available
+        const posMatch = parseErr.message.match(/position\s+(\d+)/i);
+        if (posMatch) {
+          const pos = parseInt(posMatch[1], 10);
+          const start = Math.max(0, pos - 40);
+          const end = Math.min(cleanJsonText.length, pos + 40);
+          const errorContext = cleanJsonText.slice(start, end);
+          // Highlight exact spot
+          const marker = " ".repeat(Math.min(pos - start + 10, 50)) + "^";
+          addLog(`❌ Lỗi cú pháp JSON từ AI gần vị trí ${pos}:`);
+          addLog(`[Ngữ cảnh]: ...${errorContext}...`);
+          addLog(`[Vị trí lỗi]: ${marker}`);
+        }
+        throw new Error(`Dữ liệu JSON từ AI bị lỗi cú pháp: ${parseErr.message}. Vui lòng thử lại.`);
+      }
       
       addLog(`Đang tiến hành kiểm tra (validate) dữ liệu bài học...`);
       const { valid, errors } = validateTopicData(parsedData);
