@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
+import { playSound, vibrate } from '../utils/sounds';
+import confetti from 'canvas-confetti';
 
 // LCS-based word alignment helper to prevent index mismatch from single mistakes
 function alignWords(targetWords, userWords) {
@@ -34,7 +36,7 @@ function alignWords(targetWords, userWords) {
   return matchedIndices;
 }
 
-export default function Dictation({ topic, onNavigateBack }) {
+export default function Dictation({ topic, onNavigateBack, showToast }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [showTranslation, setShowTranslation] = useState(false);
@@ -43,6 +45,24 @@ export default function Dictation({ topic, onNavigateBack }) {
   const [currentScore, setCurrentScore] = useState(0);
   const [scores, setScores] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
+  
+  const textareaRef = useRef(null);
+
+  const handleFocus = () => {
+    setTimeout(() => {
+      textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
+
+  useEffect(() => {
+    if (isFinished) {
+      const finalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      if (finalScore >= 0.8) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        playSound('complete');
+      }
+    }
+  }, [isFinished, scores]);
 
   const dialogue = topic.dialogues[currentIdx];
   const targetText = dialogue ? dialogue.text : '';
@@ -87,6 +107,14 @@ export default function Dictation({ topic, onNavigateBack }) {
     const score = matched.size / targetWords.length;
     setCurrentScore(score);
     setChecked(true);
+    
+    if (score >= 0.8) {
+      playSound('correct');
+      vibrate(50);
+    } else {
+      playSound('incorrect');
+      vibrate([50, 50, 50]);
+    }
   };
 
   const handleNext = () => {
@@ -215,6 +243,8 @@ export default function Dictation({ topic, onNavigateBack }) {
         {/* Text Input Area */}
         <div className="input-box mb-6">
           <textarea
+            ref={textareaRef}
+            onFocus={handleFocus}
             className="dictation-textarea"
             placeholder="Type what you hear..."
             value={userInput}

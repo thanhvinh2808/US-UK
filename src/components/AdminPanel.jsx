@@ -1,6 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
 
+export function preprocessAndRepairJson(rawText) {
+  // Pass 1: Repair unescaped quotes
+  let repairedText = '';
+  for (let i = 0; i < rawText.length; i++) {
+    const char = rawText[i];
+    
+    if (char === '"' && rawText[i - 1] !== '\\') {
+      // Check if it's a structural quote
+      let prevChar = '';
+      let prevIdx = i - 1;
+      while (prevIdx >= 0) {
+        const c = rawText[prevIdx];
+        if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') {
+          prevChar = c;
+          break;
+        }
+        prevIdx--;
+      }
+      
+      let nextChar = '';
+      let nextIdx = i + 1;
+      while (nextIdx < rawText.length) {
+        const c = rawText[nextIdx];
+        if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') {
+          nextChar = c;
+          break;
+        }
+        nextIdx++;
+      }
+      
+      const isPreceded = ['{', '[', ',', ':'].includes(prevChar);
+      const isFollowed = ['}', ']', ',', ':'].includes(nextChar);
+      
+      if (isPreceded || isFollowed) {
+        repairedText += char;
+      } else {
+        repairedText += '\\"'; // Escape it
+      }
+    } else {
+      repairedText += char;
+    }
+  }
+
+  // Pass 2: Escape literal newlines, carriage returns, tabs inside strings, and strip comments
+  let cleanText = '';
+  let insideString = false;
+  let escaped = false;
+  
+  for (let i = 0; i < repairedText.length; i++) {
+    const char = repairedText[i];
+    
+    // Strip comments outside strings
+    if (!insideString) {
+      if (char === '/' && repairedText[i + 1] === '/') {
+        while (i < repairedText.length && repairedText[i] !== '\n' && repairedText[i] !== '\r') {
+          i++;
+        }
+        i--;
+        continue;
+      }
+      if (char === '/' && repairedText[i + 1] === '*') {
+        i += 2;
+        while (i < repairedText.length && !(repairedText[i] === '*' && repairedText[i + 1] === '/')) {
+          i++;
+        }
+        i++;
+        continue;
+      }
+    }
+    
+    if (char === '"' && !escaped) {
+      insideString = !insideString;
+      cleanText += char;
+      continue;
+    }
+    
+    if (insideString) {
+      if (char === '\\') {
+        escaped = !escaped;
+        cleanText += char;
+      } else {
+        if (char === '\n') {
+          cleanText += '\\n';
+        } else if (char === '\r') {
+          cleanText += '\\r';
+        } else if (char === '\t') {
+          cleanText += '\\t';
+        } else {
+          cleanText += char;
+        }
+        escaped = false;
+      }
+    } else {
+      cleanText += char;
+    }
+  }
+  
+  // Remove trailing commas in arrays/objects
+  cleanText = cleanText.replace(/,\s*([\]}])/g, '$1');
+  
+  return cleanText;
+}
+
+export async function fetchGeminiWithRetry(url, options, maxRetries = 3, delayMs = 1500) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.ok) {
+        return response;
+      }
+      
+      const status = response.status;
+      if (status === 503 || status === 429 || status === 500 || status === 504) {
+        console.warn(`Gemini API returned status ${status} on attempt ${attempt}. Retrying in ${delayMs * attempt}ms...`);
+        lastError = new Error(`Gemini API Error (Status ${status}): Dịch vụ tạm thời quá tải hoặc giới hạn lượt gọi.`);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, delayMs * attempt)); // Exponential backoff
+          continue;
+        }
+      } else if (status === 400 || status === 403) {
+        throw new Error(`Gemini API Error (Status ${status}): API Key không hợp lệ, hết hạn, hoặc bị từ chối truy cập.`);
+      } else {
+        throw new Error(`Gemini API Error (Status ${status}): Đã xảy ra lỗi kết nối phía Gemini.`);
+      }
+    } catch (err) {
+      lastError = err;
+      if (err.message.includes("API Key không hợp lệ")) {
+        throw err;
+      }
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+        continue;
+      }
+    }
+  }
+  throw lastError;
+}
+
 export function validateTopicData(data) {
   const errors = [];
 
@@ -114,7 +254,7 @@ Nếu không phát hiện lỗi nào, hãy trả về:
 }`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`, {
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -127,7 +267,7 @@ Nếu không phát hiện lỗi nào, hãy trả về:
         })
       });
 
-      if (response.ok) {
+      if (response && response.ok) {
         const resData = await response.json();
         const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
@@ -135,7 +275,8 @@ Nếu không phát hiện lỗi nào, hãy trả về:
           const lastBrace = rawText.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
             const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-            const parsed = JSON.parse(cleanJsonText);
+            const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
+            const parsed = JSON.parse(repairedJsonText);
             setSpellCheckResult(parsed);
             if (parsed.hasErrors) {
               addLog(`⚠️ Đã phát hiện ${parsed.errors.length} lỗi chính tả/ngữ pháp trong bài đọc.`);
@@ -246,7 +387,8 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
 }`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`, {
+      addLog(`Đang gửi yêu cầu và đợi phản hồi từ Gemini API (hệ thống tự động thử lại nếu máy chủ quá tải)...`);
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -260,12 +402,8 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Gemini API Error: Status ${response.status} - Vui lòng kiểm tra lại tính hợp lệ của API Key.`);
-      }
-
       const resData = await response.json();
-      addLog(`Đã nhận phản hồi từ Gemini API.`);
+      addLog(`Đã nhận phản hồi thành công từ Gemini API.`);
       
       const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) {
@@ -280,14 +418,12 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
       if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
         throw new Error("Không tìm thấy cấu trúc JSON hợp lệ trong câu trả lời từ Gemini.");
       }
-      let cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-      
-      // Preprocess JSON to strip trailing commas which crash native JSON.parse
-      cleanJsonText = cleanJsonText.replace(/,\s*([\]}])/g, '$1');
+      const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
+      const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
       
       let parsedData;
       try {
-        parsedData = JSON.parse(cleanJsonText);
+        parsedData = JSON.parse(repairedJsonText);
       } catch (parseErr) {
         console.error("JSON Parse Error details:", parseErr);
         // Extract context around syntax error position if available
@@ -295,8 +431,8 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
         if (posMatch) {
           const pos = parseInt(posMatch[1], 10);
           const start = Math.max(0, pos - 40);
-          const end = Math.min(cleanJsonText.length, pos + 40);
-          const errorContext = cleanJsonText.slice(start, end);
+          const end = Math.min(repairedJsonText.length, pos + 40);
+          const errorContext = repairedJsonText.slice(start, end);
           // Highlight exact spot
           const marker = " ".repeat(Math.min(pos - start + 10, 50)) + "^";
           addLog(`❌ Lỗi cú pháp JSON từ AI gần vị trí ${pos}:`);

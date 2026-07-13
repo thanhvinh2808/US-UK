@@ -11,6 +11,8 @@ import { contentBank } from './data/contentBank';
 import GrammarLab from './components/GrammarLab';
 import Writing from './components/Writing';
 import AdminPanel from './components/AdminPanel';
+import Toast from './components/Toast';
+import GlobalTranslator from './components/GlobalTranslator';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -39,6 +41,18 @@ function App() {
   const [savedVocabCount, setSavedVocabCount] = useState(() => storage.getSavedVocab().length);
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
   const [theme, setTheme] = useState(() => localStorage.getItem('eng_app_theme') || 'light');
+  
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type, id: Date.now() });
+  };
+
+  // Check network status
+  useEffect(() => {
+    const handleOffline = () => showToast('Mất kết nối mạng. Một số tính năng có thể không hoạt động.', 'error');
+    window.addEventListener('offline', handleOffline);
+    return () => window.removeEventListener('offline', handleOffline);
+  }, []);
 
   // Initialize and track daily activity
   useEffect(() => {
@@ -193,6 +207,7 @@ function App() {
             onSavedVocabChange={refreshState}
             onComplete={refreshState}
             onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
           />
         )}
 
@@ -200,6 +215,7 @@ function App() {
           <Dictation 
             topic={selectedTopic}
             onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
           />
         )}
 
@@ -207,6 +223,7 @@ function App() {
           <Pronunciation 
             topic={selectedTopic}
             onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
           />
         )}
 
@@ -215,6 +232,7 @@ function App() {
             topic={selectedTopic}
             onComplete={refreshState}
             onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
           />
         )}
 
@@ -222,6 +240,7 @@ function App() {
           <Writing
             topic={selectedTopic}
             onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
           />
         )}
 
@@ -229,6 +248,7 @@ function App() {
           <Flashcards 
             onNavigateBack={handleBackToDashboard}
             onSavedVocabChange={refreshState}
+            showToast={showToast}
           />
         )}
 
@@ -236,9 +256,26 @@ function App() {
           <VocabNotebook 
             onNavigateBack={handleBackToDashboard}
             onSavedVocabChange={refreshState}
+            showToast={showToast}
           />
         )}
       </main>
+      
+      {/* Global Dictionary/Translation Floating Widget */}
+      <GlobalTranslator 
+        onSavedVocabChange={refreshState} 
+        showToast={showToast} 
+      />
+
+      {/* Toast Notification Container */}
+      {toast && (
+        <Toast 
+          key={toast.id} 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
+import { playSound, vibrate } from '../utils/sounds';
+import confetti from 'canvas-confetti';
 
-export default function Pronunciation({ topic, onNavigateBack }) {
+export default function Pronunciation({ topic, onNavigateBack, showToast }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [spokenText, setSpokenText] = useState('');
@@ -11,6 +13,20 @@ export default function Pronunciation({ topic, onNavigateBack }) {
   const [scores, setScores] = useState([]);
   const [isFinished, setIsFinished] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  
+  const [isIOSSafari] = useState(() => {
+    return /iPhone|iPad|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|mercury/.test(navigator.userAgent);
+  });
+
+  useEffect(() => {
+    if (isFinished) {
+      const finalScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+      if (finalScore >= 0.8) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        playSound('complete');
+      }
+    }
+  }, [isFinished, scores]);
 
   const dialogue = topic.dialogues[currentIdx];
   const targetText = dialogue ? dialogue.text : '';
@@ -27,7 +43,7 @@ export default function Pronunciation({ topic, onNavigateBack }) {
   // Initialize Speech Recognition API
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
+    if (SpeechRecognition && !isIOSSafari) {
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.lang = 'en-US';
@@ -97,6 +113,14 @@ export default function Pronunciation({ topic, onNavigateBack }) {
     const score = matchCount / targetWords.length;
     setSentenceScore(score);
     setChecked(true);
+    
+    if (score >= 0.8) {
+      playSound('correct');
+      vibrate(50);
+    } else {
+      playSound('incorrect');
+      vibrate([50, 50, 50]);
+    }
   };
 
   const handleNext = () => {
@@ -199,7 +223,11 @@ export default function Pronunciation({ topic, onNavigateBack }) {
 
         {/* Mic / Recording Section */}
         <div className="recording-section text-center mb-6">
-          {recognitionSupported ? (
+          {isIOSSafari ? (
+            <div className="alert-unsupported p-4 glass mb-4">
+              ⚠️ Trình duyệt Safari trên iOS chưa hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome trên Android hoặc máy tính để luyện phần này.
+            </div>
+          ) : recognitionSupported ? (
             <>
               <button 
                 className={`mic-button ${isRecording ? 'recording' : ''}`}

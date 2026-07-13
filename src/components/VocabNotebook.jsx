@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 
-export default function VocabNotebook({ onNavigateBack, onSavedVocabChange }) {
+export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, showToast }) {
   const [vocabList, setVocabList] = useState(() => storage.getSavedVocab());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, learning, mastered
@@ -18,17 +18,27 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange }) {
 
   const handleDelete = (wordText) => {
     if (window.confirm(`Are you sure you want to remove "${wordText}" from your notebook?`)) {
-      const newList = storage.deleteWord(wordText);
-      setVocabList(newList);
-      onSavedVocabChange();
+      try {
+        const newList = storage.deleteWord(wordText);
+        setVocabList(newList);
+        onSavedVocabChange();
+        if (showToast) showToast(`Đã xóa từ "${wordText}"`, 'success');
+      } catch (e) {
+        if (showToast) showToast('Không thể xóa từ, vui lòng thử lại', 'error');
+      }
     }
   };
 
   const handleResetWord = (wordObj) => {
-    // Reset SM-2 values to initial state
-    const updatedList = storage.resetWord(wordObj.word);
-    setVocabList(updatedList);
-    onSavedVocabChange();
+    try {
+      // Reset SM-2 values to initial state
+      const updatedList = storage.resetWord(wordObj.word);
+      setVocabList(updatedList);
+      onSavedVocabChange();
+      if (showToast) showToast(`Đã reset trạng thái ôn tập cho từ "${wordObj.word}"`, 'success');
+    } catch (e) {
+      if (showToast) showToast('Không thể reset trạng thái, vui lòng thử lại', 'error');
+    }
   };
 
   // Filter & Search Logic

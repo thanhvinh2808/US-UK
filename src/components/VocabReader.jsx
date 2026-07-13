@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 
-export default function VocabReader({ topic, onSavedVocabChange, onComplete, onNavigateBack }) {
+export default function VocabReader({ topic, onSavedVocabChange, onComplete, onNavigateBack, showToast }) {
   const [selectedWord, setSelectedWord] = useState(null);
   const [customTranslation, setCustomTranslation] = useState('');
   const [savedWordsList, setSavedWordsList] = useState(() => storage.getSavedVocab().map(w => w.word.toLowerCase()));
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFullTranslation, setShowFullTranslation] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Split reading passage into words, stripping punctuation for translation lookups
   const words = topic.reading_passage.split(/\s+/);
@@ -14,6 +15,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
   const handleWordClick = async (rawWord) => {
     // Clean word for lookup
     const cleanWord = rawWord.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
+    setIsSidebarOpen(true);
     
     // Set loading state first
     setSelectedWord({
@@ -200,12 +202,19 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
       topic: topic.topic
     };
 
-    const newList = storage.saveWord(wordToSave);
-    setSavedWordsList(newList.map(w => w.word.toLowerCase()));
-    
-    // Animate or alert save
-    setSelectedWord(prev => ({ ...prev, isSaved: true }));
-    onSavedVocabChange();
+    try {
+      const newList = storage.saveWord(wordToSave);
+      if (newList && newList.length > 0) {
+        setSavedWordsList(newList.map(w => w.word.toLowerCase()));
+        setSelectedWord(prev => ({ ...prev, isSaved: true }));
+        onSavedVocabChange();
+        showToast('Đã lưu từ vào sổ tay!', 'success');
+      } else {
+        showToast('Không thể lưu từ, vui lòng thử lại', 'error');
+      }
+    } catch (e) {
+      showToast('Không thể lưu từ, vui lòng thử lại', 'error');
+    }
   };
 
   const handleMarkAsRead = () => {
@@ -258,6 +267,13 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
               {showFullTranslation ? "👁️ Hide Paragraph Translation" : "📝 Translate Entire Paragraph"}
             </button>
             
+            <button 
+              className="btn-secondary mobile-only-vocab-btn"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              🔑 View Key Vocabulary
+            </button>
+            
             {!isCompleted ? (
               <button className="btn-primary" onClick={handleMarkAsRead}>
                 📖 Mark as Read (+10 XP)
@@ -280,7 +296,8 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
         </div>
 
         {/* Right Side: Translation Details & Keyword Sidebar */}
-        <div className="sidebar-section">
+        {isSidebarOpen && <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />}
+        <div className={`sidebar-section ${isSidebarOpen ? 'active' : ''}`}>
           {/* Word Translator Box */}
           {selectedWord ? (
             <div className="word-details-box glass-glow p-5 mb-6">
@@ -292,7 +309,10 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                   </button>
                   <button 
                     className="speak-btn close-details-btn" 
-                    onClick={() => setSelectedWord(null)} 
+                    onClick={() => {
+                      setSelectedWord(null);
+                      setIsSidebarOpen(false);
+                    }} 
                     title="Close details"
                     style={{
                       background: 'rgba(239, 68, 68, 0.1)',
@@ -362,22 +382,31 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                       <button 
                         className={`row-save-btn ${isSaved ? 'saved' : ''}`}
                         onClick={() => {
-                          setSelectedWord({
-                            word: vocab.word,
-                            ipa: vocab.ipa,
-                            vietnamese: vocab.vietnamese,
-                            example: vocab.example,
-                            isCustom: false
-                          });
-                          storage.saveWord({
-                            word: vocab.word,
-                            ipa: vocab.ipa,
-                            vietnamese: vocab.vietnamese,
-                            example: vocab.example,
-                            topic: topic.topic
-                          });
-                          setSavedWordsList(storage.getSavedVocab().map(w => w.word.toLowerCase()));
-                          onSavedVocabChange();
+                          try {
+                            setSelectedWord({
+                              word: vocab.word,
+                              ipa: vocab.ipa,
+                              vietnamese: vocab.vietnamese,
+                              example: vocab.example,
+                              isCustom: false
+                            });
+                            const saved = storage.saveWord({
+                              word: vocab.word,
+                              ipa: vocab.ipa,
+                              vietnamese: vocab.vietnamese,
+                              example: vocab.example,
+                              topic: topic.topic
+                            });
+                            if (saved && saved.length > 0) {
+                              setSavedWordsList(storage.getSavedVocab().map(w => w.word.toLowerCase()));
+                              onSavedVocabChange();
+                              showToast('Đã lưu từ vào sổ tay!', 'success');
+                            } else {
+                              showToast('Không thể lưu từ, vui lòng thử lại', 'error');
+                            }
+                          } catch (e) {
+                            showToast('Không thể lưu từ, vui lòng thử lại', 'error');
+                          }
                         }}
                         disabled={isSaved}
                       >
