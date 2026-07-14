@@ -1907,6 +1907,8 @@
   max-height: 90vh;
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   background: var(--bg-dark);
@@ -2226,4 +2228,35 @@
   border-radius: 4px;
   font-family: monospace;
   color: var(--color-secondary);
+}
+
+/* Responsive Grid for Verb Tenses & Noun/Adjective Forms on Mobile */
+.tense-grid-responsive {
+  display: grid;
+  grid-template-columns: 1fr; /* 1 column on small mobiles */
+  gap: 10px;
+  font-size: 12px;
+}
+
+@media (min-width: 480px) {
+  .tense-grid-responsive {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on larger screens */
+  }
+}
+
+.tense-card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--color-primary-glow);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+/* Micro-interaction on tap/hover */
+.tense-card-item:hover, .tense-card-item:active {
+  background: rgba(139, 92, 246, 0.08);
+  transform: translateY(-1px);
 }
