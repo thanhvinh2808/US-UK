@@ -1904,12 +1904,27 @@
 .translator-modal {
   width: 100%;
   max-width: 520px;
+  max-height: 90vh;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   background: var(--bg-dark);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
   padding: 24px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   animation: scaleUpModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.translator-result-box .speak-btn-large {
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 @keyframes scaleUpModal {
@@ -2044,20 +2059,153 @@
   to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
-  .translator-form .input-group {
-    flex-direction: column;
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 12px;
   }
-  .translator-form button {
-    width: 100%;
-    justify-content: center;
+  .translator-modal {
+    padding: 20px;
+    max-width: 460px;
   }
   .floating-translate-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-    right: 16px;
-    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    font-size: 22px;
+    right: 20px;
+    bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 8px;
+  }
+  .translator-modal {
+    padding: 14px;
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--radius-md);
+  }
+  .modal-header h3 {
+    font-size: 16px;
+  }
+  .modal-header .close-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  .direction-tabs {
+    display: flex;
+    width: 100%;
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+  .direction-tabs button {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+  }
+  .translator-form {
+    margin-top: 12px !important;
+  }
+  .translator-form .input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .translator-input {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .translator-form button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    justify-content: center;
+  }
+  .translator-options {
+    margin-top: 8px !important;
+  }
+  .translator-options label {
+    font-size: 11px !important;
+  }
+  .translator-results-container {
+    margin-top: 16px !important;
+  }
+  .translator-result-box {
+    padding: 12px !important;
+  }
+  .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .result-header .speak-btn-large {
+    margin-top: 0 !important;
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .result-word {
+    font-size: 18px;
+  }
+  .result-ipa {
+    font-size: 13px;
+    padding: 1px 6px;
+  }
+  .result-pos {
+    margin-top: 8px !important;
+  }
+  .badge-pos {
+    font-size: 12px;
+    padding: 2px 8px;
+  }
+  .grammar-correction-box {
+    margin-top: 10px !important;
+    padding: 10px !important;
+  }
+  .grammar-correction-box strong {
+    font-size: 13px !important;
+  }
+  .grammar-correction-box p {
+    font-size: 12px !important;
+  }
+  .result-meaning-box {
+    margin-top: 10px !important;
+    padding: 10px !important;
+  }
+  .result-translation {
+    font-size: 15px;
+  }
+  .result-forms {
+    margin-top: 10px !important;
+    padding: 10px !important;
+  }
+  .result-forms div {
+    font-size: 12px !important;
+  }
+  .result-example-box {
+    margin-top: 10px !important;
+    padding-left: 8px;
+  }
+  .result-example {
+    font-size: 12.5px;
+  }
+  .result-actions {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+  .result-actions button {
+    padding: 10px !important;
+    font-size: 13px !important;
+  }
+  .floating-translate-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+    right: 12px;
+    bottom: 12px;
   }
 }
 
