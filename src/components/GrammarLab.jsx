@@ -1,5 +1,137 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
+import nlp from 'compromise';
+
+function mutateSentence(sentence, tense) {
+  let doc = nlp(sentence);
+  let verbs = doc.verbs();
+  
+  if (verbs.length === 0) {
+    return {
+      mutated: sentence.replace(/\bs\b/g, ""),
+      reason: "Sai: Cấu trúc chia động từ không chính xác."
+    };
+  }
+
+  // Get the first verb phrase
+  let verbText = verbs.eq(0).text();
+  let verbNormalized = verbText.toLowerCase().trim();
+  
+  // 1. Auxiliary verb swaps
+  if (/\b(is)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(is)\b/i, "are"),
+      reason: "Sai: Chủ ngữ và động từ to be 'is/are' không hòa hợp (chủ ngữ số ít đi với 'is', không dùng 'are')."
+    };
+  }
+  if (/\b(are)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(are)\b/i, "is"),
+      reason: "Sai: Chủ ngữ và động từ to be 'is/are' không hòa hợp (chủ ngữ số nhiều đi với 'are', không dùng 'is')."
+    };
+  }
+  if (/\b(was)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(was)\b/i, "were"),
+      reason: "Sai: Động từ to be ở quá khứ 'was/were' không hòa hợp với chủ ngữ."
+    };
+  }
+  if (/\b(were)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(were)\b/i, "was"),
+      reason: "Sai: Động từ to be ở quá khứ 'was/were' không hòa hợp với chủ ngữ."
+    };
+  }
+  if (/\b(has)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(has)\b/i, "have"),
+      reason: "Sai: Trợ động từ 'has/have' không hòa hợp với chủ ngữ số ít/số nhiều."
+    };
+  }
+  if (/\b(have)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(have)\b/i, "has"),
+      reason: "Sai: Trợ động từ 'has/have' không hòa hợp với chủ ngữ số ít/số nhiều."
+    };
+  }
+  if (/\b(does)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(does)\b/i, "do"),
+      reason: "Sai: Trợ động từ 'does/do' chia sai theo ngôi của chủ ngữ."
+    };
+  }
+  if (/\b(do)\b/i.test(verbText)) {
+    return {
+      mutated: sentence.replace(/\b(do)\b/i, "does"),
+      reason: "Sai: Trợ động từ 'do/does' chia sai theo ngôi của chủ ngữ."
+    };
+  }
+
+  // 2. Future simple "will" mutations
+  if (/\bwill\s+(\w+)/i.test(sentence)) {
+    const match = sentence.match(/\bwill\s+(\w+)/i);
+    const mainVerb = match[1];
+    if (mainVerb !== "be" && mainVerb !== "have") {
+      return {
+        mutated: sentence.replace(new RegExp(`\\bwill\\s+${mainVerb}`, 'i'), `will ${mainVerb}s`),
+        reason: "Sai: Sau động từ khuyết thiếu 'will' luôn luôn đi kèm động từ nguyên mẫu không chia."
+      };
+    }
+  }
+
+  // 3. Simple present suffix mutations
+  const tenseLower = (tense || '').toLowerCase();
+  if (tenseLower.includes('present') && tenseLower.includes('simple')) {
+    if (verbNormalized.endsWith('s')) {
+      const baseVerb = verbNormalized.replace(/es$/g, 'e').replace(/s$/g, '');
+      const originalVerb = verbText;
+      const replacement = originalVerb[0] === originalVerb[0].toUpperCase()
+        ? baseVerb[0].toUpperCase() + baseVerb.slice(1)
+        : baseVerb;
+      return {
+        mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), replacement),
+        reason: "Sai: Chủ ngữ số ít yêu cầu động từ thêm 's/es', chủ ngữ số nhiều giữ nguyên mẫu."
+      };
+    } else {
+      let suffix = 's';
+      if (verbNormalized.endsWith('o') || verbNormalized.endsWith('ch') || verbNormalized.endsWith('sh') || verbNormalized.endsWith('x') || verbNormalized.endsWith('z')) {
+        suffix = 'es';
+      }
+      return {
+        mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), verbText + suffix),
+        reason: "Sai: Chủ ngữ số ít yêu cầu động từ thêm 's/es', chủ ngữ số nhiều giữ nguyên mẫu."
+      };
+    }
+  }
+
+  // 4. Simple past mutations (V2/ed -> base or incorrect V-ed)
+  if (tenseLower.includes('past') && tenseLower.includes('simple')) {
+    if (verbNormalized.endsWith('ed')) {
+      const baseVerb = verbNormalized.replace(/ed$/g, '');
+      return {
+        mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), baseVerb),
+        reason: "Sai: Câu ở quá khứ đơn cần chia động từ ở dạng quá khứ (V2/ed) thay vì nguyên mẫu."
+      };
+    } else {
+      return {
+        mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), verbText + "ed"),
+        reason: "Sai: Chia động từ quá khứ đơn không chính xác (hoặc viết sai dạng động từ bất quy tắc)."
+      };
+    }
+  }
+
+  let fallbackWord = verbText;
+  if (fallbackWord.endsWith('s')) {
+    fallbackWord = fallbackWord.slice(0, -1);
+  } else {
+    fallbackWord = fallbackWord + 's';
+  }
+
+  return {
+    mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), fallbackWord),
+    reason: "Sai: Động từ được chia không chính xác theo cấu trúc thì."
+  };
+}
 
 export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
   const [currentStep, setCurrentStep] = useState('theory'); // theory | examples | quiz | done
@@ -44,9 +176,9 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
           sentenceText = ex.en.replace("will cook", "will cooks");
           explanationText = "Sai: Động từ đi sau 'will' luôn luôn giữ nguyên mẫu, không thêm 's/es' dù chủ ngữ là gì.";
         } else {
-          // Fallback mutation: strip ending 's' or 'ed'
-          sentenceText = ex.en.replace(/s\b/g, "");
-          explanationText = "Sai: Chia động từ không chính xác theo quy tắc cấu trúc thì.";
+          const res = mutateSentence(ex.en, grammar.tense);
+          sentenceText = res.mutated;
+          explanationText = res.reason;
         }
       }
 

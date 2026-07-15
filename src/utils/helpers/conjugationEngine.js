@@ -18,8 +18,15 @@ const MODAL_VERBS = {
 
 // 2. Spelling helpers for regular verbs
 export function getSForm(word) {
-  if (word.endsWith("s") || word.endsWith("x") || word.endsWith("z") || word.endsWith("ch") || word.endsWith("sh") || word.endsWith("o")) {
+  if (word.endsWith("s") || word.endsWith("x") || word.endsWith("z") || word.endsWith("ch") || word.endsWith("sh")) {
     return word + "es";
+  }
+  if (word.endsWith("o")) {
+    const wordLower = word.toLowerCase();
+    if (wordLower.endsWith("go") || wordLower.endsWith("do") || wordLower.endsWith("veto") || wordLower.endsWith("echo")) {
+      return word + "es";
+    }
+    return word + "s";
   }
   if (word.match(/[^aeiou]y$/)) {
     return word.slice(0, -1) + "ies";

@@ -88,9 +88,12 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
         {topics.map((topic) => {
           const topicProg = progress[topic.id] || {
             is_reading_completed: false,
-            max_speaking_score: 0,
-            max_listening_score: 0
+            max_speaking_score: -1,
+            max_listening_score: -1
           };
+
+          const maxListening = topicProg.max_listening_score !== undefined ? topicProg.max_listening_score : -1;
+          const maxSpeaking = topicProg.max_speaking_score !== undefined ? topicProg.max_speaking_score : -1;
 
           // Lock validation based on current stats level
           const userLevelVal = LEVEL_VALUES[stats.level] || 1;
@@ -129,25 +132,25 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
                   </div>
                 </div>
 
-                <div className={`status-item ${topicProg.max_listening_score > 0 ? 'completed' : ''}`}>
+                <div className={`status-item ${maxListening >= 0 ? 'completed' : ''}`}>
                   <span className="status-icon">D</span>
                   <div className="status-text">
                     <span className="label">Dictation / Listening</span>
                     <span className="value">
-                      {topicProg.max_listening_score > 0 
-                        ? `Best Score: ${Math.round(topicProg.max_listening_score * 100)}%` 
+                      {maxListening >= 0 
+                        ? `Best Score: ${Math.round(maxListening * 100)}%` 
                         : "Not started"}
                     </span>
                   </div>
                 </div>
 
-                <div className={`status-item ${topicProg.max_speaking_score > 0 ? 'completed' : ''}`}>
+                <div className={`status-item ${maxSpeaking >= 0 ? 'completed' : ''}`}>
                   <span className="status-icon">S</span>
                   <div className="status-text">
                     <span className="label">Pronunciation / Speaking</span>
                     <span className="value">
-                      {topicProg.max_speaking_score > 0 
-                        ? `Best Score: ${Math.round(topicProg.max_speaking_score * 100)}%` 
+                      {maxSpeaking >= 0 
+                        ? `Best Score: ${Math.round(maxSpeaking * 100)}%` 
                         : "Not started"}
                     </span>
                   </div>

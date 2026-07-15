@@ -254,11 +254,15 @@ export const storage = {
       const progress = storage.getTopicProgress();
       const topicProg = progress[topicId] || {
         is_reading_completed: false,
-        max_speaking_score: 0,
-        max_listening_score: 0,
+        max_speaking_score: -1,
+        max_listening_score: -1,
         is_grammar_completed: false,
-        max_writing_score: 0
+        max_writing_score: -1
       };
+
+      if (topicProg.max_speaking_score === undefined) topicProg.max_speaking_score = -1;
+      if (topicProg.max_listening_score === undefined) topicProg.max_listening_score = -1;
+      if (topicProg.max_writing_score === undefined) topicProg.max_writing_score = -1;
 
       let pointsAdded = 0;
       let completedModulesAdded = 0;
@@ -270,20 +274,22 @@ export const storage = {
           completedModulesAdded = 1;
         }
       } else if (moduleKey === "speaking") {
-        const currentBest = topicProg.max_speaking_score || 0;
-        if (score > currentBest) {
+        const currentBest = topicProg.max_speaking_score;
+        if (score >= currentBest) {
           topicProg.max_speaking_score = score;
-          pointsAdded = Math.round((score - currentBest) * 10);
-          if (currentBest === 0) {
+          const prevScore = currentBest === -1 ? 0 : currentBest;
+          pointsAdded = Math.round((score - prevScore) * 10);
+          if (currentBest === -1) {
             completedModulesAdded = 1;
           }
         }
       } else if (moduleKey === "listening") {
-        const currentBest = topicProg.max_listening_score || 0;
-        if (score > currentBest) {
+        const currentBest = topicProg.max_listening_score;
+        if (score >= currentBest) {
           topicProg.max_listening_score = score;
-          pointsAdded = Math.round((score - currentBest) * 10);
-          if (currentBest === 0) {
+          const prevScore = currentBest === -1 ? 0 : currentBest;
+          pointsAdded = Math.round((score - prevScore) * 10);
+          if (currentBest === -1) {
             completedModulesAdded = 1;
           }
         }
@@ -294,11 +300,12 @@ export const storage = {
           completedModulesAdded = 1;
         }
       } else if (moduleKey === "writing") {
-        const currentBest = topicProg.max_writing_score || 0;
-        if (score > currentBest) {
+        const currentBest = topicProg.max_writing_score;
+        if (score >= currentBest) {
           topicProg.max_writing_score = score;
-          pointsAdded = Math.round((score - currentBest) * 10);
-          if (currentBest === 0) {
+          const prevScore = currentBest === -1 ? 0 : currentBest;
+          pointsAdded = Math.round((score - prevScore) * 10);
+          if (currentBest === -1) {
             completedModulesAdded = 1;
           }
         }

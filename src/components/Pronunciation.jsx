@@ -74,6 +74,14 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
       };
 
       setRecognition(rec);
+
+      return () => {
+        try {
+          rec.abort();
+        } catch (e) {
+          // ignore
+        }
+      };
     } else {
       setRecognitionSupported(false);
     }

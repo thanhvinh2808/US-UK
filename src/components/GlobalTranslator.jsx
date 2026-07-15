@@ -53,25 +53,26 @@ function checkLocalGrammarErrors(text) {
   }
 
   const aBeforeVowelsRegex = /\b(a|A)\s+([aeiou][a-z]*)\b/g;
-  let match;
-  const tempRegex = new RegExp(aBeforeVowelsRegex);
-  while ((match = tempRegex.exec(corrected)) !== null) {
-    const vowelWord = match[2].toLowerCase();
+  corrected = corrected.replace(aBeforeVowelsRegex, (fullMatch, art, word) => {
+    const vowelWord = word.toLowerCase();
     if (!vowelWord.startsWith("uni") && !vowelWord.startsWith("one")) {
-      corrected = corrected.replace(new RegExp(`\\b${match[1]}\\s+${match[2]}\\b`, 'g'), `${match[1] === 'A' ? 'An' : 'an'} ${match[2]}`);
-      explanations.push(`Dùng mạo từ '${match[1] === 'A' ? 'An' : 'an'}' thay vì '${match[1]}' trước từ bắt đầu bằng nguyên âm '${match[2]}'.`);
+      const correctArt = art === 'A' ? 'An' : 'an';
+      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng nguyên âm '${word}'.`);
+      return `${correctArt} ${word}`;
     }
-  }
+    return fullMatch;
+  });
 
   const anBeforeConsonantsRegex = /\b(an|An)\s+([bcdfghjklmnpqrstvwxyz][a-z]*)\b/g;
-  const tempRegex2 = new RegExp(anBeforeConsonantsRegex);
-  while ((match = tempRegex2.exec(corrected)) !== null) {
-    const consWord = match[2].toLowerCase();
+  corrected = corrected.replace(anBeforeConsonantsRegex, (fullMatch, art, word) => {
+    const consWord = word.toLowerCase();
     if (!consWord.startsWith("hour") && !consWord.startsWith("honest") && !consWord.startsWith("honor")) {
-      corrected = corrected.replace(new RegExp(`\\b${match[1]}\\s+${match[2]}\\b`, 'g'), `${match[1] === 'An' ? 'A' : 'a'} ${match[2]}`);
-      explanations.push(`Dùng mạo từ '${match[1] === 'An' ? 'A' : 'a'}' thay vì '${match[1]}' trước từ bắt đầu bằng phụ âm '${match[2]}'.`);
+      const correctArt = art === 'An' ? 'A' : 'a';
+      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng phụ âm '${word}'.`);
+      return `${correctArt} ${word}`;
     }
-  }
+    return fullMatch;
+  });
 
   if (/\b(im)\b/i.test(corrected)) {
     corrected = corrected.replace(/\b(im)\b/gi, "I'm");
@@ -222,10 +223,13 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
 
         try {
           const response = await fetchGeminiWithRetry(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey.trim()}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey.trim()
+              },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { responseMimeType: "application/json", temperature: 0.3 }
