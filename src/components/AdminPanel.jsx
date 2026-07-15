@@ -209,6 +209,7 @@ export function validateTopicData(data) {
 export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("eng_app_gemini_key") || "");
   const [isKeySaved, setIsKeySaved] = useState(() => !!localStorage.getItem("eng_app_gemini_key"));
+  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem("eng_app_gemini_model") || "gemini-1.5-flash");
   
   // Generation parameters
   const [form, setForm] = useState({ topicName: '', tense: 'Present Simple', level: 'A2' });
@@ -254,7 +255,7 @@ Nếu không phát hiện lỗi nào, hãy trả về:
 }`;
 
     try {
-      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`, {
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -389,7 +390,7 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
 
     try {
       addLog(`Đang gửi yêu cầu và đợi phản hồi từ Gemini API (hệ thống tự động thử lại nếu máy chủ quá tải)...`);
-      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`, {
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -565,13 +566,29 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
                 <button className="btn-primary" onClick={handleSaveKey}>Lưu Key</button>
               </div>
             )}
+            <div className="mt-4 pt-3 border-t border-dashed" style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <label className="text-xs color-text-muted block mb-1">Mô hình Gemini (Model):</label>
+              <select 
+                className="search-input glass w-full text-sm"
+                value={selectedModel}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  localStorage.setItem("eng_app_gemini_model", e.target.value);
+                }}
+                style={{ background: 'var(--bg-darker)' }}
+              >
+                <option value="gemini-1.5-flash">gemini-1.5-flash (Khuyên dùng - Ổn định & Miễn phí)</option>
+                <option value="gemini-2.0-flash">gemini-2.0-flash (Mới - Tốc độ cao)</option>
+                <option value="gemini-3.5-flash">gemini-3.5-flash (Cực mạnh - Yêu cầu tài khoản/hạn ngạch cao)</option>
+              </select>
+            </div>
             <p className="color-text-muted text-xs mt-2">API Key được lưu bảo mật trong Local Storage trên chính trình duyệt của bạn, hoàn toàn không được gửi đi nơi khác.</p>
           </div>
 
           {/* AI Generator Form */}
           {!generatedData && (
             <div className="generator-card glass p-6">
-              <h3 className="mb-4">Sinh bài học bằng AI (Gemini 3.5 Flash)</h3>
+              <h3 className="mb-4">Sinh bài học bằng AI ({selectedModel})</h3>
               
               <div className="flex flex-col gap-4 mb-6">
                 <div>

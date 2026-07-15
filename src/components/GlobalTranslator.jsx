@@ -175,6 +175,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       }
 
       const apiKey = localStorage.getItem("eng_app_gemini_key");
+      const selectedModel = localStorage.getItem("eng_app_gemini_model") || "gemini-1.5-flash";
 
       if (useAI && (!apiKey || !apiKey.trim())) {
         showToast("Vui lòng cấu hình Gemini API Key trong Admin Panel trước để sử dụng AI!", "error");
@@ -223,7 +224,7 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
 
         try {
           const response = await fetchGeminiWithRetry(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
             {
               method: "POST",
               headers: { 
