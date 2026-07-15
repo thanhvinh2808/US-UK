@@ -3,6 +3,14 @@ import { storage } from '../utils/storage';
 import nlp from 'compromise';
 
 function mutateSentence(sentence, tense) {
+  // Check for "will have" to prevent mutating "have" -> "has" with subject-verb agreement explanation
+  if (/\bwill\s+have\b/i.test(sentence)) {
+    return {
+      mutated: sentence.replace(/\bwill\s+have\b/i, "will has"),
+      reason: "Sai: Sau động từ khuyết thiếu 'will' luôn luôn đi kèm động từ nguyên mẫu không chia ('have'), không chia thành 'has' dù chủ ngữ là gì."
+    };
+  }
+
   let doc = nlp(sentence);
   let verbs = doc.verbs();
   
