@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
 import { playSound } from '../utils/sounds';
-import { fetchGeminiWithRetry } from './AdminPanel';
+import { fetchGeminiWithRetry, preprocessAndRepairJson } from './AdminPanel';
 import { conjugateWithCompromise, needsAIFallback, getSForm } from '../utils/helpers/conjugationEngine';
 
 function checkLocalGrammarErrors(text) {
@@ -174,12 +174,51 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       }
 
       const apiKey = localStorage.getItem("eng_app_gemini_key");
+
+      if (useAI && (!apiKey || !apiKey.trim())) {
+        showToast("Vui lòng cấu hình Gemini API Key trong Admin Panel trước để sử dụng AI!", "error");
+        setIsLoading(false);
+        return;
+      }
+
       const isFallback = needsAIFallback(query, direction, useAI, apiKey);
 
       if (isFallback && apiKey && apiKey.trim()) {
         const prompt = isSourceEn
-          ? `Bạn là một từ điển Anh-Việt học thuật và trợ lý kiểm tra ngữ pháp tiếng Anh thông minh. Hãy dịch, phân tích từ loại, chức năng ngữ pháp và đặc biệt hãy KIỂM TRA LỖI CHÍNH TẢ & NGỮ PHÁP đối với từ hoặc câu tiếng Anh sau: "${query}". Quy tắc: 1. Giải thích rõ từ loại. 2. Cung cấp đầy đủ 12 thì (nếu là động từ). 3. Kiểm tra lỗi chính tả/ngữ pháp. 4. Trả về JSON duy nhất (không markdown).`
-          : `Bạn là một từ điển Việt-Anh học thuật và trợ lý tiếng Anh thông minh. Hãy dịch từ hoặc câu tiếng Việt sau sang tiếng Anh: "${query}". Quy tắc: 1. Giải thích rõ từ loại. 2. Cung cấp đầy đủ 12 thì (nếu là động từ). 3. Trả về JSON duy nhất (không markdown).`;
+          ? `Bạn là một từ điển Anh-Việt học thuật và trợ lý kiểm tra ngữ pháp tiếng Anh thông minh. Hãy dịch, phân tích từ loại, chức năng ngữ pháp và đặc biệt hãy KIỂM TRA LỖI CHÍNH TẢ & NGỮ PHÁP đối với từ hoặc câu tiếng Anh sau: "${query}".
+Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xác như mẫu dưới đây (chỉ trả về JSON, không bao gồm markdown hay giải thích nào khác ngoài JSON):
+{
+  "word": "từ hoặc câu tiếng Anh gốc (đã được sửa nếu có lỗi chính tả/ngữ pháp)",
+  "ipa": "phiên âm IPA của từ đơn (nếu là từ đơn, ví dụ: /he'loʊ/, nếu là câu thì để trống '')",
+  "vietnamese": "dịch nghĩa tiếng Việt đầy đủ và tự nhiên",
+  "partOfSpeech": "từ loại (Danh từ, Động từ, Tính từ, Trạng từ, Cụm từ, Câu...)",
+  "hasGrammarError": false, // true nếu phát hiện bất kỳ lỗi chính tả hoặc lỗi ngữ pháp nào trong câu gốc "${query}", ngược lại là false
+  "correctedText": "câu đã được sửa lỗi chính tả/ngữ pháp hoàn chỉnh (nếu hasGrammarError là true, ngược lại để trống '')",
+  "grammarErrorExplanation": "giải thích chi tiết bằng tiếng Việt các lỗi chính tả/ngữ pháp và cách sửa (nếu hasGrammarError là true, ngược lại để trống '')",
+  "example": "một câu ví dụ tiếng Anh liên quan",
+  "example_translation": "dịch nghĩa tiếng Việt của câu ví dụ đó",
+  "synonyms": [
+    { "word": "từ đồng nghĩa tiếng Anh (nếu đầu vào là từ đơn) hoặc câu/cách diễn đạt tương tự bằng tiếng Anh (nếu đầu vào là câu)", "vietnamese": "dịch nghĩa tiếng Việt tương ứng tương ứng" }
+  ], // Luôn cung cấp từ 3-5 gợi ý từ đồng nghĩa (nếu đầu vào là từ đơn) hoặc 3-5 câu/cách diễn đạt tương tự (nếu đầu vào là cụm từ/câu) kèm theo dịch nghĩa tiếng Việt tương ứng
+  "forms": null // Đối tượng chứa biến thể 12 thì (nếu là động từ đơn, ví dụ: go, eat, study...), còn nếu là câu/cụm từ/từ loại khác thì để null. Mẫu: {"present_simple": "go / goes", "present_continuous": "am/is/are going", "present_perfect": "have/has gone", "present_perfect_continuous": "have/has been going", "past_simple": "went", "past_continuous": "was/were going", "past_perfect": "had gone", "past_perfect_continuous": "had been going", "future_simple": "will go", "future_continuous": "will be going", "future_perfect": "will have gone", "future_perfect_continuous": "will have been going"}
+}`
+          : `Bạn là một từ điển Việt-Anh học thuật và trợ lý tiếng Anh thông minh. Hãy dịch từ hoặc câu tiếng Việt sau sang tiếng Anh: "${query}".
+Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xác như mẫu dưới đây (chỉ trả về JSON, không bao gồm markdown hay giải thích nào khác ngoài JSON):
+{
+  "word": "bản dịch tiếng Anh (viết đúng chính tả và ngữ pháp)",
+  "ipa": "phiên âm IPA của bản dịch tiếng Anh (nếu là từ đơn, ví dụ: /he'loʊ/, nếu là câu thì để trống '')",
+  "vietnamese": "câu/từ tiếng Việt gốc ('${query}')",
+  "partOfSpeech": "từ loại của bản dịch tiếng Anh (Danh từ, Động từ, Tính từ, Trạng từ, Cụm từ, Câu...)",
+  "hasGrammarError": false, // Luôn điền false vì dịch từ Việt sang Anh
+  "correctedText": "",
+  "grammarErrorExplanation": "",
+  "example": "một câu ví dụ tiếng Anh liên quan đến bản dịch",
+  "example_translation": "dịch nghĩa tiếng Việt của câu ví dụ đó",
+  "synonyms": [
+    { "word": "từ đồng nghĩa tiếng Anh với bản dịch (nếu đầu vào là từ đơn) hoặc câu/cách diễn đạt tương đương bằng tiếng Anh (nếu đầu vào là câu)", "vietnamese": "dịch nghĩa tiếng Việt tương ứng tương ứng" }
+  ], // Luôn cung cấp từ 3-5 gợi ý từ đồng nghĩa (nếu đầu vào là từ đơn) hoặc 3-5 câu/cách diễn đạt tương tự (nếu đầu vào là cụm từ/câu) kèm theo dịch nghĩa tiếng Việt tương ứng
+  "forms": null // Đối tượng chứa biến thể 12 thì (nếu bản dịch là động từ đơn, ví dụ: go, eat...), ngược lại là null. Mẫu: {"present_simple": "go / goes", "present_continuous": "am/is/are going", "present_perfect": "have/has gone", "present_perfect_continuous": "have/has been going", "past_simple": "went", "past_continuous": "was/were going", "past_perfect": "had gone", "past_perfect_continuous": "had been going", "future_simple": "will go", "future_continuous": "will be going", "future_perfect": "will have gone", "future_perfect_continuous": "will have been going"}
+}`;
 
         try {
           const response = await fetchGeminiWithRetry(
@@ -201,7 +240,9 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
               const firstBrace = rawText.indexOf('{');
               const lastBrace = rawText.lastIndexOf('}');
               if (firstBrace !== -1 && lastBrace !== -1) {
-                const parsed = JSON.parse(rawText.slice(firstBrace, lastBrace + 1));
+                const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
+                const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
+                const parsed = JSON.parse(repairedJsonText);
                 const translatedClean = (parsed.word || '').trim().toLowerCase();
                 const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === translatedClean);
                 
@@ -215,6 +256,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                   correctedText: parsed.correctedText || "",
                   grammarErrorExplanation: parsed.grammarErrorExplanation || "",
                   example: parsed.example ? `${parsed.example} -> ${parsed.example_translation || ''}` : '',
+                  synonyms: parsed.synonyms || [],
                   isCustom: true,
                   isSaved: !!alreadySaved,
                   source: 'ai'
@@ -239,7 +281,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       const targetEnglishWord = isSourceEn ? cleanQuery : translationResult.trim().toLowerCase();
       const isTargetSingleWord = !targetEnglishWord.includes(' ');
 
-      let dictPromise = Promise.resolve({ ipa: '', example: '' });
+      let dictPromise = Promise.resolve({ ipa: '', example: '', synonymsList: [] });
       if (isTargetSingleWord) {
         dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${targetEnglishWord}`)
           .then(res => res.json())
@@ -249,17 +291,59 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
               const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${targetEnglishWord}/`;
               const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
               const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || "";
+              
+              let synonyms = [];
+              if (data[0].meanings) {
+                for (const m of data[0].meanings) {
+                  if (m.synonyms) {
+                    synonyms.push(...m.synonyms);
+                  }
+                  if (m.definitions) {
+                    for (const d of m.definitions) {
+                      if (d.synonyms) {
+                        synonyms.push(...d.synonyms);
+                      }
+                    }
+                  }
+                }
+              }
+              const synonymsList = Array.from(new Set(synonyms))
+                .filter(s => s && s.trim() && s.toLowerCase() !== targetEnglishWord.toLowerCase())
+                .slice(0, 5);
+
               return { 
                 ipa: foundIpa, 
-                example: meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '' 
+                example: meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '',
+                synonymsList: synonymsList
               };
             }
-            return { ipa: `/${targetEnglishWord}/`, example: '' };
+            return { ipa: `/${targetEnglishWord}/`, example: '', synonymsList: [] };
           })
-          .catch(() => ({ ipa: `/${targetEnglishWord}/`, example: '' }));
+          .catch(() => ({ ipa: `/${targetEnglishWord}/`, example: '', synonymsList: [] }));
       }
 
       const dictInfo = await dictPromise;
+      let localSynonyms = [];
+      if (dictInfo.synonymsList && dictInfo.synonymsList.length > 0) {
+        try {
+          const synonymsText = dictInfo.synonymsList.join(" | ");
+          const synTransRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(synonymsText)}`)
+            .then(res => res.json())
+            .then(data => data && data[0] && data[0][0] && data[0][0][0] ? data[0][0][0] : "");
+          
+          if (synTransRes) {
+            const translatedWords = synTransRes.split(/\s*\|\s*/);
+            localSynonyms = dictInfo.synonymsList.map((word, idx) => ({
+              word: word,
+              vietnamese: (translatedWords[idx] || "").trim() || "Nghĩa tương tự"
+            }));
+          }
+        } catch (e) {
+          console.warn("Failed to translate local synonyms:", e);
+          localSynonyms = dictInfo.synonymsList.map(word => ({ word, vietnamese: "" }));
+        }
+      }
+
       const localGrammar = isTargetSingleWord ? conjugateWithCompromise(targetEnglishWord) : null;
       const localCheck = isSourceEn ? checkLocalGrammarErrors(query) : { hasError: false, correctedText: "", explanation: "" };
       // Check if result is already in notebook
@@ -278,6 +362,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         hasGrammarError: localCheck.hasError,
         correctedText: localCheck.correctedText,
         grammarErrorExplanation: localCheck.explanation,
+        synonyms: localSynonyms,
         isCustom: true,
         isSaved: alreadySaved ? true : false
       });
@@ -505,6 +590,37 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                       <p className="result-translation" style={{ fontSize: '16px', fontWeight: 'normal' }}>
                         {result.vietnamese}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Các nghĩa tương tự & Từ đồng nghĩa */}
+                  {result.synonyms && result.synonyms.length > 0 && (
+                    <div className="synonyms-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
+                      <strong className="color-text-muted text-xs block mb-2">
+                        💡 TỪ ĐỒNG NGHĨA / CÂU TƯƠNG TỰ (KÈM DỊCH NGHĨA):
+                      </strong>
+                      <div className="flex flex-wrap gap-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {result.synonyms.map((item, idx) => (
+                          <div 
+                            key={idx} 
+                            className="synonym-tag p-2 rounded" 
+                            style={{ 
+                              background: 'rgba(255, 255, 255, 0.03)', 
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              borderRadius: '6px',
+                              padding: '8px',
+                              flex: '1 1 200px',
+                              minWidth: '150px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '2px'
+                            }}
+                          >
+                            <span className="font-semibold" style={{ color: 'var(--color-primary)', fontSize: '13px' }}>{item.word}</span>
+                            <span className="color-text-muted" style={{ fontSize: '11px' }}>{item.vietnamese}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 

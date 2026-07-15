@@ -1,0 +1,329 @@
+.tenses-handbook-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.handbook-header {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glow);
+}
+
+.handbook-controls .search-input {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glow);
+  outline: none;
+  transition: var(--transition);
+}
+
+.handbook-controls .search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+}
+
+/* Stacked Time Row Groups */
+.tenses-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.time-row-group {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: var(--radius-lg);
+}
+
+.time-row-group.present .group-header {
+  color: #4ade80;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+  padding-bottom: 8px;
+}
+
+.time-row-group.past .group-header {
+  color: #f59e0b;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+  padding-bottom: 8px;
+}
+
+.time-row-group.future .group-header {
+  color: #c084fc;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.15);
+  padding-bottom: 8px;
+}
+
+.group-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.group-items-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .group-items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .group-items-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tense Grid Card */
+.tense-grid-card {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.tense-grid-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.tense-grid-card.active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.tense-grid-card.active .tense-card-vi {
+  color: var(--color-primary);
+}
+
+.tense-card-vi {
+  font-size: 14.5px;
+  color: var(--color-text-main);
+  transition: var(--transition);
+}
+
+.tense-card-en {
+  letter-spacing: 0.02em;
+}
+
+.short-formula-badge {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--color-primary);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 4px;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* Tense Details Viewer Panel */
+.tense-details-panel {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glow);
+  box-shadow: var(--shadow-glow-sm);
+  overflow: hidden;
+}
+
+.detail-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.detail-subtitle {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.badge-time-large {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-time-large.badge-present {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-time-large.badge-past {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-time-large.badge-future {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* Horizontal Formulas Layout */
+.formula-type-block-horizontal {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.formula-columns-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .formula-columns-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.formula-col-card {
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  transition: var(--transition);
+}
+
+.formula-col-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.formula-col-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.formula-col-code {
+  color: #fff;
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: block;
+}
+
+/* Stratified Sections Layout */
+.detail-section-block {
+  width: 100%;
+}
+
+.detail-section-block.border-t {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-title-handbook {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 1. Definition block styling */
+.definition-block {
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  color: var(--color-text-main);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* 2. Usages block styling (Chips style) */
+.usages-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.usage-chip {
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  color: var(--color-text-main);
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.usage-chip:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* 3. Signals block styling (Pill style) */
+.signals-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.signal-pill {
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border-radius: 9999px;
+  transition: var(--transition);
+}
+
+.signal-pill:hover {
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+/* 4. Examples grid styling */
+.examples-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .examples-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.example-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: var(--transition);
+}
+
+.example-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.example-card-en {
+  font-size: 14.5px;
+  color: var(--color-primary);
+  line-height: 1.4;
+}
+
+.example-card-vi {
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.example-card-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  display: inline-block;
+  line-height: 1;
+}

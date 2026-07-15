@@ -40,6 +40,17 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
           <button className="btn-secondary" onClick={() => onNavigate('notebook')}>
             Notebook ({savedVocabCount})
           </button>
+          <button 
+            className="btn-secondary flex items-center gap-1" 
+            onClick={() => onNavigate('tenses_handbook')}
+            style={{ 
+              border: '1px solid var(--color-primary)', 
+              background: 'rgba(59, 130, 246, 0.08)',
+              color: 'var(--color-primary)'
+            }}
+          >
+            📚 12 Thì Tiếng Anh
+          </button>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import Writing from './components/Writing';
 import AdminPanel from './components/AdminPanel';
 import Toast from './components/Toast';
 import GlobalTranslator from './components/GlobalTranslator';
+import TensesHandbook from './components/TensesHandbook';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -257,6 +258,12 @@ function App() {
             onNavigateBack={handleBackToDashboard}
             onSavedVocabChange={refreshState}
             showToast={showToast}
+          />
+        )}
+
+        {activeScreen === 'tenses_handbook' && (
+          <TensesHandbook 
+            onNavigateBack={handleBackToDashboard}
           />
         )}
       </main>
