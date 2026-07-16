@@ -1,108 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { storage } from '../utils/storage';
-
-export function preprocessAndRepairJson(rawText) {
-  // Pass 1: Repair unescaped quotes
-  let repairedText = '';
-  for (let i = 0; i < rawText.length; i++) {
-    const char = rawText[i];
-    
-    if (char === '"' && rawText[i - 1] !== '\\') {
-      // Check if it's a structural quote
-      let prevChar = '';
-      let prevIdx = i - 1;
-      while (prevIdx >= 0) {
-        const c = rawText[prevIdx];
-        if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') {
-          prevChar = c;
-          break;
-        }
-        prevIdx--;
-      }
-      
-      let nextChar = '';
-      let nextIdx = i + 1;
-      while (nextIdx < rawText.length) {
-        const c = rawText[nextIdx];
-        if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') {
-          nextChar = c;
-          break;
-        }
-        nextIdx++;
-      }
-      
-      const isPreceded = ['{', '[', ',', ':'].includes(prevChar);
-      const isFollowed = ['}', ']', ',', ':'].includes(nextChar);
-      
-      if (isPreceded || isFollowed) {
-        repairedText += char;
-      } else {
-        repairedText += '\\"'; // Escape it
-      }
-    } else {
-      repairedText += char;
-    }
-  }
-
-  // Pass 2: Escape literal newlines, carriage returns, tabs inside strings, and strip comments
-  let cleanText = '';
-  let insideString = false;
-  let escaped = false;
-  
-  for (let i = 0; i < repairedText.length; i++) {
-    const char = repairedText[i];
-    
-    // Strip comments outside strings
-    if (!insideString) {
-      if (char === '/' && repairedText[i + 1] === '/') {
-        while (i < repairedText.length && repairedText[i] !== '\n' && repairedText[i] !== '\r') {
-          i++;
-        }
-        i--;
-        continue;
-      }
-      if (char === '/' && repairedText[i + 1] === '*') {
-        i += 2;
-        while (i < repairedText.length && !(repairedText[i] === '*' && repairedText[i + 1] === '/')) {
-          i++;
-        }
-        i++;
-        continue;
-      }
-    }
-    
-    if (char === '"' && !escaped) {
-      insideString = !insideString;
-      cleanText += char;
-      continue;
-    }
-    
-    if (insideString) {
-      if (char === '\\') {
-        escaped = !escaped;
-        cleanText += char;
-      } else {
-        if (char === '\n') {
-          cleanText += '\\n';
-        } else if (char === '\r') {
-          cleanText += '\\r';
-        } else if (char === '\t') {
-          cleanText += '\\t';
-        } else {
-          cleanText += char;
-        }
-        escaped = false;
-      }
-    } else {
-      cleanText += char;
-    }
-  }
-  
-  // Remove trailing commas in arrays/objects
-  cleanText = cleanText.replace(/,\s*([\]}])/g, '$1');
-  
-  return cleanText;
-}
 
 export async function fetchGeminiWithRetry(url, options, maxRetries = 4, delayMs = 3000) {
   let lastError = null;
@@ -116,7 +13,6 @@ export async function fetchGeminiWithRetry(url, options, maxRetries = 4, delayMs
       
       const status = response.status;
       if (status === 429) {
-        // Rate limit hit: exponential backoff (e.g. 6s, 12s, 24s) to allow limit window to reset
         const waitTime = Math.pow(2, attempt) * 3000;
         console.warn(`Gemini API returned 429 (Rate Limit) on attempt ${attempt}. Retrying in ${waitTime}ms...`);
         lastError = new Error(`Gemini API Error (Status 429): Tần suất gọi API quá nhanh hoặc vượt quá hạn ngạch (Rate Limit). Vui lòng đợi giây lát.`);
@@ -153,50 +49,31 @@ export async function fetchGeminiWithRetry(url, options, maxRetries = 4, delayMs
   throw lastError;
 }
 
-export function validateTopicData(data) {
+function preprocessAndRepairJson(rawText) {
+  let cleanText = rawText.trim();
+  if (cleanText.startsWith("```json")) {
+    cleanText = cleanText.substring(7);
+  }
+  if (cleanText.endsWith("```")) {
+    cleanText = cleanText.substring(0, cleanText.length - 3);
+  }
+  cleanText = cleanText.trim();
+  return cleanText;
+}
+
+function validateTopicData(data) {
   const errors = [];
+  if (!data.id) errors.push("Thiếu ID bài học ('id').");
+  if (!data.topic) errors.push("Thiếu tên chủ đề ('topic').");
+  if (!data.level) errors.push("Thiếu cấp độ ('level').");
+  if (!data.title) errors.push("Thiếu tiêu đề bài đọc ('title').");
+  if (!data.reading_passage) errors.push("Thiếu nội dung bài đọc ('reading_passage').");
+  if (!data.reading_passage_translation) errors.push("Thiếu bản dịch bài đọc ('reading_passage_translation').");
+  if (!data.grammar_focus) errors.push("Thiếu phần ngữ pháp trọng tâm ('grammar_focus').");
+  if (!data.writing_exercises || data.writing_exercises.length === 0) errors.push("Thiếu danh sách bài tập viết ('writing_exercises').");
+  if (!data.dialogues || data.dialogues.length === 0) errors.push("Thiếu danh sách hội thoại mẫu ('dialogues').");
+  if (!data.default_vocabs || data.default_vocabs.length === 0) errors.push("Thiếu từ vựng mặc định ('default_vocabs').");
 
-  if (!data) {
-    errors.push("Dữ liệu bài học rỗng.");
-    return { valid: false, errors };
-  }
-
-  if (!data.id) errors.push("Thiếu thuộc tính 'id' định danh.");
-  if (!data.topic) errors.push("Thiếu thuộc tính 'topic' tên chủ đề.");
-  if (!data.level) errors.push("Thiếu thuộc tính 'level' cấp độ học tập.");
-  if (!data.title) errors.push("Thiếu thuộc tính 'title' tiêu đề tiếng Anh.");
-
-  if (!data.reading_passage || data.reading_passage.split(/\s+/).filter(Boolean).length < 40) {
-    errors.push("Bài đọc 'reading_passage' quá ngắn hoặc không tồn tại (cần ít nhất 40 từ).");
-  }
-
-  if (!data.reading_passage_translation) {
-    errors.push("Thiếu trường dịch nghĩa toàn bài đọc 'reading_passage_translation'.");
-  }
-
-  if (!data.grammar_focus?.examples || data.grammar_focus.examples.length < 2) {
-    errors.push("Phần ngữ pháp 'grammar_focus.examples' phải có ít nhất 2 câu ví dụ.");
-  }
-
-  if (!data.writing_exercises || data.writing_exercises.length !== 3) {
-    errors.push("Phần bài tập viết 'writing_exercises' bắt buộc phải có đúng 3 bài.");
-  } else {
-    // Check types
-    const types = data.writing_exercises.map(e => e.type);
-    if (!types.includes("fill_blank")) errors.push("Thiếu bài tập dạng điền vào chỗ trống ('fill_blank').");
-    if (!types.includes("sentence_ordering")) errors.push("Thiếu bài tập dạng sắp xếp từ thành câu ('sentence_ordering').");
-    if (!types.includes("free_writing")) errors.push("Thiếu bài tập dạng viết tự do ('free_writing').");
-  }
-
-  if (!data.dialogues || data.dialogues.length !== 5) {
-    errors.push("Phần hội thoại 'dialogues' bắt buộc phải có đúng 5 câu thoại.");
-  }
-
-  if (!data.default_vocabs || data.default_vocabs.length < 5) {
-    errors.push("Danh sách từ vựng 'default_vocabs' phải có ít nhất 5 từ.");
-  }
-
-  // Check if example sentences are in reading passage or dialogues
   if (data.grammar_focus?.examples && data.reading_passage && data.dialogues) {
     const allSourceText = (data.reading_passage + " " + data.dialogues.map(d => d.text).join(" "))
       .toLowerCase()
@@ -217,6 +94,87 @@ export function validateTopicData(data) {
 
   return { valid: errors.length === 0, errors };
 }
+
+const SAMPLE_TOPICS = {
+  "topic_custom_airport_1": {
+    id: "topic_custom_airport_1",
+    topic: "At the Airport",
+    level: "A2",
+    title: "Flying to London",
+    reading_passage: "Tomorrow, Nam will fly to London for the first time. He will arrive at the airport three hours before his flight. First, he will check in his luggage at the airline counter. Then, he will go through security control. If he has time, he will buy some duty-free gifts for his friends. Finally, he will wait at the departure gate until the flight attendants announce boarding. It will be a long flight, but he will enjoy it.",
+    reading_passage_translation: "Ngày mai, Nam sẽ bay đến Luân Đôn lần đầu tiên. Anh ấy sẽ đến sân bay ba giờ trước chuyến bay của mình. Đầu tiên, anh ấy sẽ ký gửi hành lý tại quầy của hãng hàng không. Sau đó, anh ấy sẽ đi qua cửa kiểm tra an ninh. Nếu có thời gian, anh ấy sẽ mua một số món quà miễn thuế cho bạn bè của mình. Cuối cùng, anh ấy sẽ đợi ở cửa khởi hành cho đến khi tiếp viên hàng không thông báo lên máy bay. Đó sẽ là một chuyến bay dài, nhưng anh ấy sẽ tận hưởng nó.",
+    grammar_focus: {
+      tense: "Future Simple",
+      tense_vi: "Thì tương lai đơn",
+      formula: "S + will + V (nguyên mẫu)",
+      explanation: "Dùng để diễn tả một hành động sẽ xảy ra trong tương lai, một quyết định ngay tại thời điểm nói, hoặc một dự đoán.",
+      examples: [
+        { en: "Tomorrow, Nam will fly to London for the first time.", vi: "Ngày mai Nam sẽ bay đi Luân Đôn lần đầu.", note: "Diễn tả hành động chắc chắn sẽ xảy ra trong tương lai." },
+        { en: "He will arrive at the airport three hours before his flight.", vi: "Anh ấy sẽ đến sân bay trước 3 tiếng.", note: "Kế hoạch tương lai." },
+        { en: "It will be a long flight, but he will enjoy it.", vi: "Đó sẽ là chuyến bay dài, nhưng anh ấy sẽ thích nó.", note: "Lời dự đoán." }
+      ]
+    },
+    writing_exercises: [
+      { id: "ap_w1", type: "fill_blank", sentence_parts: ["Next week, they ", " (travel) to Japan."], answer: "will travel", hint: "Thì tương lai đơn: will + V" },
+      { id: "ap_w2", type: "sentence_ordering", words: ["flight", "at", "arrive", "will", "The", "midnight"], answer: "The flight will arrive at midnight." },
+      { id: "ap_w3", type: "free_writing", prompt_vi: "Viết 2 câu kể về kế hoạch du lịch trong tương lai của bạn, sử dụng thì tương lai đơn.", required_keywords: ["will", "next year", "visit", "travel"], min_words: 8 }
+    ],
+    dialogues: [
+      { id: "ap_d1", speaker: "Agent", text: "Good morning! Can I see your passport and ticket, please?", vietnamese: "Xin chào! Cho tôi xem hộ chiếu và vé của bạn được không?" },
+      { id: "ap_d2", speaker: "Nam", text: "Here you are. I will check in this suitcase.", vietnamese: "Đây ạ. Tôi sẽ ký gửi chiếc vali này." },
+      { id: "ap_d3", speaker: "Agent", text: "Great. Do you want a window or an aisle seat?", vietnamese: "Tuyệt vời. Bạn muốn ghế cạnh cửa sổ hay cạnh lối đi?" },
+      { id: "ap_d4", speaker: "Nam", text: "I prefer a window seat, please.", vietnamese: "Cho tôi ghế cạnh cửa sổ nhé." },
+      { id: "ap_d5", speaker: "Agent", text: "Here is your boarding pass. Your gate is gate fifteen.", vietnamese: "Đây là thẻ lên máy bay của bạn. Cửa ra máy bay của bạn là cửa số mười lăm." }
+    ],
+    default_vocabs: [
+      { word: "passport", ipa: "/ˈpɑːspɔːt/", vietnamese: "hộ chiếu", example: "Don't forget to pack your passport before going to the airport." },
+      { word: "luggage", ipa: "/ˈlʌɡɪdʒ/", vietnamese: "hành lý", example: "I have two pieces of luggage to check in." },
+      { word: "departure gate", ipa: "/dɪˈpɑːtʃər ɡeɪt/", vietnamese: "cửa khởi hành", example: "Please proceed to the departure gate immediately." },
+      { word: "boarding pass", ipa: "/ˈbɔːdɪŋ pɑːs/", vietnamese: "thẻ lên máy bay", example: "Keep your boarding pass and passport in your hand." },
+      { word: "aisle", ipa: "/aɪl/", vietnamese: "lối đi (giữa các hàng ghế)", example: "I prefer an aisle seat so I can walk easily." },
+      { word: "suitcase", ipa: "/ˈsuːtkeɪs/", vietnamese: "vali hành lý", example: "This heavy suitcase contains all my clothes." }
+    ]
+  },
+  "topic_custom_job_it_2": {
+    id: "topic_custom_job_it_2",
+    topic: "Job Interview in IT",
+    level: "B2",
+    title: "Applying for Software Engineer",
+    reading_passage: "Last year, Huy applied for a Software Engineer job at a tech startup in Da Nang. In the interview, the technical manager asked him about his past programming projects. Huy explained his code structure and how he solved performance issues. He answered the database design questions very well. Two days later, the human resources manager sent him an offer letter with a great salary. He accepted it and started his career in Da Nang.",
+    reading_passage_translation: "Năm ngoái, Huy đã nộp đơn ứng tuyển công việc Kỹ sư phần mềm tại một công ty khởi nghiệp công nghệ ở Đà Nẵng. Trong buổi phỏng vấn, người quản lý kỹ thuật đã hỏi anh ấy về các dự án lập trình trước đây của anh ấy. Huy đã giải thích cấu trúc code của mình và cách anh ấy giải quyết các vấn đề về hiệu suất. Anh ấy đã trả lời các câu hỏi thiết kế cơ sở dữ liệu rất tốt. Hai ngày sau, người quản lý nhân sự gửi cho anh ấy một thư mời nhận việc với mức lương tuyệt vời. Anh ấy đã đồng ý và bắt đầu sự nghiệp của mình tại Đà Nẵng.",
+    grammar_focus: {
+      tense: "Past Simple",
+      tense_vi: "Thì quá khứ đơn",
+      formula: "S + V2/V-ed [quy tắc] | S + V (bất quy tắc)",
+      explanation: "Dùng để diễn tả một hành động đã xảy ra và kết thúc hoàn toàn trong quá khứ.",
+      examples: [
+        { en: "Huy applied for a Software Engineer job.", vi: "Huy đã nộp đơn ứng tuyển vị trí Kỹ sư phần mềm.", note: "'applied' là dạng quá khứ có quy tắc (thêm -ed) của động từ apply." },
+        { en: "The technical manager asked Huy about his past projects.", vi: "Trưởng phòng kỹ thuật đã hỏi Huy về các dự án trước đây.", note: "'asked' là dạng quá khứ có quy tắc của động từ ask." },
+        { en: "He answered the database design questions very well.", vi: "Anh ấy đã trả lời các câu hỏi thiết kế database rất tốt.", note: "'answered' chia thì quá khứ đơn để thuật lại sự việc đã kết thúc." }
+      ]
+    },
+    writing_exercises: [
+      { id: "it_w1", type: "fill_blank", sentence_parts: ["Yesterday, I ", " (meet) the CEO at the office."], answer: "met", hint: "Quá khứ bất quy tắc của 'meet' là 'met'." },
+      { id: "it_w2", type: "sentence_ordering", words: ["offer", "accepted", "the", "Huy", "job", "yesterday"], answer: "Huy accepted the job offer yesterday." },
+      { id: "it_w3", type: "free_writing", prompt_vi: "Viết 2 câu kể về trải nghiệm một buổi phỏng vấn hoặc bài thi trong quá khứ của bạn, dùng thì quá khứ đơn.", required_keywords: ["asked", "answered", "was", "interview"], min_words: 8 }
+    ],
+    dialogues: [
+      { id: "it_d1", speaker: "Interviewer", text: "Welcome Huy! Can you tell me about your previous coding experience?", vietnamese: "Chào mừng Huy! Bạn có thể giới thiệu về kinh nghiệm lập trình trước đây không?" },
+      { id: "it_d2", speaker: "Huy", text: "Certainly. I worked on a React and Node.js web app for two years.", vietnamese: "Chắc chắn rồi. Tôi đã làm việc trên một ứng dụng web React và Node.js trong hai năm." },
+      { id: "it_d3", speaker: "Interviewer", text: "Excellent. How did you handle conflicts in your developer team?", vietnamese: "Xuất sắc. Bạn đã xử lý các mâu thuẫn trong nhóm phát triển của mình thế nào?" },
+      { id: "it_d4", speaker: "Huy", text: "We discussed issues openly and chose the best technical solution.", vietnamese: "Chúng tôi thảo luận công khai về các vấn đề và chọn giải pháp kỹ thuật tốt nhất." },
+      { id: "it_d5", speaker: "Interviewer", text: "Very good. We will notify you of the results soon.", vietnamese: "Rất tốt. Chúng tôi sẽ sớm thông báo kết quả cho bạn." }
+    ],
+    default_vocabs: [
+      { word: "apply", ipa: "/əˈplaɪ/", vietnamese: "nộp đơn ứng tuyển", example: "I want to apply for the software developer position." },
+      { word: "interviewer", ipa: "/ˈɪntəvjuːər/", vietnamese: "người phỏng vấn", example: "The interviewer was very friendly and helpful." },
+      { word: "conflict", ipa: "/ˈkɒnflɪkt/", vietnamese: "sự mâu thuẫn, xung đột", example: "We resolved the team conflict through communication." },
+      { word: "notify", ipa: "/ˈnəʊtɪfaɪ/", vietnamese: "thông báo", example: "They will notify the candidates by email next week." },
+      { word: "technical", ipa: "/ˈteknɪkl/", vietnamese: "thuộc về kỹ thuật", example: "He has strong technical skills in JavaScript." },
+      { word: "salary", ipa: "/ˈsæləri/", vietnamese: "mức lương", example: "They offered him a very competitive salary." }
+    ]
+  }
+};
 
 export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("eng_app_gemini_key") || "");
@@ -245,10 +203,26 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
+  const handleSaveKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("eng_app_gemini_key", apiKey.trim());
+      setIsKeySaved(true);
+      alert("Đã lưu API Key thành công!");
+    }
+  };
+
+  const handleClearKey = () => {
+    localStorage.removeItem("eng_app_gemini_key");
+    setApiKey("");
+    setIsKeySaved(false);
+    alert("Đã xóa API Key.");
+  };
+
   const runSpellCheck = async (text) => {
     if (!apiKey.trim() || !text) return;
+    
     setIsCheckingSpelling(true);
-    addLog("Đang tiến hành quét và kiểm tra lỗi chính tả/ngữ pháp bằng AI...");
+    setSpellCheckResult(null);
     
     const prompt = `Bạn là một chuyên gia soát lỗi và hiệu đính tiếng Anh. Hãy phân tích đoạn văn sau và kiểm tra xem có bất kỳ lỗi chính tả (spelling) hoặc ngữ pháp (grammar) nào không:
 "${text}"
@@ -286,116 +260,76 @@ Nếu không phát hiện lỗi nào, hãy trả về:
         if (rawText) {
           const firstBrace = rawText.indexOf('{');
           const lastBrace = rawText.lastIndexOf('}');
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
-            const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-            const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
-            const parsed = JSON.parse(repairedJsonText);
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            const cleanText = preprocessAndRepairJson(rawText.slice(firstBrace, lastBrace + 1));
+            const parsed = JSON.parse(cleanText);
             setSpellCheckResult(parsed);
-            if (parsed.hasErrors) {
-              addLog(`⚠️ Đã phát hiện ${parsed.errors.length} lỗi chính tả/ngữ pháp trong bài đọc.`);
-            } else {
-              addLog(`🎉 Bài đọc hoàn hảo! Không phát hiện lỗi chính tả hay ngữ pháp.`);
-            }
-            return;
           }
         }
       }
-      setSpellCheckResult({ hasErrors: false, errors: [] });
-      addLog("Không thể hoàn thành kiểm tra chính tả (Phản hồi không đúng cấu trúc).");
     } catch (e) {
-      console.error("Spell check error:", e);
-      addLog("Lỗi khi kết nối kiểm tra chính tả.");
+      console.error(e);
+      alert(`Lỗi soát lỗi AI: ${e.message}`);
     } finally {
       setIsCheckingSpelling(false);
     }
   };
 
-  const handleSaveKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("eng_app_gemini_key", apiKey.trim());
-      setIsKeySaved(true);
-      alert("Đã lưu API Key thành công!");
-    }
-  };
-
-  const handleClearKey = () => {
-    localStorage.removeItem("eng_app_gemini_key");
-    setApiKey("");
-    setIsKeySaved(false);
-  };
-
   const handleGenerate = async () => {
     if (!apiKey.trim()) {
-      alert("Vui lòng cấu hình Gemini API Key trước!");
+      alert("Vui lòng cấu hình API Key trước!");
+      return;
+    }
+    if (!form.topicName.trim()) {
+      alert("Vui lòng nhập chủ đề!");
       return;
     }
 
-    setIsLoading(false);
+    setIsLoading(true);
+    setGeneratedData(null);
     setLogs([]);
     setValidationErrors([]);
-    setGeneratedData(null);
     setSpellCheckResult(null);
-    setIsCheckingSpelling(false);
-    setIsLoading(true);
 
-    addLog(`Bắt đầu kết nối với Gemini API...`);
-    addLog(`Đang gửi yêu cầu sinh bài học cho chủ đề: "${form.topicName}"`);
-    addLog(`Độ khó: ${form.level} | Thì ngữ pháp chủ đạo: ${form.tense}`);
+    addLog(`Bắt đầu sinh bài học cho chủ đề "${form.topicName}" (Thì: ${form.tense}, Cấp độ: ${form.level})`);
 
-    const systemPrompt = `Bạn là chuyên gia soạn giáo trình tiếng Anh.
-Nhiệm vụ: tạo 1 bài học theo ĐÚNG cấu trúc JSON được yêu cầu, không thêm bất kỳ văn bản nào khác ngoài JSON.
-Quy tắc bắt buộc:
-1. Mọi câu trong "examples" của grammar_focus PHẢI được trích nguyên văn từ "reading_passage" hoặc "dialogues", không được tự ý bịa câu mới. Đây là tiêu chí bắt buộc để chấm điểm.
-2. "reading_passage" khoảng 80-120 từ, đúng level yêu cầu, dùng đúng thì ngữ pháp được chỉ định làm thì chủ đạo.
-3. "reading_passage_translation" là bản dịch tiếng Việt tự nhiên của "reading_passage".
-4. "dialogues" gồm đúng 5 câu, xen kẽ 2 người nói.
-5. "default_vocabs" gồm đúng 6 từ lấy từ chính đoạn văn, kèm IPA, giải thích nghĩa tiếng Việt và câu ví dụ chứa từ đó.
-6. "writing_exercises" gồm đúng 3 bài: 
-   - Bài 1: type "fill_blank", sentence_parts: [phần trước chỗ trống, phần sau chỗ trống], answer: động từ đã chia đúng thì, hint: gợi ý ngữ pháp.
-   - Bài 2: type "sentence_ordering", words: mảng gồm các từ đơn lẻ xáo trộn, answer: câu hoàn chỉnh (nhớ dấu chấm ở cuối câu).
-   - Bài 3: type "free_writing", prompt_vi: đề bài tiếng Việt yêu cầu người học tự viết 2 câu, required_keywords: mảng từ khóa, min_words: 8.
-7. ID của chủ đề (id) phải là duy nhất dạng: "topic_custom_xxxx" (ví dụ: topic_custom_travel_123).
-8. ĐẶC BIỆT CHÚ Ý: Mọi dấu ngoặc kép (double quotes) xuất hiện bên trong các trường văn bản PHẢI được viết dưới dạng thoát ký tự: \\" (ví dụ: \\"fine\\" thay vì "fine"). Không được để dấu ngoặc kép trần làm hỏng cấu trúc JSON.
-9. Đảm bảo cấu trúc JSON hoàn chỉnh, không có dấu phẩy thừa (trailing commas) ở cuối các phần tử mảng hoặc thuộc tính đối tượng.`;
+    const systemPrompt = `Bạn là một trợ lý AI tạo giáo trình học tiếng Anh chuyên nghiệp. Nhiệm vụ của bạn là sinh ra một bài học tiếng Anh hoàn chỉnh theo đúng cấu trúc JSON được chỉ định.
+QUAN TRỌNG: 
+1. Câu ví dụ trong phần "grammar_focus.examples" PHẢI trùng khớp nguyên văn từng ký tự với các câu có trong "reading_passage" hoặc "dialogues". Đây là quy định bắt buộc.
+2. Giọng đọc hỗ trợ cả US (Mỹ) và UK (Anh), các từ vựng phải có phiên âm IPA chuẩn xác.`;
 
-    // Generate a random seed to enforce diverse output
-    const randomSeed = Math.random().toString(36).substring(7);
+    const userPrompt = `Hãy tạo một bài học tiếng Anh về chủ đề: "${form.topicName}"
+- Cấp độ: ${form.level}
+- Thì ngữ pháp trọng tâm: ${form.tense}
 
-    const userPrompt = `Hãy tạo một bài học tiếng Anh hoàn toàn MỚI, ĐỘC ĐÁO và KHÁC BIỆT (tránh trùng lặp nội dung với các lần tạo trước) cho:
-Chủ đề: ${form.topicName}
-Thì ngữ pháp trọng tâm: ${form.tense}
-Level: ${form.level}
-Mã số định danh sáng tạo ngẫu nhiên (Creative Seed): ${randomSeed}
-
-Hãy sáng tạo một cốt truyện bài đọc (reading_passage) và các câu thoại mới lạ lấy cảm hứng ngẫu nhiên dựa trên mã số định danh này để tạo tính đa dạng.
-
-Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không thêm chữ nào ngoài JSON):
+Yêu cầu trả về đúng cấu trúc JSON mẫu sau đây (không được thêm văn bản giải thích nào khác ngoài khối JSON):
 {
-  "id": "topic_custom_${Date.now()}_${randomSeed}",
+  "id": "topic_${form.topicName.toLowerCase().replace(/[^a-z0-9]/g, '_')}",
   "topic": "${form.topicName}",
   "level": "${form.level}",
-  "title": "Tên tiêu đề tiếng Anh",
-  "reading_passage": "...",
-  "reading_passage_translation": "...",
+  "title": "[Tiêu đề bài học ngắn gọn, ví dụ: Shopping in Paris]",
+  "reading_passage": "[Đoạn văn đọc tiếng Anh khoảng 5-7 câu sử dụng nhiều câu chứa thì ${form.tense}]",
+  "reading_passage_translation": "[Dịch nghĩa tiếng Việt đầy đủ của đoạn văn đọc]",
   "grammar_focus": {
     "tense": "${form.tense}",
-    "tense_vi": "Ví dụ: Thì hiện tại đơn",
-    "formula": "Ví dụ: S + V(s/es)",
-    "explanation": "...",
+    "tense_vi": "[Tên tiếng Việt của thì ngữ pháp]",
+    "formula": "[Công thức của thì]",
+    "explanation": "[Giải thích cách dùng ngắn gọn bằng tiếng Việt]",
     "examples": [
-      { "en": "Trích nguyên văn từ reading_passage hoặc dialogues", "vi": "Dịch nghĩa", "note": "Ghi chú ngữ pháp" }
+      { "en": "[Câu ví dụ tiếng Anh - PHẢI trích nguyên văn từ bài đọc hoặc hội thoại thoại ở trên]", "vi": "[Dịch nghĩa câu ví dụ]", "note": "[Giải thích cấu trúc ngữ pháp chia trong câu này]" }
     ]
   },
   "writing_exercises": [
-    { "id": "w1", "type": "fill_blank", "sentence_parts": ["...", "..."], "answer": "...", "hint": "..." },
-    { "id": "w2", "type": "sentence_ordering", "words": ["..."], "answer": "..." },
-    { "id": "w3", "type": "free_writing", "prompt_vi": "...", "required_keywords": ["..."], "min_words": 8 }
+    { "id": "ex_1", "type": "fill_blank", "sentence_parts": ["[Phần câu đầu]", "[Phần câu cuối]"], "answer": "[Từ/cụm từ điền vào chỗ trống]", "hint": "[Gợi ý bằng tiếng Việt]" },
+    { "id": "ex_2", "type": "sentence_ordering", "words": ["từ", "sắp", "xếp"], "answer": "[câu hoàn chỉnh]" },
+    { "id": "ex_3", "type": "free_writing", "prompt_vi": "[Đề bài viết tự do liên quan đến chủ đề]", "required_keywords": ["từ", "khóa"], "min_words": 8 }
   ],
   "dialogues": [
-    { "id": "d1", "speaker": "Speaker A", "text": "...", "vietnamese": "..." }
+    { "id": "d_1", "speaker": "Barista", "text": "[Câu thoại tiếng Anh]", "vietnamese": "[Dịch câu thoại]" },
+    { "id": "d_2", "speaker": "Customer", "text": "[Câu thoại tiếng Anh]", "vietnamese": "[Dịch câu thoại]" }
   ],
   "default_vocabs": [
-    { "word": "...", "ipa": "...", "vietnamese": "...", "example": "..." }
+    { "word": "[từ vựng]", "ipa": "[phiên âm IPA, ví dụ: /kəˈnekt/]", "vietnamese": "[nghĩa tiếng Việt]", "example": "[câu ví dụ]" }
   ]
 }`;
 
@@ -418,53 +352,31 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
         })
       });
 
-      const resData = await response.json();
-      addLog(`Đã nhận phản hồi thành công từ Gemini API.`);
-      
-      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) {
-        throw new Error("Không nhận được nội dung từ AI.");
+      if (!response || !response.ok) {
+        throw new Error(`Kết nối thất bại (Mã lỗi: ${response ? response.status : 'Không rõ'})`);
       }
 
-      addLog(`Đang tiến hành trích xuất dữ liệu JSON...`);
+      addLog(`Đã nhận phản hồi thành công. Đang phân tích cú pháp JSON...`);
+      const resData = await response.json();
+      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      // Robust JSON extraction matching first { and last }
+      if (!rawText) {
+        throw new Error("Gemini API trả về nội dung trống rỗng.");
+      }
+
       const firstBrace = rawText.indexOf('{');
       const lastBrace = rawText.lastIndexOf('}');
-      if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
-        throw new Error("Không tìm thấy cấu trúc JSON hợp lệ trong câu trả lời từ Gemini.");
-      }
-      const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-      const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
-      
-      let parsedData;
-      try {
-        parsedData = JSON.parse(repairedJsonText);
-      } catch (parseErr) {
-        console.error("JSON Parse Error details:", parseErr);
-        // Extract context around syntax error position if available
-        const posMatch = parseErr.message.match(/position\s+(\d+)/i);
-        if (posMatch) {
-          const pos = parseInt(posMatch[1], 10);
-          const start = Math.max(0, pos - 40);
-          const end = Math.min(repairedJsonText.length, pos + 40);
-          const errorContext = repairedJsonText.slice(start, end);
-          // Highlight exact spot
-          const marker = " ".repeat(Math.min(pos - start + 10, 50)) + "^";
-          addLog(`❌ Lỗi cú pháp JSON từ AI gần vị trí ${pos}:`);
-          addLog(`[Ngữ cảnh]: ...${errorContext}...`);
-          addLog(`[Vị trí lỗi]: ${marker}`);
-        }
-        throw new Error(`Dữ liệu JSON từ AI bị lỗi cú pháp: ${parseErr.message}. Vui lòng thử lại.`);
+      if (firstBrace === -1 || lastBrace === -1) {
+        throw new Error("Không thể tìm thấy khối cấu trúc dữ liệu JSON trong phản hồi của AI.");
       }
 
-      // Auto-heal mismatches between grammar_focus.examples and reading_passage/dialogues
-      if (parsedData.grammar_focus?.examples && parsedData.reading_passage && parsedData.dialogues) {
-        addLog("🔧 Đang tự động khớp và sửa lỗi dấu câu/chữ hoa cho các câu ví dụ ngữ pháp...");
-        
+      const cleanJsonText = preprocessAndRepairJson(rawText.slice(firstBrace, lastBrace + 1));
+      const parsedData = JSON.parse(cleanJsonText);
+
+      addLog(`Áp dụng thuật toán vá ngữ pháp tự động (Auto-Healing) để khớp câu ví dụ...`);
+      if (parsedData.grammar_focus?.examples && parsedData.reading_passage) {
         const sentences = [];
-        const passageSentences = parsedData.reading_passage.split(/[.!?]+\s+/);
-        passageSentences.forEach(s => {
+        parsedData.reading_passage.split(/[.!?]/).forEach(s => {
           if (s.trim()) sentences.push(s.trim());
         });
         parsedData.dialogues.forEach(d => {
@@ -494,18 +406,15 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
             });
             
             const score = intersect / Math.max(exWordSet.size, sWordSet.size);
-            if (score > bestScore) {
+            if (score > bestScore && score >= 0.7) {
               bestScore = score;
               bestSentence = s;
             }
           });
           
-          if (bestScore >= 0.70 && bestSentence.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").trim() !== ex.en.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").trim()) {
-            addLog(`📝 Tự sửa câu ví dụ #${idx + 1}: đổi từ "${ex.en}" thành "${bestSentence}" cho khớp hoàn hảo.`);
-            return {
-              ...ex,
-              en: bestSentence
-            };
+          if (bestSentence !== ex.en) {
+            addLog(`-> Đã tự động vá và đồng bộ câu ví dụ #${idx + 1} từ "${ex.en}" thành câu nguyên văn: "${bestSentence}"`);
+            ex.en = bestSentence;
           }
           return ex;
         });
@@ -516,7 +425,6 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
       setValidationErrors(errors);
 
       setGeneratedData(parsedData);
-      // Removed automatic runSpellCheck call to prevent 429 rate limit hit
       if (valid) {
         addLog(`🎉 Bài học đã được sinh thành công và ĐẠT TẤT CẢ các kiểm tra cấu trúc dữ liệu!`);
       } else {
@@ -535,11 +443,9 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
   const handleApprove = () => {
     if (!generatedData) return;
     
-    // Save to published custom topics list
     const updated = storage.saveCustomTopic(generatedData);
     setCustomTopics(updated);
     
-    // If it was in pending, remove it
     storage.deletePendingTopic(generatedData.id);
     setPendingTopics(storage.getPendingTopics());
 
@@ -548,20 +454,32 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
     alert("🎉 Đã DUYỆT và công khai bài học cho học viên!");
   };
 
+  const handleImportSample = (sampleId) => {
+    const sampleTopic = SAMPLE_TOPICS[sampleId];
+    if (!sampleTopic) return;
+    
+    try {
+      const updated = storage.saveCustomTopic(sampleTopic);
+      setCustomTopics(updated);
+      onTopicsListChange();
+      alert(`🎉 Đã thêm bài học "${sampleTopic.topic}" vào dự án thành công!`);
+    } catch (e) {
+      console.error(e);
+      alert("Import bài học mẫu thất bại!");
+    }
+  };
+
   const handleSavePending = () => {
     if (!generatedData) return;
-    
     const updated = storage.savePendingTopic(generatedData);
     setPendingTopics(updated);
-    
     setGeneratedData(null);
     alert("💾 Đã lưu bài học vào danh sách chờ duyệt!");
   };
 
   const handleReject = () => {
-    if (window.confirm("Bạn có chắc chắn muốn hủy bỏ bài học đang sinh này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn đóng bản xem trước này?")) {
       setGeneratedData(null);
-      setValidationErrors([]);
     }
   };
 
@@ -649,11 +567,6 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
               </select>
             </div>
             <p className="color-text-muted text-xs mt-2">API Key được lưu bảo mật trong Local Storage trên chính trình duyệt của bạn, hoàn toàn không được gửi đi nơi khác.</p>
-            <div className="mt-4 p-3 rounded" style={{ background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
-              <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.4' }}>
-                💡 <strong>Mẹo Antigravity</strong>: Nếu chưa có API Key hoặc bị lỗi giới hạn lượt gọi (429), bạn có thể chat trực tiếp với trợ lý <strong>Antigravity</strong> ở khung chat IDE kế bên (ví dụ: <em>"Hãy sinh bài học chủ đề Shopping, level A2, thì Present Continuous"</em>). Trợ lý AI sẽ tự động tạo bài học và ghi trực tiếp vào mã nguồn dự án cho bạn!
-              </p>
-            </div>
           </div>
 
           {/* AI Generator Form */}
@@ -739,10 +652,54 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
               <button 
                 className="btn-primary w-full justify-center py-3" 
                 onClick={handleGenerate}
-                disabled={isLoading || !form.topicName.trim() || !apiKey.trim()}
+                disabled={isLoading || !form.topicName.trim()}
               >
                 {isLoading ? "Đang sinh bài học..." : "Sinh bài học tự động"}
               </button>
+            </div>
+          )}
+
+          {/* Sample Lesson Quick-Import Library */}
+          {!generatedData && (
+            <div className="glass p-6">
+              <h3 className="mb-2" style={{ fontSize: '15px', fontWeight: 'bold' }}>📚 Thư viện bài học mẫu</h3>
+              <p className="color-text-muted text-xs mb-4">Nhấn "Import nhanh" để thêm ngay bài học chất lượng cao đã biên soạn sẵn mà không cần kết nối mạng hay chờ đợi.</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  {
+                    id: "topic_custom_airport_1",
+                    topic: "At the Airport",
+                    level: "A2",
+                    title: "Flying to London",
+                    desc: "Học cách làm thủ tục bay, kiểm tra an ninh và cấu trúc tương lai đơn 'will + V'."
+                  },
+                  {
+                    id: "topic_custom_job_it_2",
+                    topic: "Job Interview in IT",
+                    level: "B2",
+                    title: "Applying for Software Engineer",
+                    desc: "Học cách đối đáp phỏng vấn IT tiếng Anh chuẩn xác sử dụng các thì quá khứ đơn."
+                  }
+                ].map((item) => (
+                  <div key={item.id} className="p-3 rounded flex justify-between items-center" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-light)', gap: '10px' }}>
+                    <div style={{ maxWidth: '75%' }}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="badge-level" style={{ fontSize: '9px', padding: '1px 4px' }}>{item.level}</span>
+                        <strong className="text-xs">{item.topic}</strong>
+                      </div>
+                      <p className="color-text-muted text-[11px]" style={{ margin: '2px 0 0 0' }}>{item.desc}</p>
+                    </div>
+                    <button 
+                      className="btn-primary text-xs" 
+                      style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}
+                      onClick={() => handleImportSample(item.id)}
+                    >
+                      Import nhanh
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -848,108 +805,6 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
             </div>
           )}
 
-          {/* Live Preview Container (Active only when lesson is generated) */}
-          {generatedData && (
-            <div className="preview-container glass p-6">
-              <div className="preview-header mb-4 flex justify-between items-center flex-wrap gap-3">
-                <h3 className="text-gradient">Xem trước bài học AI sinh: "{generatedData.title}"</h3>
-                
-                {/* Preview Tabs Toolbar */}
-                <div className="filter-buttons flex gap-2">
-                  <button className={`filter-btn ${previewTab === 'reading' ? 'active' : ''}`} onClick={() => setPreviewTab('reading')}>Bài đọc</button>
-                  <button className={`filter-btn ${previewTab === 'dialogues' ? 'active' : ''}`} onClick={() => setPreviewTab('dialogues')}>Hội thoại</button>
-                  <button className={`filter-btn ${previewTab === 'grammar' ? 'active' : ''}`} onClick={() => setPreviewTab('grammar')}>Ngữ pháp</button>
-                  <button className={`filter-btn ${previewTab === 'writing' ? 'active' : ''}`} onClick={() => setPreviewTab('writing')}>Bài tập viết</button>
-                  <button className={`filter-btn ${previewTab === 'json' ? 'active' : ''}`} onClick={() => setPreviewTab('json')}>Code JSON</button>
-                </div>
-              </div>
-
-              {/* Tab Contents */}
-              <div className="preview-body p-4 glass mb-6" style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                {previewTab === 'reading' && (
-                  <div className="animate-slideup">
-                    <h4 className="font-bold color-text-dark mb-2">{generatedData.title} ({generatedData.level})</h4>
-                    <p className="leading-relaxed text-sm mb-4">{generatedData.reading_passage}</p>
-                    <hr className="mb-4" style={{ borderColor: 'var(--border-light)' }} />
-                    <p className="italic text-xs color-text-muted">{generatedData.reading_passage_translation}</p>
-                  </div>
-                )}
-
-                {previewTab === 'dialogues' && (
-                  <div className="animate-slideup flex flex-col gap-3">
-                    {generatedData.dialogues.map((d, index) => (
-                      <div key={index} className="p-2 glass text-xs">
-                        <strong>{d.speaker}:</strong> "{d.text}"
-                        <p className="italic color-text-muted mt-1">🇻🇳 {d.vietnamese}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {previewTab === 'grammar' && (
-                  <div className="animate-slideup">
-                    <h4 className="font-bold color-text-dark mb-1">{generatedData.grammar_focus.tense_vi} ({generatedData.grammar_focus.tense})</h4>
-                    <code className="text-xs color-text-muted block mb-3 font-mono p-2 glass">Công thức: {generatedData.grammar_focus.formula}</code>
-                    <p className="text-xs mb-4">{generatedData.grammar_focus.explanation}</p>
-                    
-                    <strong className="text-xs">Ví dụ trích văn bản:</strong>
-                    <div className="flex flex-col gap-2 mt-2">
-                      {generatedData.grammar_focus.examples.map((ex, index) => (
-                        <div key={index} className="p-2 glass text-xs">
-                          <strong>"{ex.en}"</strong>
-                          <p className="color-text-muted mt-1">🇻🇳 {ex.vi}</p>
-                          <p className="text-xs italic color-text-muted mt-1">💡 Chú ý: {ex.note}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {previewTab === 'writing' && (
-                  <div className="animate-slideup flex flex-col gap-4">
-                    {generatedData.writing_exercises.map((ex, index) => (
-                      <div key={index} className="p-3 glass text-xs">
-                        <strong>Bài tập {index + 1} ({ex.type})</strong>
-                        {ex.type === 'fill_blank' && (
-                          <p className="mt-1">Nối câu: {ex.sentence_parts[0]} _____ {ex.sentence_parts[1]} (Đáp án: {ex.answer})</p>
-                        )}
-                        {ex.type === 'sentence_ordering' && (
-                          <p className="mt-1">Xếp từ: {ex.words.join(', ')} (Đáp án: {ex.answer})</p>
-                        )}
-                        {ex.type === 'free_writing' && (
-                          <p className="mt-1">Viết tự do: {ex.prompt_vi} (Từ khóa: {ex.required_keywords.join(', ')})</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {previewTab === 'json' && (
-                  <pre className="text-xs color-text-muted font-mono" style={{ whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(generatedData, null, 2)}
-                  </pre>
-                )}
-              </div>
-
-              {/* Action Buttons for generated lesson */}
-              <div className="flex gap-4">
-                <button className="btn-secondary w-1/3 justify-center" onClick={handleReject}>
-                  Hủy bỏ
-                </button>
-                <button className="btn-secondary w-1/3 justify-center" onClick={handleSavePending}>
-                  Lưu chờ duyệt
-                </button>
-                <button 
-                  className="btn-primary w-1/3 justify-center" 
-                  onClick={handleApprove}
-                  style={{ background: 'linear-gradient(135deg, var(--color-success) 0%, #059669 100%)', boxShadow: '0 0 15px var(--color-success-glow)' }}
-                >
-                  ✓ Duyệt & Công khai
-                </button>
-              </div>
-            </div>
-          )}
-
         </div>
 
         {/* Right Column: Manage existing custom topics (Show only when not previewing generated topic) */}
@@ -1000,6 +855,108 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* Live Preview Container (Active only when lesson is previewed) */}
+        {generatedData && (
+          <div className="preview-container glass p-6">
+            <div className="preview-header mb-4 flex justify-between items-center flex-wrap gap-3">
+              <h3 className="text-gradient">Xem trước bài học: "{generatedData.title}"</h3>
+              
+              {/* Preview Tabs */}
+              <div className="filter-buttons flex gap-2">
+                <button className={`filter-btn ${previewTab === 'reading' ? 'active' : ''}`} onClick={() => setPreviewTab('reading')}>Bài đọc</button>
+                <button className={`filter-btn ${previewTab === 'dialogues' ? 'active' : ''}`} onClick={() => setPreviewTab('dialogues')}>Hội thoại</button>
+                <button className={`filter-btn ${previewTab === 'grammar' ? 'active' : ''}`} onClick={() => setPreviewTab('grammar')}>Ngữ pháp</button>
+                <button className={`filter-btn ${previewTab === 'writing' ? 'active' : ''}`} onClick={() => setPreviewTab('writing')}>Bài tập viết</button>
+                <button className={`filter-btn ${previewTab === 'json' ? 'active' : ''}`} onClick={() => setPreviewTab('json')}>Code JSON</button>
+              </div>
+            </div>
+
+            {/* Tab Contents */}
+            <div className="preview-body p-4 glass mb-6" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+              {previewTab === 'reading' && (
+                <div className="animate-slideup">
+                  <h4 className="font-bold color-text-dark mb-2">{generatedData.title} ({generatedData.level})</h4>
+                  <p className="leading-relaxed text-sm mb-4">{generatedData.reading_passage}</p>
+                  <hr className="mb-4" style={{ borderColor: 'var(--border-light)' }} />
+                  <p className="italic text-xs color-text-muted">{generatedData.reading_passage_translation}</p>
+                </div>
+              )}
+
+              {previewTab === 'dialogues' && (
+                <div className="animate-slideup flex flex-col gap-3">
+                  {generatedData.dialogues.map((d, index) => (
+                    <div key={index} className="p-2 glass text-xs">
+                      <strong>{d.speaker}:</strong> "{d.text}"
+                      <p className="italic color-text-muted mt-1">🇻🇳 {d.vietnamese}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {previewTab === 'grammar' && (
+                <div className="animate-slideup">
+                  <h4 className="font-bold color-text-dark mb-1">{generatedData.grammar_focus.tense_vi} ({generatedData.grammar_focus.tense})</h4>
+                  <code className="text-xs color-text-muted block mb-3 font-mono p-2 glass">Công thức: {generatedData.grammar_focus.formula}</code>
+                  <p className="text-xs mb-4">{generatedData.grammar_focus.explanation}</p>
+                  
+                  <strong className="text-xs">Ví dụ trích văn bản:</strong>
+                  <div className="flex flex-col gap-2 mt-2">
+                    {generatedData.grammar_focus.examples.map((ex, index) => (
+                      <div key={index} className="p-2 glass text-xs">
+                        <strong>"{ex.en}"</strong>
+                        <p className="color-text-muted mt-1">🇻🇳 {ex.vi}</p>
+                        <p className="text-xs italic color-text-muted mt-1">💡 Chú ý: {ex.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {previewTab === 'writing' && (
+                <div className="animate-slideup flex flex-col gap-4">
+                  {generatedData.writing_exercises.map((ex, index) => (
+                    <div key={index} className="p-3 glass text-xs">
+                      <strong>Bài tập {index + 1} ({ex.type})</strong>
+                      {ex.type === 'fill_blank' && (
+                        <p className="mt-1">Nối câu: {ex.sentence_parts[0]} _____ {ex.sentence_parts[1]} (Đáp án: {ex.answer})</p>
+                      )}
+                      {ex.type === 'sentence_ordering' && (
+                        <p className="mt-1">Xếp từ: {ex.words.join(', ')} (Đáp án: {ex.answer})</p>
+                      )}
+                      {ex.type === 'free_writing' && (
+                        <p className="mt-1">Viết tự do: {ex.prompt_vi} (Từ khóa: {ex.required_keywords.join(', ')})</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {previewTab === 'json' && (
+                <pre className="text-xs color-text-muted font-mono" style={{ whiteSpace: 'pre-wrap' }}>
+                  {JSON.stringify(generatedData, null, 2)}
+                </pre>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button className="btn-secondary w-1/3 justify-center" onClick={handleReject}>
+                Hủy bỏ
+              </button>
+              <button className="btn-secondary w-1/3 justify-center" onClick={handleSavePending}>
+                Lưu chờ duyệt
+              </button>
+              <button 
+                className="btn-primary w-1/3 justify-center" 
+                onClick={handleApprove}
+                style={{ background: 'linear-gradient(135deg, var(--color-success) 0%, #059669 100%)', boxShadow: '0 0 15px var(--color-success-glow)' }}
+              >
+                ✓ Duyệt & Công khai
+              </button>
+            </div>
           </div>
         )}
 

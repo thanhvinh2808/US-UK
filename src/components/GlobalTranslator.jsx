@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
 import { playSound, speak, speakCompare } from '../utils/sounds';
-import { fetchGeminiWithRetry, preprocessAndRepairJson } from './AdminPanel';
-import { conjugateWithCompromise, needsAIFallback, getSForm } from '../utils/helpers/conjugationEngine';
+import { conjugateWithCompromise, getSForm } from '../utils/helpers/conjugationEngine';
 
 function checkLocalGrammarErrors(text) {
   let clean = text.trim();
@@ -92,7 +91,6 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
-  const [useAI, setUseAI] = useState(false);
   const [direction, setDirection] = useState('en-vi');
   const inputRef = useRef(null);
   const [grammarMode, setGrammarMode] = useState(null);
@@ -203,109 +201,6 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
           setIsSaved(true);
           setIsLoading(false);
           return;
-        }
-      }
-
-      const apiKey = localStorage.getItem("eng_app_gemini_key");
-      const selectedModel = localStorage.getItem("eng_app_gemini_model") || "gemini-1.5-flash";
-
-      if (useAI && (!apiKey || !apiKey.trim())) {
-        showToast("Vui lòng cấu hình Gemini API Key trong Admin Panel trước để sử dụng AI!", "error");
-        setIsLoading(false);
-        return;
-      }
-
-      const isFallback = needsAIFallback(query, direction, useAI, apiKey);
-
-      if (isFallback && apiKey && apiKey.trim()) {
-        const prompt = isSourceEn
-          ? `Bạn là một từ điển Anh-Việt học thuật và trợ lý kiểm tra ngữ pháp tiếng Anh thông minh. Hãy dịch, phân tích từ loại, chức năng ngữ pháp và đặc biệt hãy KIỂM TRA LỖI CHÍNH TẢ & NGỮ PHÁP đối với từ hoặc câu tiếng Anh sau: "${query}".
-Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xác như mẫu dưới đây (chỉ trả về JSON, không bao gồm markdown hay giải thích nào khác ngoài JSON):
-{
-  "word": "từ hoặc câu tiếng Anh gốc (đã được sửa nếu có lỗi chính tả/ngữ pháp)",
-  "ipa": "phiên âm IPA của từ đơn (nếu là từ đơn, ví dụ: /he'loʊ/, nếu là câu thì để trống '')",
-  "vietnamese": "dịch nghĩa tiếng Việt đầy đủ và tự nhiên",
-  "partOfSpeech": "từ loại (Danh từ, Động từ, Tính từ, Trạng từ, Cụm từ, Câu...)",
-  "hasGrammarError": false, // true nếu phát hiện bất kỳ lỗi chính tả hoặc lỗi ngữ pháp nào trong câu gốc "${query}", ngược lại là false
-  "correctedText": "câu đã được sửa lỗi chính tả/ngữ pháp hoàn chỉnh (nếu hasGrammarError là true, ngược lại để trống '')",
-  "grammarErrorExplanation": "giải thích chi tiết bằng tiếng Việt các lỗi chính tả/ngữ pháp và cách sửa (nếu hasGrammarError là true, ngược lại để trống '')",
-  "example": "một câu ví dụ tiếng Anh liên quan",
-  "example_translation": "dịch nghĩa tiếng Việt của câu ví dụ đó",
-  "synonyms": [
-    { "word": "từ đồng nghĩa tiếng Anh (nếu đầu vào là từ đơn) hoặc câu/cách diễn đạt tương tự bằng tiếng Anh (nếu đầu vào là câu)", "vietnamese": "dịch nghĩa tiếng Việt tương ứng tương ứng" }
-  ], // Luôn cung cấp từ 3-5 gợi ý từ đồng nghĩa (nếu đầu vào là từ đơn) hoặc 3-5 câu/cách diễn đạt tương tự (nếu đầu vào là cụm từ/câu) kèm theo dịch nghĩa tiếng Việt tương ứng
-  "forms": null // Đối tượng chứa biến thể 12 thì (nếu là động từ đơn, ví dụ: go, eat, study...), còn nếu là câu/cụm từ/từ loại khác thì để null. Mẫu: {"present_simple": "go / goes", "present_continuous": "am/is/are going", "present_perfect": "have/has gone", "present_perfect_continuous": "have/has been going", "past_simple": "went", "past_continuous": "was/were going", "past_perfect": "had gone", "past_perfect_continuous": "had been going", "future_simple": "will go", "future_continuous": "will be going", "future_perfect": "will have gone", "future_perfect_continuous": "will have been going"}
-}`
-          : `Bạn là một từ điển Việt-Anh học thuật và trợ lý tiếng Anh thông minh. Hãy dịch từ hoặc câu tiếng Việt sau sang tiếng Anh: "${query}".
-Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xác như mẫu dưới đây (chỉ trả về JSON, không bao gồm markdown hay giải thích nào khác ngoài JSON):
-{
-  "word": "bản dịch tiếng Anh (viết đúng chính tả và ngữ pháp)",
-  "ipa": "phiên âm IPA của bản dịch tiếng Anh (nếu là từ đơn, ví dụ: /he'loʊ/, nếu là câu thì để trống '')",
-  "vietnamese": "câu/từ tiếng Việt gốc ('${query}')",
-  "partOfSpeech": "từ loại của bản dịch tiếng Anh (Danh từ, Động từ, Tính từ, Trạng từ, Cụm từ, Câu...)",
-  "hasGrammarError": false, // Luôn điền false vì dịch từ Việt sang Anh
-  "correctedText": "",
-  "grammarErrorExplanation": "",
-  "example": "một câu ví dụ tiếng Anh liên quan đến bản dịch",
-  "example_translation": "dịch nghĩa tiếng Việt của câu ví dụ đó",
-  "synonyms": [
-    { "word": "từ đồng nghĩa tiếng Anh với bản dịch (nếu đầu vào là từ đơn) hoặc câu/cách diễn đạt tương đương bằng tiếng Anh (nếu đầu vào là câu)", "vietnamese": "dịch nghĩa tiếng Việt tương ứng tương ứng" }
-  ], // Luôn cung cấp từ 3-5 gợi ý từ đồng nghĩa (nếu đầu vào là từ đơn) hoặc 3-5 câu/cách diễn đạt tương tự (nếu đầu vào là cụm từ/câu) kèm theo dịch nghĩa tiếng Việt tương ứng
-  "forms": null // Đối tượng chứa biến thể 12 thì (nếu bản dịch là động từ đơn, ví dụ: go, eat...), ngược lại là null. Mẫu: {"present_simple": "go / goes", "present_continuous": "am/is/are going", "present_perfect": "have/has gone", "present_perfect_continuous": "have/has been going", "past_simple": "went", "past_continuous": "was/were going", "past_perfect": "had gone", "past_perfect_continuous": "had been going", "future_simple": "will go", "future_continuous": "will be going", "future_perfect": "will have gone", "future_perfect_continuous": "will have been going"}
-}`;
-
-        try {
-          const response = await fetchGeminiWithRetry(
-            `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`,
-            {
-              method: "POST",
-              headers: { 
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey.trim()
-              },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { responseMimeType: "application/json", temperature: 0.3 }
-              })
-            }
-          );
-
-          if (response && response.ok) {
-            const resData = await response.json();
-            const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              const firstBrace = rawText.indexOf('{');
-              const lastBrace = rawText.lastIndexOf('}');
-              if (firstBrace !== -1 && lastBrace !== -1) {
-                const cleanJsonText = rawText.slice(firstBrace, lastBrace + 1);
-                const repairedJsonText = preprocessAndRepairJson(cleanJsonText);
-                const parsed = JSON.parse(repairedJsonText);
-                const translatedClean = (parsed.word || '').trim().toLowerCase();
-                const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === translatedClean);
-                
-                setResult({
-                  word: parsed.word || query.trim(),
-                  ipa: parsed.ipa || "",
-                  vietnamese: parsed.vietnamese || "",
-                  partOfSpeech: parsed.partOfSpeech || "",
-                  forms: parsed.forms || null,
-                  hasGrammarError: parsed.hasGrammarError || false,
-                  correctedText: parsed.correctedText || "",
-                  grammarErrorExplanation: parsed.grammarErrorExplanation || "",
-                  example: parsed.example ? `${parsed.example} -> ${parsed.example_translation || ''}` : '',
-                  synonyms: parsed.synonyms || [],
-                  isCustom: true,
-                  isSaved: !!alreadySaved,
-                  source: 'ai'
-                });
-                updateSearchHistory(parsed.word || query.trim(), parsed.vietnamese || "");
-                setIsLoading(false);
-                return;
-              }
-            }
-          }
-        } catch (geminiErr) {
-          console.warn("Gemini translate failed, falling back:", geminiErr);
         }
       }
 
@@ -564,18 +459,6 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                 </button>
               </div>
 
-              {/* AI Translation Toggle */}
-              <div className="translator-options mt-3">
-                <label className="flex items-center gap-2 text-xs cursor-pointer color-text-muted select-none">
-                  <input
-                    type="checkbox"
-                    checked={useAI}
-                    onChange={(e) => setUseAI(e.target.checked)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <span>✨ Dịch & Sửa lỗi ngữ pháp bằng Gemini AI (Yêu cầu API Key, phản hồi chậm hơn)</span>
-                </label>
-              </div>
             </form>
 
             {/* Results Section */}
@@ -584,7 +467,7 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                 <div className="text-center p-6">
                   <span className="spinner-large" />
                   <p className="color-text-muted mt-2">
-                    {useAI ? 'Đang gọi Gemini AI phân tích...' : 'Đang tra cứu từ điển nhanh...'}
+                    Đang tra cứu từ điển nhanh...
                   </p>
                 </div>
               )}
