@@ -41,7 +41,20 @@ function checkLocalGrammarErrors(text) {
     { regex: /\b(he|He|she|She|it|It)\s+(go)\b/g, replacement: "$1 goes", explanation: "Động từ 'go' cần thêm '-es' thành 'goes' sau chủ ngữ ngôi thứ ba số ít." },
     { regex: /\b(he|He|she|She|it|It)\s+(do)\b/g, replacement: "$1 does", explanation: "Động từ 'do' cần thêm '-es' thành 'does' sau chủ ngữ ngôi thứ ba số ít." },
     { regex: /\b(he|He|she|She|it|It)\s+(want)\b/g, replacement: "$1 wants", explanation: "Động từ 'want' cần thêm '-s' thành 'wants' sau chủ ngữ ngôi thứ ba số ít." },
-    { regex: /\b(he|He|she|She|it|It)\s+(like)\b/g, replacement: "$1 likes", explanation: "Động từ 'like' cần thêm '-s' thành 'likes' sau chủ ngữ ngôi thứ ba số ít." }
+    { regex: /\b(he|He|she|She|it|It)\s+(like)\b/g, replacement: "$1 likes", explanation: "Động từ 'like' cần thêm '-s' thành 'likes' sau chủ ngữ ngôi thứ ba số ít." },
+    { regex: /\b(is|am|Is|Am)\s+you\b/g, replacement: "are you", explanation: "Trong câu hỏi, chủ ngữ 'you' đi với động từ tobe là 'are' ('are you' chứ không phải 'is/am you')." },
+    { regex: /\b(are|am|Are|Am)\s+(he|she|it)\b/g, replacement: "is $2", explanation: "Trong câu hỏi, chủ ngữ số ít 'he/she/it' đi với động từ tobe là 'is' ('is he/she/it')." },
+    { regex: /\b(does|Does)\s+(I|i|you|You|we|We|they|They)\b/g, replacement: "do $2", explanation: "Trong câu hỏi, chủ ngữ số nhiều và 'I', 'you' dùng trợ động từ 'do' ('do you', 'do they')." },
+    { regex: /\b(do|Do)\s+(he|He|she|She|it|It)\b/g, replacement: "does $2", explanation: "Trong câu hỏi, chủ ngữ ngôi thứ ba số ít dùng trợ động từ 'does' ('does he', 'does she')." },
+    { regex: /\b(what|What)\s+(timing|timming)\s+is\s+it\b/g, replacement: "$1 time is it", explanation: "Câu hỏi giờ giấc chuẩn tiếng Anh sử dụng danh từ 'time' ('What time is it') chứ không dùng 'timing'." },
+    { regex: /\b(we|they|people|these|those|We|They|People|These|Those)\s+a\s+([a-zA-Z]+)\b/g, replacement: "$1 are $2", explanation: "Dùng động từ tobe số nhiều 'are' thay vì từ đơn 'a' đứng sau chủ ngữ/danh từ số nhiều." },
+    { regex: /\b(where|how|when|why|Where|How|When|Why)\s+(you|they|we)\s+(go|live|work|like|want|do|study|learn|see|eat|drink|have|play|say|call)\b/g, replacement: "$1 do $2 $3", explanation: "Trong câu hỏi có từ để hỏi (wh-question), cần thêm trợ động từ 'do' trước chủ ngữ." },
+    { regex: /\b(where|how|when|why|Where|How|When|Why)\s+(he|she|it)\s+(go|live|work|like|want|do|study|learn|see|eat|drink|have|play|say|call)\b/g, replacement: "$1 does $2 $3", explanation: "Trong câu hỏi có từ để hỏi (wh-question), cần thêm trợ động từ 'does' trước chủ ngữ số ít." },
+    { regex: /\b([hH]ow\s+many\s+[a-zA-Z]+)\s+in\s+([a-zA-Z\s]+)\b/g, replacement: "$1 are there in $2", explanation: "Thiếu cấu trúc chỉ sự tồn tại 'are there' trong câu hỏi số lượng ('How many... are there in...')." },
+    { regex: /\b(I|i|we|We|they|They|you|You)\s+am\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "$1 $2", explanation: "Không dùng động từ tobe 'am/are' đi liền trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn." },
+    { regex: /\b(I'm|i'm|Im|im)\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "I $2", explanation: "Không dùng 'I'm' trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn (dùng 'I' thay vì 'I'm')." },
+    { regex: /\b(I'm|i'm|Im|im)\s+(study|work|learn|read|write|cook|run|play|watch)\b/g, replacement: "I am $2ing", explanation: "Dùng động từ đuôi -ing sau 'I am' để tạo thì hiện tại tiếp diễn." },
+    { regex: /\b(anh|Anh)\b/g, replacement: "and", explanation: "Từ nối 'and' bị viết nhầm/gõ nhầm thành từ 'anh'." }
   ];
 
   for (const item of agreementReplacements) {
@@ -83,6 +96,63 @@ function checkLocalGrammarErrors(text) {
     correctedText: corrected,
     explanation: explanations.join(" \n")
   };
+}
+
+async function checkGrammarOnline(text) {
+  try {
+    const response = await fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `text=${encodeURIComponent(text)}&language=en-US&level=picky`
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (!data.matches || data.matches.length === 0) {
+      return { hasError: false, correctedText: "", explanation: "" };
+    }
+    
+    const sortedMatches = [...data.matches].sort((a, b) => b.offset - a.offset);
+    
+    let correctedText = text;
+    const explanations = [];
+    
+    for (const match of sortedMatches) {
+      const originalWord = text.substring(match.offset, match.offset + match.length);
+      const replacement = match.replacements && match.replacements[0] ? match.replacements[0].value : "";
+      
+      if (replacement) {
+        correctedText = correctedText.substring(0, match.offset) + replacement + correctedText.substring(match.offset + match.length);
+      }
+      
+      let explanationVi = match.message;
+      try {
+        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(match.message)}`);
+        const transData = await transRes.json();
+        if (transData && transData[0] && transData[0][0] && transData[0][0][0]) {
+          explanationVi = transData[0][0][0].trim();
+        }
+      } catch (transErr) {
+        console.warn(transErr);
+      }
+      
+      explanations.push(`- Lỗi "${originalWord}": ${explanationVi}${replacement ? ` (Gợi ý sửa: "${replacement}")` : ''}`);
+    }
+    
+    explanations.reverse();
+    
+    return {
+      hasError: true,
+      correctedText,
+      explanation: explanations.join('\n')
+    };
+  } catch (err) {
+    console.error("LanguageTool check error:", err);
+    return null;
+  }
 }
 
 export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
@@ -188,8 +258,8 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
             ipa: savedEntry.ipa,
             vietnamese: savedEntry.vietnamese,
             example: savedEntry.example,
-            partOfSpeech: savedEntry.partOfSpeech || localGrammar.partOfSpeech,
-            forms: localGrammar.forms,
+            partOfSpeech: savedEntry.partOfSpeech || (localGrammar ? localGrammar.partOfSpeech : ""),
+            forms: localGrammar ? localGrammar.forms : null,
             hasGrammarError: savedEntry.hasGrammarError || false,
             correctedText: savedEntry.correctedText || "",
             grammarErrorExplanation: savedEntry.grammarErrorExplanation || "",
@@ -203,6 +273,8 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
           return;
         }
       }
+
+
 
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
@@ -305,7 +377,29 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       }
 
       const localGrammar = isTargetSingleWord ? conjugateWithCompromise(targetEnglishWord) : null;
-      const localCheck = isSourceEn ? checkLocalGrammarErrors(query) : { hasError: false, correctedText: "", explanation: "" };
+      let localCheck = { hasError: false, correctedText: "", explanation: "" };
+      if (isSourceEn) {
+        const localResult = checkLocalGrammarErrors(query);
+        const onlineCheck = await checkGrammarOnline(query);
+        
+        if (onlineCheck && onlineCheck.hasError) {
+          const combinedExplanations = [];
+          if (localResult.hasError) {
+            combinedExplanations.push(localResult.explanation);
+          }
+          combinedExplanations.push(onlineCheck.explanation);
+          
+          const mergedCorrected = checkLocalGrammarErrors(onlineCheck.correctedText);
+          
+          localCheck = {
+            hasError: true,
+            correctedText: mergedCorrected.correctedText,
+            explanation: Array.from(new Set(combinedExplanations.join('\n').split('\n'))).filter(line => line.trim()).join('\n')
+          };
+        } else {
+          localCheck = localResult;
+        }
+      }
       
       const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === targetEnglishWord);
       if (alreadySaved) {
@@ -659,12 +753,6 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                     </div>
                   )}
 
-                  {/* Gợi ý bật AI để sửa ngữ pháp nếu là câu dài và không dùng AI */}
-                  {!useAI && !result.hasGrammarError && direction === 'en-vi' && query.trim().split(/\s+/).length > 2 && (
-                    <div className="mt-3 text-xs text-center color-text-muted p-3 glass" style={{ border: '1px dashed var(--border-light)', borderRadius: 'var(--radius-sm)' }}>
-                      💡 Bật chế độ <strong>Dịch & Sửa lỗi ngữ pháp bằng Gemini AI</strong> để kiểm tra ngữ pháp nâng cao hơn.
-                    </div>
-                  )}
 
                   {/* Biến thể các thì hiện tại / quá khứ đơn / 12 thì */}
                   {result.forms && (
