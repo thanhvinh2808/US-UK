@@ -288,7 +288,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
           {showFullTranslation && (
             <div className="paragraph-translation-box glass p-5 mb-6 animate-slideup" style={{ borderLeft: '4px solid var(--color-secondary)' }}>
               <h4 className="color-text-muted mb-2 text-sm">🇻🇳 Bản dịch nghĩa tiếng Việt:</h4>
-              <p className="color-text-main leading-relaxed" style={{ fontSize: '16.5px' }}>
+              <p className="color-text-main leading-relaxed paragraph-translation-text">
                 {topic.reading_passage_translation}
               </p>
             </div>

@@ -483,13 +483,21 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
             {/* Form */}
             <form onSubmit={handleTranslate} className="translator-form mt-4">
               <div className="input-group">
-                <input
+                <textarea
                   ref={inputRef}
-                  type="text"
                   placeholder={direction === 'en-vi' ? "Nhập từ tiếng Anh hoặc câu cần dịch..." : "Nhập từ tiếng Việt hoặc câu cần dịch..."}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (query.trim() && !isLoading) {
+                        handleTranslate(e);
+                      }
+                    }
+                  }}
                   className="translator-input glass"
+                  rows={1}
                 />
                 <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
                   {isLoading ? <span className="spinner" /> : 'Tra cứu'}
@@ -592,7 +600,7 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                   {direction === 'vi-en' && (
                     <div className="result-meaning-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
                       <strong className="color-text-muted text-xs block mb-1">CÂU TIẾNG VIỆT GỐC:</strong>
-                      <p className="result-translation" style={{ fontSize: '16px', fontWeight: 'normal' }}>
+                      <p className="result-translation original-text">
                         {result.vietnamese}
                       </p>
                     </div>

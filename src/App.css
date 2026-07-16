@@ -350,6 +350,10 @@
   flex-direction: column;
 }
 
+.paragraph-translation-text {
+  font-size: 16.5px;
+}
+
 .reading-text-box {
   background: var(--bg-input);
   border-radius: var(--radius-md);
@@ -1940,6 +1944,17 @@
   }
 }
 
+@keyframes slideUpBottomSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1993,6 +2008,10 @@
   color: var(--color-text-main);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  resize: none;
+  min-height: 48px;
+  line-height: 1.4;
+  font-family: inherit;
 }
 
 .translator-input:focus {
@@ -2033,6 +2052,11 @@
   font-weight: 600;
   color: var(--color-text-main);
   margin: 0;
+}
+
+.result-translation.original-text {
+  font-size: 16px;
+  font-weight: normal;
 }
 
 .result-example-box {
@@ -2080,12 +2104,18 @@
 
 @media (max-width: 480px) {
   .modal-overlay {
-    padding: 8px;
+    padding: 0;
+    align-items: flex-end;
   }
   .translator-modal {
-    padding: 14px;
-    max-height: calc(100dvh - 16px);
-    border-radius: var(--radius-md);
+    padding: 16px 16px 30px 16px;
+    max-height: 85vh;
+    max-height: calc(100dvh - 32px);
+    width: 100%;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    margin: 0;
+    animation: slideUpBottomSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   .modal-header h3 {
     font-size: 16px;
@@ -2115,8 +2145,9 @@
     gap: 8px;
   }
   .translator-input {
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-size: 14px;
+    min-height: 44px;
   }
   .translator-form button[type="submit"] {
     width: 100%;
@@ -2137,17 +2168,21 @@
     padding: 12px !important;
   }
   .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
   }
   .result-header .speak-btn-large {
     margin-top: 0 !important;
-    width: 100%;
+    width: auto;
     justify-content: center;
-    display: flex;
+    display: inline-flex;
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 12px;
+    white-space: nowrap;
   }
   .result-word {
     font-size: 18px;
@@ -2178,21 +2213,24 @@
     padding: 10px !important;
   }
   .result-translation {
-    font-size: 15px;
+    font-size: 14.5px;
+  }
+  .result-translation.original-text {
+    font-size: 13.5px !important;
   }
   .result-forms {
     margin-top: 10px !important;
     padding: 10px !important;
   }
   .result-forms div {
-    font-size: 12px !important;
+    font-size: 11.5px !important;
   }
   .result-example-box {
     margin-top: 10px !important;
     padding-left: 8px;
   }
   .result-example {
-    font-size: 12.5px;
+    font-size: 12px;
   }
   .result-actions {
     margin-top: 12px !important;
@@ -2208,6 +2246,9 @@
     font-size: 18px;
     right: 12px;
     bottom: 12px;
+  }
+  .paragraph-translation-text {
+    font-size: 14.5px !important;
   }
 }
 
@@ -2233,15 +2274,9 @@
 /* Responsive Grid for Verb Tenses & Noun/Adjective Forms on Mobile */
 .tense-grid-responsive {
   display: grid;
-  grid-template-columns: 1fr; /* 1 column on small mobiles */
-  gap: 10px;
-  font-size: 12px;
-}
-
-@media (min-width: 480px) {
-  .tense-grid-responsive {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns on larger screens */
-  }
+  grid-template-columns: repeat(2, 1fr); /* 2 columns everywhere to save space */
+  gap: 8px;
+  font-size: 11.5px;
 }
 
 .tense-card-item {
