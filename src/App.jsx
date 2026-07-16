@@ -14,6 +14,10 @@ import AdminPanel from './components/AdminPanel';
 import Toast from './components/Toast';
 import GlobalTranslator from './components/GlobalTranslator';
 import TensesHandbook from './components/TensesHandbook';
+import MinimalPairs from './components/MinimalPairs';
+import Shadowing from './components/Shadowing';
+import IdiomsHandbook from './components/IdiomsHandbook';
+import MiniGames from './components/MiniGames';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -42,6 +46,7 @@ function App() {
   const [savedVocabCount, setSavedVocabCount] = useState(() => storage.getSavedVocab().length);
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
   const [theme, setTheme] = useState(() => localStorage.getItem('eng_app_theme') || 'light');
+  const [voiceAccent, setVoiceAccent] = useState(() => localStorage.getItem('eng_app_voice_accent') || 'US');
   
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'info') => {
@@ -55,12 +60,42 @@ function App() {
     return () => window.removeEventListener('offline', handleOffline);
   }, []);
 
-  // Initialize and track daily activity
+  // Initialize and track daily activity + daily notification reminders
   useEffect(() => {
     const updatedStats = storage.recordActivity();
     setStats(updatedStats);
     setProgress(storage.getTopicProgress());
     setSavedVocabCount(storage.getSavedVocab().length);
+
+    // Request Notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Trigger daily study reminder if they haven't learned today yet
+    if ("Notification" in window && Notification.permission === "granted") {
+      const today = new Date().toDateString();
+      const lastActiveDate = updatedStats.lastActive ? new Date(updatedStats.lastActive).toDateString() : null;
+      
+      if (lastActiveDate !== today) {
+        const now = Date.now();
+        const reviewsDue = storage.getSavedVocab()
+          .filter(item => !item.nextReviewDate || new Date(item.nextReviewDate) <= now).length;
+          
+        if (reviewsDue > 0) {
+          setTimeout(() => {
+            try {
+              new Notification("V-English Luyện Tập Hàng Ngày", {
+                body: `Bạn có ${reviewsDue} từ vựng cần ôn tập hôm nay để duy trì streak ${updatedStats.streak} ngày!`,
+                icon: '/favicon.ico'
+              });
+            } catch (e) {
+              console.warn("Could not display notification:", e);
+            }
+          }, 2000);
+        }
+      }
+    }
   }, []);
 
   // Sync theme attribute
@@ -72,6 +107,13 @@ function App() {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('eng_app_theme', newTheme);
+  };
+
+  const toggleVoiceAccent = () => {
+    const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
+    setVoiceAccent(newAccent);
+    localStorage.setItem('eng_app_voice_accent', newAccent);
+    showToast(`Đã đổi giọng nói mặc định sang ${newAccent === 'US' ? 'Mỹ (en-US) 🇺🇸' : 'Anh (en-GB) 🇬🇧'}`, 'success');
   };
 
   const refreshState = () => {
@@ -147,6 +189,22 @@ function App() {
             }}
           >
             {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+          <button 
+            className="btn-secondary" 
+            onClick={toggleVoiceAccent}
+            title="Chuyển giọng đọc US/UK"
+            style={{ 
+              padding: '6px 12px', 
+              fontSize: '14px', 
+              borderRadius: 'var(--radius-sm)',
+              borderColor: 'var(--border-glow)',
+              background: 'rgba(16, 185, 129, 0.05)',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            {voiceAccent === 'US' ? '🇺🇸 US' : '🇬🇧 UK'}
           </button>
           <button 
             className="btn-secondary" 
@@ -264,6 +322,33 @@ function App() {
         {activeScreen === 'tenses_handbook' && (
           <TensesHandbook 
             onNavigateBack={handleBackToDashboard}
+          />
+        )}
+
+        {activeScreen === 'minimal_pairs' && (
+          <MinimalPairs 
+            onNavigateBack={handleBackToDashboard}
+          />
+        )}
+
+        {activeScreen === 'shadowing' && selectedTopic && (
+          <Shadowing 
+            topic={selectedTopic}
+            onNavigateBack={handleBackToTopicDetail}
+            showToast={showToast}
+          />
+        )}
+
+        {activeScreen === 'idioms_handbook' && (
+          <IdiomsHandbook 
+            onNavigateBack={handleBackToDashboard}
+          />
+        )}
+
+        {activeScreen === 'mini_games' && (
+          <MiniGames 
+            onNavigateBack={handleBackToDashboard}
+            showToast={showToast}
           />
         )}
       </main>

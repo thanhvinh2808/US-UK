@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
+import { speak } from '../utils/sounds';
 import nlp from 'compromise';
 
 function mutateSentence(sentence, tense) {
@@ -203,13 +204,7 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
   });
 
   const handleSpeak = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(text, { rate: 0.85 });
   };
 
   const handleAnswer = (answerBool) => {

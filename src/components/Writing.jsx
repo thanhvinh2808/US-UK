@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
+import { speak } from '../utils/sounds';
 
 export default function Writing({ topic, onNavigateBack }) {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -30,13 +31,7 @@ export default function Writing({ topic, onNavigateBack }) {
   }, [currentIdx]);
 
   const handleSpeak = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(text, { rate: 0.85 });
   };
 
   // Word Tapping Logic for Sentence Ordering

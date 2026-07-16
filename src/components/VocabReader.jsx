@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
+import { speak, speakCompare } from '../utils/sounds';
 
 export default function VocabReader({ topic, onSavedVocabChange, onComplete, onNavigateBack, showToast }) {
   const [selectedWord, setSelectedWord] = useState(null);
@@ -8,6 +9,10 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
   const [isCompleted, setIsCompleted] = useState(false);
   const [showFullTranslation, setShowFullTranslation] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // Custom Typography settings
+  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('eng_app_reader_font_size')) || 16);
+  const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('eng_app_reader_font_family') || 'var(--font-sans)');
 
   // Split reading passage into words, stripping punctuation for translation lookups
   const words = topic.reading_passage.split(/\s+/);
@@ -178,17 +183,8 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
     }
   };
 
-  const handleSpeak = (word) => {
-    if ('speechSynthesis' in window) {
-      // Cancel ongoing speech
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85; // slightly slower for learners
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert("Text-to-speech is not supported on this browser.");
-    }
+  const handleSpeak = (word, accent) => {
+    speak(word, { accent: accent || localStorage.getItem('eng_app_voice_accent') || 'US', rate: 0.85 });
   };
 
   const handleSaveWord = () => {
@@ -240,8 +236,63 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
         {/* Left Side: Reading Passage */}
         <div className="passage-section glass p-6">
           <h2 className="passage-title mb-4">{topic.title}</h2>
+
+          {/* Typography Customization Toolbar */}
+          <div className="font-controls mb-4 flex flex-wrap gap-4 items-center justify-between p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-light)' }}>
+            <div className="flex gap-2 items-center">
+              <span className="text-xs color-text-muted">Cỡ chữ:</span>
+              <button 
+                className="btn-secondary" 
+                style={{ padding: '2px 8px', fontSize: '12px' }}
+                onClick={() => {
+                  const newSize = Math.max(12, fontSize - 2);
+                  setFontSize(newSize);
+                  localStorage.setItem('eng_app_reader_font_size', newSize);
+                }}
+              >
+                A-
+              </button>
+              <span className="text-sm font-bold">{fontSize}px</span>
+              <button 
+                className="btn-secondary" 
+                style={{ padding: '2px 8px', fontSize: '12px' }}
+                onClick={() => {
+                  const newSize = Math.min(30, fontSize + 2);
+                  setFontSize(newSize);
+                  localStorage.setItem('eng_app_reader_font_size', newSize);
+                }}
+              >
+                A+
+              </button>
+            </div>
+            <div className="flex gap-2 items-center">
+              <span className="text-xs color-text-muted">Phông chữ:</span>
+              <select
+                value={fontFamily}
+                onChange={(e) => {
+                  setFontFamily(e.target.value);
+                  localStorage.setItem('eng_app_reader_font_family', e.target.value);
+                }}
+                className="btn-secondary text-xs"
+                style={{ padding: '4px 8px', background: 'var(--bg-dark)', color: 'var(--color-text-main)', border: '1px solid var(--border-light)' }}
+              >
+                <option value="var(--font-sans)">Không chân (Sans-Serif)</option>
+                <option value="Georgia, Cambria, 'Times New Roman', Times, serif">Có chân (Serif)</option>
+                <option value="'Courier New', Courier, monospace">Đơn cách (Monospace)</option>
+                <option value="system-ui, -apple-system, BlinkMacSystemFont, sans-serif">Hệ thống (System)</option>
+              </select>
+            </div>
+          </div>
           
-          <div className="reading-text-box mb-6">
+          <div 
+            className="reading-text-box mb-6"
+            style={{ 
+              fontSize: `${fontSize}px`, 
+              fontFamily: fontFamily,
+              lineHeight: '1.8',
+              letterSpacing: '0.02em'
+            }}
+          >
             {words.map((word, idx) => {
               const clean = word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "");
               const isSaved = savedWordsList.includes(clean);
@@ -304,9 +355,11 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
               <div className="details-header mb-3">
                 <h3 className="word-title">{selectedWord.word}</h3>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word)} title="Listen pronunciation">
-                    🔊
-                  </button>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word, 'US')} title="US Pronunciation">🇺🇸</button>
+                    <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word, 'UK')} title="UK Pronunciation">🇬🇧</button>
+                    <button className="speak-btn" onClick={() => speakCompare(selectedWord.word)} title="Compare US/UK">🆚</button>
+                  </div>
                   <button 
                     className="speak-btn close-details-btn" 
                     onClick={() => {
@@ -377,8 +430,12 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                       <span className="vocab-row-word">{vocab.word}</span>
                       <span className="vocab-row-ipa">{vocab.ipa}</span>
                     </div>
-                    <div className="vocab-row-right">
-                      <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word)}>🔊</button>
+                    <div className="vocab-row-right" style={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="flex gap-1" style={{ marginRight: '8px', display: 'flex' }}>
+                        <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word, 'US')} title="US">🇺🇸</button>
+                        <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word, 'UK')} title="UK">🇬🇧</button>
+                        <button className="row-speak-btn" onClick={() => speakCompare(vocab.word)} title="So sánh">🆚</button>
+                      </div>
                       <button 
                         className={`row-save-btn ${isSaved ? 'saved' : ''}`}
                         onClick={() => {

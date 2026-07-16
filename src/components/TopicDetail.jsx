@@ -181,6 +181,29 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
             Start Speaking
           </button>
         </div>
+
+        {/* Module 3.5: Shadowing Reflex */}
+        <div className="module-select-card glass p-6">
+          <div className="module-icon-large" style={{ fontFamily: 'var(--font-heading)', fontWeight: '800', fontSize: '24px' }}>⚡</div>
+          <h3 className="mb-2">Module 3.5: Shadowing Reflex</h3>
+          <p className="color-text-muted text-sm mb-6">
+            Luyện phản xạ nói đuổi theo giọng mẫu. Hệ thống tự động mở ghi âm sau khi âm thanh kết thúc và đo đạc độ trễ phản hồi của bạn.
+          </p>
+          <div className="module-status-indicator mb-6">
+            <span className="status-pill mastered" style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+              Sẵn sàng
+            </span>
+          </div>
+          <button 
+            className="btn-primary w-full justify-center mt-auto"
+            onClick={() => onSelectModule('shadowing')}
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%)'
+            }}
+          >
+            Start Shadowing
+          </button>
+        </div>
       </div>
     </div>
   );

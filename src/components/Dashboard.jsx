@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { contentBank } from '../data/contentBank';
 import { storage } from '../utils/storage';
 
@@ -17,6 +17,45 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
   const reviewsDue = stats ? storage.getSavedVocab()
     .filter(item => !item.nextReviewDate || new Date(item.nextReviewDate) <= now).length : 0;
 
+  // Generate data for GitHub-like activity heatmap
+  const heatmapGrid = useMemo(() => {
+    const history = stats?.activityHistory || {};
+    const grid = [];
+    const today = new Date();
+    
+    // Start date is exactly 364 days ago
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 364);
+    
+    // Align starting date to Sunday of that week
+    const dayOfWeek = startDate.getDay();
+    startDate.setDate(startDate.getDate() - dayOfWeek);
+    
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    let currentDate = new Date(startDate.getTime());
+    
+    // 53 columns (weeks)
+    for (let w = 0; w < 53; w++) {
+      const week = [];
+      // 7 rows (Sunday - Saturday)
+      for (let d = 0; d < 7; d++) {
+        const dateStr = currentDate.getFullYear() + '-' + 
+                        String(currentDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(currentDate.getDate()).padStart(2, '0');
+        const count = history[dateStr] || 0;
+        
+        week.push({
+          date: dateStr,
+          count: count,
+          dayLabel: currentDate.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric', weekday: 'short' })
+        });
+        currentDate = new Date(currentDate.getTime() + oneDayMs);
+      }
+      grid.push(week);
+    }
+    return grid;
+  }, [stats?.activityHistory]);
+
   return (
     <div className="dashboard animate-slideup">
       {/* Header section */}
@@ -25,7 +64,7 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
           <h1 className="glow-text text-gradient">Welcome back, Language Learner!</h1>
           <p className="color-text-muted mt-2">Ready to level up your English skills today? Choose a topic below or review your vocabulary.</p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions flex flex-wrap gap-2 mt-4 md:mt-0">
           <button 
             className="btn-primary" 
             onClick={() => onNavigate('flashcards')}
@@ -37,16 +76,54 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
           >
             Review Cards {reviewsDue > 0 && <span className="badge-count">{reviewsDue}</span>}
           </button>
+          
           <button className="btn-secondary" onClick={() => onNavigate('notebook')}>
             Notebook ({savedVocabCount})
           </button>
+          
+          <button 
+            className="btn-secondary flex items-center gap-1" 
+            onClick={() => onNavigate('minimal_pairs')}
+            style={{ 
+              border: '1px solid var(--color-primary)', 
+              background: 'rgba(124, 58, 237, 0.08)',
+              color: 'var(--color-primary)'
+            }}
+          >
+            🎙️ Minimal Pairs
+          </button>
+
+          <button 
+            className="btn-secondary flex items-center gap-1" 
+            onClick={() => onNavigate('idioms_handbook')}
+            style={{ 
+              border: '1px solid var(--color-secondary)', 
+              background: 'rgba(245, 158, 11, 0.08)',
+              color: 'var(--color-secondary)'
+            }}
+          >
+            📙 Idioms & Phrasal Verbs
+          </button>
+
+          <button 
+            className="btn-secondary flex items-center gap-1" 
+            onClick={() => onNavigate('mini_games')}
+            style={{ 
+              border: '1px solid var(--color-success)', 
+              background: 'rgba(16, 185, 129, 0.08)',
+              color: 'var(--color-success)'
+            }}
+          >
+            🎮 Playzone (Games)
+          </button>
+
           <button 
             className="btn-secondary flex items-center gap-1" 
             onClick={() => onNavigate('tenses_handbook')}
             style={{ 
-              border: '1px solid var(--color-primary)', 
+              border: '1px solid rgba(59, 130, 246, 0.5)', 
               background: 'rgba(59, 130, 246, 0.08)',
-              color: 'var(--color-primary)'
+              color: '#3b82f6'
             }}
           >
             📚 12 Thì Tiếng Anh
@@ -79,6 +156,61 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
             <h3>{stats.completedModules}</h3>
             <p>Modules Completed</p>
           </div>
+        </div>
+      </div>
+
+      {/* GitHub-like Activity Heatmap */}
+      <div className="activity-heatmap-box glass p-6 mb-8">
+        <h3 className="text-sm font-semibold mb-2 color-text-main flex items-center gap-2">
+          📊 Lịch sử học tập & rèn luyện (Last 365 Days)
+        </h3>
+        <p className="text-xs color-text-muted mb-4">
+          Độ đậm nhạt của các ô vuông thể hiện mức độ học tập hằng ngày của bạn qua các bài học, luyện phát âm và trắc nghiệm.
+        </p>
+        
+        <div className="heatmap-scroll-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '8px' }}>
+          <div className="heatmap-grid" style={{ 
+            display: 'grid', 
+            gridTemplateRows: 'repeat(7, 12px)', 
+            gridAutoFlow: 'column', 
+            gridAutoColumns: '12px',
+            gap: '3px',
+            minWidth: '780px'
+          }}>
+            {heatmapGrid.map((week, wIdx) => 
+              week.map((day, dIdx) => {
+                let cellBg = 'rgba(255, 255, 255, 0.05)';
+                if (day.count > 0) {
+                  if (day.count <= 2) cellBg = 'rgba(159, 122, 234, 0.3)'; // light purple
+                  else if (day.count <= 5) cellBg = 'rgba(159, 122, 234, 0.6)'; // medium purple
+                  else cellBg = 'rgba(124, 58, 237, 1)'; // dark primary purple
+                }
+                
+                return (
+                  <div 
+                    key={`${wIdx}-${dIdx}`}
+                    style={{ 
+                      backgroundColor: cellBg, 
+                      borderRadius: '2px', 
+                      width: '12px', 
+                      height: '12px'
+                    }}
+                    title={`${day.dayLabel}: ${day.count} hoạt động`}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
+        
+        {/* Heatmap Legend */}
+        <div className="flex justify-end gap-2 items-center text-xs color-text-muted mt-3">
+          <span>Ít học</span>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(255,255,255,0.05)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(159, 122, 234, 0.3)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(159, 122, 234, 0.6)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(124, 58, 237, 1)' }}></div>
+          <span>Chăm chỉ 🔥</span>
         </div>
       </div>
 

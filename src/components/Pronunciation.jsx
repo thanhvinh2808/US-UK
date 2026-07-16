@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, vibrate } from '../utils/sounds';
+import { playSound, vibrate, speak } from '../utils/sounds';
 import confetti from 'canvas-confetti';
 
 export default function Pronunciation({ topic, onNavigateBack, showToast }) {
@@ -88,13 +88,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
   }, [currentIdx]);
 
   const handleSpeakSample = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(targetText);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    speak(targetText, { rate: 0.9 });
   };
 
   const handleToggleRecord = () => {

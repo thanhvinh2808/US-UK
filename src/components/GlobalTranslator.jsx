@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
-import { playSound } from '../utils/sounds';
+import { playSound, speak, speakCompare } from '../utils/sounds';
 import { fetchGeminiWithRetry, preprocessAndRepairJson } from './AdminPanel';
 import { conjugateWithCompromise, needsAIFallback, getSForm } from '../utils/helpers/conjugationEngine';
 
@@ -379,14 +379,8 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
     }
   };
 
-  const handleSpeak = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
-    }
+  const handleSpeak = (text, accent) => {
+    speak(text, { accent: accent || localStorage.getItem('eng_app_voice_accent') || 'US', rate: 0.85 });
   };
 
   const handleSaveWord = () => {
@@ -553,9 +547,17 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                       </h4>
                       {result.ipa && <span className="result-ipa">{result.ipa}</span>}
                     </div>
-                    <button className="speak-btn-large" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word)}>
-                      🔊 Nghe phát âm
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', width: '100%' }}>
+                      <button className="speak-btn-large flex-1" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'US')} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
+                        🇺🇸 US
+                      </button>
+                      <button className="speak-btn-large flex-1" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'UK')} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
+                        🇬🇧 UK
+                      </button>
+                      <button className="speak-btn-large flex-1" onClick={() => speakCompare(direction === 'en-vi' ? result.word : result.word)} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
+                        🆚 So sánh
+                      </button>
+                    </div>
                   </div>
 
                   {/* Từ loại & vai trò ngữ pháp */}

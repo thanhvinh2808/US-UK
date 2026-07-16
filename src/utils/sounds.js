@@ -76,3 +76,76 @@ export const vibrate = (pattern = 50) => {
     navigator.vibrate(pattern);
   }
 };
+
+// Global text-to-speech speaking utility with US/UK support
+export const speak = (text, options = {}) => {
+  if (!('speechSynthesis' in window)) {
+    console.warn("speechSynthesis not supported on this browser.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  
+  const accent = options.accent || localStorage.getItem('eng_app_voice_accent') || 'US';
+  const lang = accent === 'UK' ? 'en-GB' : 'en-US';
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.rate = options.rate || 0.85; // slightly slower for learners
+  if (options.pitch) utterance.pitch = options.pitch;
+  
+  if (window.speechSynthesis.getVoices) {
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => {
+      const vLang = v.lang.toLowerCase().replace('_', '-');
+      return vLang.startsWith(lang.toLowerCase());
+    });
+    if (voice) {
+      utterance.voice = voice;
+    }
+  }
+
+  if (options.onstart) utterance.onstart = options.onstart;
+  if (options.onend) utterance.onend = options.onend;
+  if (options.onerror) utterance.onerror = options.onerror;
+  
+  window.speechSynthesis.speak(utterance);
+};
+
+// Compares pronunciation by speaking US, then UK with a brief pause
+export const speakCompare = (text, onFinish) => {
+  if (!('speechSynthesis' in window)) {
+    console.warn("speechSynthesis not supported on this browser.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  
+  const rate = 0.85;
+  const uttUS = new SpeechSynthesisUtterance(text);
+  uttUS.lang = 'en-US';
+  uttUS.rate = rate;
+  
+  const uttUK = new SpeechSynthesisUtterance(text);
+  uttUK.lang = 'en-GB';
+  uttUK.rate = rate;
+  
+  if (window.speechSynthesis.getVoices) {
+    const voices = window.speechSynthesis.getVoices();
+    const voiceUS = voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith('en-us'));
+    const voiceUK = voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith('en-gb'));
+    if (voiceUS) uttUS.voice = voiceUS;
+    if (voiceUK) uttUK.voice = voiceUK;
+  }
+  
+  uttUS.onend = () => {
+    setTimeout(() => {
+      window.speechSynthesis.speak(uttUK);
+    }, 600);
+  };
+  
+  if (onFinish) {
+    uttUK.onend = onFinish;
+  }
+  
+  window.speechSynthesis.speak(uttUS);
+};
+

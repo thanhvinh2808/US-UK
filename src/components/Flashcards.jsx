@@ -10,6 +10,8 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
   // Settings state
   const [quizMode, setQuizMode] = useState('mixed'); // mixed, choice, spelling
   const [quizLength, setQuizLength] = useState(10);
+  const [selectedDeckId, setSelectedDeckId] = useState('all');
+  const [customDecks] = useState(() => storage.getCustomDecks());
   
   // Game playing state
   const [quizWords, setQuizWords] = useState([]);
@@ -17,6 +19,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
   const [currentOptions, setCurrentOptions] = useState([]);
   const [isEngToVi, setIsEngToVi] = useState(true);
   const [isSpellingQuestion, setIsSpellingQuestion] = useState(false);
+  const [activePool, setActivePool] = useState([]); // tracks active vocab list filtered by deck
   
   const [selectedOption, setSelectedOption] = useState(null);
   const [spellingInput, setSpellingInput] = useState('');
@@ -30,25 +33,31 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
   // Initialize and shuffle quiz words based on settings
   const handleStartQuiz = () => {
-    if (savedVocab.length < 4) {
+    const vocabToUse = selectedDeckId === 'all' 
+      ? savedVocab 
+      : savedVocab.filter(item => item.deckId === selectedDeckId);
+
+    if (vocabToUse.length < 4) {
+      alert("Bộ thẻ này cần có ít nhất 4 từ để chơi flashcards.");
       return;
     }
     
     // Shuffle and slice vocab list
-    const shuffled = [...savedVocab].sort(() => 0.5 - Math.random());
+    const shuffled = [...vocabToUse].sort(() => 0.5 - Math.random());
     const length = Math.min(quizLength, shuffled.length);
     const selected = shuffled.slice(0, length);
     
+    setActivePool(vocabToUse);
     setQuizWords(selected);
     setCurrentIndex(0);
     setScore(0);
     setResultsList([]);
     setGameState('playing');
-    setupQuestion(selected[0], 0);
+    setupQuestion(selected[0], 0, vocabToUse);
   };
 
   // Setup the current question properties
-  const setupQuestion = (word, index) => {
+  const setupQuestion = (word, index, vocabToUse = activePool) => {
     setSelectedOption(null);
     setSpellingInput('');
     setChecked(false);
@@ -63,13 +72,15 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
     }
     setIsSpellingQuestion(isSpelling);
 
+    const pool = vocabToUse && vocabToUse.length >= 4 ? vocabToUse : savedVocab;
+
     if (!isSpelling) {
       // Multiple choice settings
       const engToVi = Math.random() > 0.5;
       setIsEngToVi(engToVi);
       
       // Generate 4 options
-      const distractors = savedVocab
+      const distractors = pool
         .filter(item => item.word.toLowerCase() !== word.word.toLowerCase())
         .map(item => engToVi ? item.vietnamese : item.word);
       
@@ -219,12 +230,41 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                 </div>
               </div>
 
+              {/* Deck Select */}
+              <div className="mb-4">
+                <label className="text-xs color-text-muted block mb-1">Chọn bộ từ vựng (Custom Deck):</label>
+                <select
+                  value={selectedDeckId}
+                  onChange={(e) => setSelectedDeckId(e.target.value)}
+                  className="btn-secondary w-full"
+                  style={{ padding: '8px 12px', background: 'var(--bg-dark)', color: 'var(--color-text-main)', border: '1px solid var(--border-light)' }}
+                >
+                  <option value="all">Tất cả thẻ từ vựng ({savedVocab.length})</option>
+                  {customDecks.map(deck => {
+                    const count = savedVocab.filter(item => item.deckId === deck.id).length;
+                    return (
+                      <option key={deck.id} value={deck.id}>
+                        📦 {deck.name} ({count} từ)
+                      </option>
+                    );
+                  })}
+                </select>
+                {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
+                  <small className="block mt-1" style={{ color: 'var(--color-error)' }}>
+                    ⚠️ Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
+                  </small>
+                )}
+              </div>
+
               {/* Length Select */}
               <div>
                 <label className="text-xs color-text-muted block mb-1">Số lượng câu hỏi:</label>
                 <div className="flex gap-2">
                   {[5, 10, 15, 20].map((num) => {
-                    const disabled = savedVocab.length < num;
+                    const currentPoolSize = selectedDeckId === 'all' 
+                      ? savedVocab.length 
+                      : savedVocab.filter(item => item.deckId === selectedDeckId).length;
+                    const disabled = currentPoolSize < num;
                     return (
                       <button
                         key={num}
@@ -242,7 +282,11 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                   })}
                 </div>
                 <small className="color-text-muted mt-2 block text-xs">
-                  (Tổng số từ bạn đã lưu trong sổ tay: <strong>{savedVocab.length}</strong>)
+                  (Từ có thể ôn tập trong bộ đã chọn: <strong>{
+                    selectedDeckId === 'all' 
+                      ? savedVocab.length 
+                      : savedVocab.filter(item => item.deckId === selectedDeckId).length
+                  }</strong> từ)
                 </small>
               </div>
             </div>

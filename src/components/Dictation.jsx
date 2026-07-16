@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, vibrate } from '../utils/sounds';
+import { playSound, vibrate, speak } from '../utils/sounds';
 import confetti from 'canvas-confetti';
 
 // LCS-based word alignment helper to prevent index mismatch from single mistakes
@@ -79,15 +79,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
   const userWords = getCleanWords(userInput);
 
   const handleSpeak = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(targetText);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.85; // slower rate for dictation
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert("Text-to-speech is not supported on this browser.");
-    }
+    speak(targetText, { rate: 0.85 });
   };
 
   // Play automatically when dialogue index changes

@@ -51,7 +51,8 @@ const defaultStats = {
   points: 0,
   level: "A1",
   lastActive: null,
-  completedModules: 0
+  completedModules: 0,
+  activityHistory: {} // "YYYY-MM-DD" -> count
 };
 
 export const storage = {
@@ -69,8 +70,21 @@ export const storage = {
     try {
       const list = storage.getSavedVocab();
       // Avoid duplicate saves
-      if (list.some(item => item.word.toLowerCase() === wordObj.word.toLowerCase())) {
-        return list;
+      const existingWord = list.find(item => item.word.toLowerCase() === wordObj.word.toLowerCase());
+      if (existingWord) {
+        // If word exists, update deck information if provided
+        const updatedList = list.map(item => {
+          if (item.word.toLowerCase() === wordObj.word.toLowerCase()) {
+            return {
+              ...item,
+              deckId: wordObj.deckId !== undefined ? wordObj.deckId : item.deckId,
+              deckName: wordObj.deckName !== undefined ? wordObj.deckName : item.deckName
+            };
+          }
+          return item;
+        });
+        localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+        return updatedList;
       }
       
       const newWord = {
@@ -79,6 +93,9 @@ export const storage = {
         vietnamese: wordObj.vietnamese || "",
         example: wordObj.example || "",
         topic: wordObj.topic || "General",
+        deckId: wordObj.deckId || null,
+        deckName: wordObj.deckName || null,
+        lowGradeCount: 0,
         // SM-2 fields
         repetitions: 0,
         interval: 1,
@@ -121,15 +138,20 @@ export const storage = {
             item.easinessFactor
           );
           
+          const isLowGrade = grade <= 2;
+          
           return {
             ...item,
             ...sm2Result,
-            status: grade >= 4 ? "mastered" : "learning"
+            status: grade >= 4 ? "mastered" : "learning",
+            lowGradeCount: (item.lowGradeCount || 0) + (isLowGrade ? 1 : 0)
           };
         }
         return item;
       });
       localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      // Increment user learning activity as well
+      storage.incrementActivity(1);
       return updatedList;
     } catch (e) {
       console.error("Error updating word progress", e);
@@ -164,6 +186,11 @@ export const storage = {
     try {
       const data = localStorage.getItem(KEY_STATS);
       let stats = data ? JSON.parse(data) : { ...defaultStats };
+      
+      // Ensure activityHistory exists
+      if (!stats.activityHistory) {
+        stats.activityHistory = {};
+      }
       
       // Automatic streak validation/update
       const now = new Date();
@@ -209,8 +236,12 @@ export const storage = {
       const stats = storage.getUserStats();
       const now = new Date();
       const todayString = now.toDateString();
+      const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
       
       let updatedStats = { ...stats };
+      if (!updatedStats.activityHistory) {
+        updatedStats.activityHistory = {};
+      }
       
       if (!stats.lastActive) {
         updatedStats.streak = 1;
@@ -230,12 +261,38 @@ export const storage = {
         }
       }
       
+      // Initialize today's count to 0 if not present (does not count as an interaction unless incremented)
+      if (updatedStats.activityHistory[dateKey] === undefined) {
+        updatedStats.activityHistory[dateKey] = 0;
+      }
+      
       updatedStats.lastActive = Date.now();
       localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
       return updatedStats;
     } catch (e) {
       console.error("Error recording user activity", e);
       return { ...defaultStats };
+    }
+  },
+
+  incrementActivity: (amount = 1) => {
+    try {
+      const stats = storage.getUserStats();
+      const now = new Date();
+      const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      
+      let updatedStats = { ...stats };
+      if (!updatedStats.activityHistory) {
+        updatedStats.activityHistory = {};
+      }
+      updatedStats.activityHistory[dateKey] = (updatedStats.activityHistory[dateKey] || 0) + amount;
+      updatedStats.lastActive = Date.now();
+      
+      localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+      return updatedStats;
+    } catch (e) {
+      console.error("Error incrementing user activity", e);
+      return null;
     }
   },
 
@@ -326,6 +383,9 @@ export const storage = {
         });
       }
 
+      // Record daily learning activity
+      storage.incrementActivity(3);
+
       return updatedProgress;
     } catch (e) {
       console.error("Error updating topic progress", e);
@@ -399,6 +459,75 @@ export const storage = {
       return updated;
     } catch (e) {
       console.error("Error deleting pending topic", e);
+      return [];
+    }
+  },
+
+  // Custom Decks management
+  getCustomDecks: () => {
+    try {
+      const data = localStorage.getItem("eng_app_custom_decks");
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      console.error("Error reading custom decks", e);
+      return [];
+    }
+  },
+
+  saveCustomDeck: (deckObj) => {
+    try {
+      const list = storage.getCustomDecks();
+      const filtered = list.filter(d => d.id !== deckObj.id);
+      const updated = [...filtered, deckObj];
+      localStorage.setItem("eng_app_custom_decks", JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.error("Error saving custom deck", e);
+      return [];
+    }
+  },
+
+  deleteCustomDeck: (deckId) => {
+    try {
+      const list = storage.getCustomDecks();
+      const updated = list.filter(d => d.id !== deckId);
+      localStorage.setItem("eng_app_custom_decks", JSON.stringify(updated));
+      
+      // Clear deck field from words in this deck
+      const vocab = storage.getSavedVocab();
+      const updatedVocab = vocab.map(item => {
+        if (item.deckId === deckId) {
+          const { deckId: _, deckName: __, ...rest } = item;
+          return rest;
+        }
+        return item;
+      });
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedVocab));
+      
+      return updated;
+    } catch (e) {
+      console.error("Error deleting custom deck", e);
+      return [];
+    }
+  },
+
+  assignWordToDeck: (wordText, deckId, deckName) => {
+    try {
+      const list = storage.getSavedVocab();
+      const updatedList = list.map(item => {
+        if (item.word.toLowerCase() === wordText.toLowerCase()) {
+          return {
+            ...item,
+            deckId,
+            deckName
+          };
+        }
+        return item;
+      });
+      localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+      return updatedList;
+    } catch (e) {
+      console.error("Error assigning word to deck", e);
       return [];
     }
   }
