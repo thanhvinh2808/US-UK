@@ -649,6 +649,11 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
               </select>
             </div>
             <p className="color-text-muted text-xs mt-2">API Key được lưu bảo mật trong Local Storage trên chính trình duyệt của bạn, hoàn toàn không được gửi đi nơi khác.</p>
+            <div className="mt-4 p-3 rounded" style={{ background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
+              <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.4' }}>
+                💡 <strong>Mẹo Antigravity</strong>: Nếu chưa có API Key hoặc bị lỗi giới hạn lượt gọi (429), bạn có thể chat trực tiếp với trợ lý <strong>Antigravity</strong> ở khung chat IDE kế bên (ví dụ: <em>"Hãy sinh bài học chủ đề Shopping, level A2, thì Present Continuous"</em>). Trợ lý AI sẽ tự động tạo bài học và ghi trực tiếp vào mã nguồn dự án cho bạn!
+              </p>
+            </div>
           </div>
 
           {/* AI Generator Form */}
