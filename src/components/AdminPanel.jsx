@@ -104,7 +104,7 @@ export function preprocessAndRepairJson(rawText) {
   return cleanText;
 }
 
-export async function fetchGeminiWithRetry(url, options, maxRetries = 3, delayMs = 1500) {
+export async function fetchGeminiWithRetry(url, options, maxRetries = 4, delayMs = 3000) {
   let lastError = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -115,25 +115,37 @@ export async function fetchGeminiWithRetry(url, options, maxRetries = 3, delayMs
       }
       
       const status = response.status;
-      if (status === 503 || status === 429 || status === 500 || status === 504) {
-        console.warn(`Gemini API returned status ${status} on attempt ${attempt}. Retrying in ${delayMs * attempt}ms...`);
-        lastError = new Error(`Gemini API Error (Status ${status}): Dịch vụ tạm thời quá tải hoặc giới hạn lượt gọi.`);
+      if (status === 429) {
+        // Rate limit hit: exponential backoff (e.g. 6s, 12s, 24s) to allow limit window to reset
+        const waitTime = Math.pow(2, attempt) * 3000;
+        console.warn(`Gemini API returned 429 (Rate Limit) on attempt ${attempt}. Retrying in ${waitTime}ms...`);
+        lastError = new Error(`Gemini API Error (Status 429): Tần suất gọi API quá nhanh hoặc vượt quá hạn ngạch (Rate Limit). Vui lòng đợi giây lát.`);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, delayMs * attempt)); // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
         }
+      } else if (status === 503 || status === 500 || status === 504) {
+        const waitTime = attempt * delayMs;
+        console.warn(`Gemini API returned status ${status} on attempt ${attempt}. Retrying in ${waitTime}ms...`);
+        lastError = new Error(`Gemini API Error (Status ${status}): Dịch vụ Gemini tạm thời bận hoặc quá tải.`);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+      } else if (status === 404) {
+        throw new Error(`Gemini API Error (Status 404): Không tìm thấy mô hình hoặc sai URL endpoint. Vui lòng chọn mô hình khác.`);
       } else if (status === 400 || status === 403) {
-        throw new Error(`Gemini API Error (Status ${status}): API Key không hợp lệ, hết hạn, hoặc bị từ chối truy cập.`);
+        throw new Error(`Gemini API Error (Status ${status}): API Key không hợp lệ hoặc không được phép truy cập mô hình này.`);
       } else {
-        throw new Error(`Gemini API Error (Status ${status}): Đã xảy ra lỗi kết nối phía Gemini.`);
+        throw new Error(`Gemini API Error (Status ${status}): Lỗi kết nối phía Gemini API.`);
       }
     } catch (err) {
       lastError = err;
-      if (err.message.includes("API Key không hợp lệ")) {
+      if (err.message.includes("không hợp lệ") || err.message.includes("404") || err.message.includes("400") || err.message.includes("403")) {
         throw err;
       }
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+        await new Promise(resolve => setTimeout(resolve, attempt * delayMs));
         continue;
       }
     }
@@ -255,11 +267,10 @@ Nếu không phát hiện lỗi nào, hãy trả về:
 }`;
 
     try {
-      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`, {
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey.trim()
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
@@ -390,11 +401,10 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
 
     try {
       addLog(`Đang gửi yêu cầu và đợi phản hồi từ Gemini API (hệ thống tự động thử lại nếu máy chủ quá tải)...`);
-      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent`, {
+      const response = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey.trim()}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey.trim()
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: userPrompt }] }],
@@ -506,7 +516,7 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
       setValidationErrors(errors);
 
       setGeneratedData(parsedData);
-      runSpellCheck(parsedData.reading_passage);
+      // Removed automatic runSpellCheck call to prevent 429 rate limit hit
       if (valid) {
         addLog(`🎉 Bài học đã được sinh thành công và ĐẠT TẤT CẢ các kiểm tra cấu trúc dữ liệu!`);
       } else {
@@ -633,9 +643,9 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
                 }}
                 style={{ background: 'var(--bg-darker)' }}
               >
-                <option value="gemini-1.5-flash">gemini-1.5-flash (Khuyên dùng - Ổn định & Miễn phí)</option>
+                <option value="gemini-1.5-flash">gemini-1.5-flash (Khuyên dùng - Miễn phí & Ổn định)</option>
                 <option value="gemini-2.0-flash">gemini-2.0-flash (Mới - Tốc độ cao)</option>
-                <option value="gemini-3.5-flash">gemini-3.5-flash (Cực mạnh - Yêu cầu tài khoản/hạn ngạch cao)</option>
+                <option value="gemini-1.5-pro">gemini-1.5-pro (Logic cực mạnh - Dành cho bài phức tạp)</option>
               </select>
             </div>
             <p className="color-text-muted text-xs mt-2">API Key được lưu bảo mật trong Local Storage trên chính trình duyệt của bạn, hoàn toàn không được gửi đi nơi khác.</p>
@@ -756,17 +766,33 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
           )}
 
           {/* AI Spell Check Report */}
-          {generatedData && (isCheckingSpelling || spellCheckResult) && (
+          {generatedData && (
             <div className="spellcheck-card glass p-6 mb-6">
               <h3 className="mb-4 flex items-center gap-2" style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                Soát lỗi chính tả & ngữ pháp
+                Soát lỗi chính tả & ngữ pháp bài đọc
               </h3>
-              {isCheckingSpelling ? (
+              
+              {!isCheckingSpelling && !spellCheckResult && (
+                <div className="text-center py-4 flex flex-col items-center justify-center">
+                  <p className="color-text-muted text-xs mb-4">Bạn có muốn quét soát lỗi chính tả và ngữ pháp cho bài đọc vừa tạo không?</p>
+                  <button 
+                    className="btn-secondary text-xs" 
+                    onClick={() => runSpellCheck(generatedData.reading_passage)}
+                    style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--border-light)' }}
+                  >
+                    🔍 Quét lỗi bằng AI
+                  </button>
+                </div>
+              )}
+
+              {isCheckingSpelling && (
                 <div className="text-center py-4 flex flex-col items-center justify-center">
                   <div className="admin-spinner" style={{ margin: '0 auto 12px auto' }}></div>
                   <p className="color-text-muted text-xs mt-2">AI đang kiểm tra cấu trúc từng từ và câu thoại...</p>
                 </div>
-              ) : spellCheckResult && spellCheckResult.hasErrors ? (
+              )}
+
+              {!isCheckingSpelling && spellCheckResult && spellCheckResult.hasErrors && (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs color-text-muted">Đã tìm thấy <strong>{spellCheckResult.errors.length}</strong> điểm cần chỉnh sửa trong bài viết:</p>
                   <div className="flex flex-col gap-2">
@@ -784,12 +810,34 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
                       </div>
                     ))}
                   </div>
+                  <button 
+                    className="btn-secondary text-xs mt-2" 
+                    style={{ alignSelf: 'flex-start', padding: '6px 12px', cursor: 'pointer' }}
+                    onClick={() => {
+                      setSpellCheckResult(null);
+                      runSpellCheck(generatedData.reading_passage);
+                    }}
+                  >
+                    🔄 Quét lại
+                  </button>
                 </div>
-              ) : (
+              )}
+
+              {!isCheckingSpelling && spellCheckResult && !spellCheckResult.hasErrors && (
                 <div className="text-center py-4" style={{ color: 'var(--color-success)' }}>
                   <div style={{ fontSize: '32px', marginBottom: '8px', fontWeight: 'bold' }}>✓</div>
                   <p className="text-sm font-semibold mt-2">Văn bản hoàn chỉnh & chuẩn bản xứ!</p>
                   <p className="color-text-muted text-xs">Không phát hiện bất kỳ lỗi chính tả hay ngữ pháp nào trong bài đọc.</p>
+                  <button 
+                    className="btn-secondary text-xs mt-3" 
+                    style={{ padding: '4px 10px', cursor: 'pointer' }}
+                    onClick={() => {
+                      setSpellCheckResult(null);
+                      runSpellCheck(generatedData.reading_passage);
+                    }}
+                  >
+                    Quét lại
+                  </button>
                 </div>
               )}
             </div>
