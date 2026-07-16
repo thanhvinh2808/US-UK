@@ -397,7 +397,10 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
           "x-goog-api-key": apiKey.trim()
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+          contents: [{ parts: [{ text: userPrompt }] }],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          },
           generationConfig: {
             responseMimeType: "application/json",
             temperature: 1.0
@@ -443,6 +446,59 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
           addLog(`[Vị trí lỗi]: ${marker}`);
         }
         throw new Error(`Dữ liệu JSON từ AI bị lỗi cú pháp: ${parseErr.message}. Vui lòng thử lại.`);
+      }
+
+      // Auto-heal mismatches between grammar_focus.examples and reading_passage/dialogues
+      if (parsedData.grammar_focus?.examples && parsedData.reading_passage && parsedData.dialogues) {
+        addLog("🔧 Đang tự động khớp và sửa lỗi dấu câu/chữ hoa cho các câu ví dụ ngữ pháp...");
+        
+        const sentences = [];
+        const passageSentences = parsedData.reading_passage.split(/[.!?]+\s+/);
+        passageSentences.forEach(s => {
+          if (s.trim()) sentences.push(s.trim());
+        });
+        parsedData.dialogues.forEach(d => {
+          if (d.text.trim()) sentences.push(d.text.trim());
+        });
+
+        parsedData.grammar_focus.examples = parsedData.grammar_focus.examples.map((ex, idx) => {
+          if (!ex.en) return ex;
+          
+          const cleanEx = ex.en.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").replace(/\s+/g, " ").trim();
+          
+          let bestSentence = ex.en;
+          let bestScore = 0;
+          
+          sentences.forEach(s => {
+            const cleanS = s.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").replace(/\s+/g, " ").trim();
+            
+            const exWords = cleanEx.split(' ');
+            const sWords = cleanS.split(' ');
+            
+            const exWordSet = new Set(exWords);
+            const sWordSet = new Set(sWords);
+            
+            let intersect = 0;
+            exWordSet.forEach(w => {
+              if (sWordSet.has(w)) intersect++;
+            });
+            
+            const score = intersect / Math.max(exWordSet.size, sWordSet.size);
+            if (score > bestScore) {
+              bestScore = score;
+              bestSentence = s;
+            }
+          });
+          
+          if (bestScore >= 0.70 && bestSentence.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").trim() !== ex.en.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'!]/g, "").trim()) {
+            addLog(`📝 Tự sửa câu ví dụ #${idx + 1}: đổi từ "${ex.en}" thành "${bestSentence}" cho khớp hoàn hảo.`);
+            return {
+              ...ex,
+              en: bestSentence
+            };
+          }
+          return ex;
+        });
       }
       
       addLog(`Đang tiến hành kiểm tra (validate) dữ liệu bài học...`);
@@ -600,6 +656,34 @@ Trả về đúng JSON theo cấu trúc mẫu sau (chỉ trả về JSON, không
                     value={form.topicName}
                     onChange={(e) => setForm({ ...form, topicName: e.target.value })}
                   />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                    <span className="color-text-muted text-[10px]" style={{ width: '100%' }}>Gợi ý nhanh chủ đề:</span>
+                    {[
+                      'Travel to Sa Pa 🏔️', 
+                      'Job Interview 💼', 
+                      'Coffee Shop Talk ☕', 
+                      'At the Airport ✈️', 
+                      'Vietnamese Street Food 🍜'
+                    ].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        className="btn-secondary"
+                        style={{
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          borderColor: 'var(--border-glow)',
+                          background: 'rgba(255, 255, 255, 0.01)',
+                          lineHeight: '1.2'
+                        }}
+                        onClick={() => setForm({ ...form, topicName: t.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').trim() })}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
