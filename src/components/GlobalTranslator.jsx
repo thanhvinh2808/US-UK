@@ -97,6 +97,35 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
   const inputRef = useRef(null);
   const [grammarMode, setGrammarMode] = useState(null);
 
+  // Search History States & Actions
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      const data = localStorage.getItem("eng_app_search_history");
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const updateSearchHistory = (wordText, translationText) => {
+    try {
+      const historyData = localStorage.getItem("eng_app_search_history");
+      let list = historyData ? JSON.parse(historyData) : [];
+      
+      list = list.filter(item => item.word.toLowerCase() !== wordText.toLowerCase());
+      list.unshift({
+        word: wordText,
+        translation: translationText,
+        timestamp: Date.now()
+      });
+      list = list.slice(0, 6);
+      localStorage.setItem("eng_app_search_history", JSON.stringify(list));
+      setSearchHistory(list);
+    } catch (e) {
+      console.error("Failed to save search history", e);
+    }
+  };
+
   useEffect(() => {
     if (result) {
       const isVerb = result.partOfSpeech && (
@@ -128,9 +157,10 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleTranslate = async (e) => {
+  const handleTranslate = async (e, overrideQuery) => {
     if (e) e.preventDefault();
-    const cleanQuery = query.trim().toLowerCase();
+    const queryToUse = overrideQuery || query;
+    const cleanQuery = queryToUse.trim().toLowerCase();
     if (!cleanQuery) return;
 
     setIsLoading(true);
@@ -149,6 +179,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
               isSaved: true,
               source: 'cache'
             });
+            updateSearchHistory(savedEntry.word, savedEntry.vietnamese);
             setIsSaved(true);
             setIsLoading(false);
             return;
@@ -168,6 +199,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
             isSaved: true,
             source: 'cache'
           });
+          updateSearchHistory(savedEntry.word, savedEntry.vietnamese);
           setIsSaved(true);
           setIsLoading(false);
           return;
@@ -266,6 +298,7 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                   isSaved: !!alreadySaved,
                   source: 'ai'
                 });
+                updateSearchHistory(parsed.word || query.trim(), parsed.vietnamese || "");
                 setIsLoading(false);
                 return;
               }
@@ -286,7 +319,7 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
       const targetEnglishWord = isSourceEn ? cleanQuery : translationResult.trim().toLowerCase();
       const isTargetSingleWord = !targetEnglishWord.includes(' ');
 
-      let dictPromise = Promise.resolve({ ipa: '', example: '', synonymsList: [] });
+      let dictPromise = Promise.resolve({ ipa: '', ipaUK: '', ipaUS: '', example: '', synonymsList: [] });
       if (isTargetSingleWord) {
         dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${targetEnglishWord}`)
           .then(res => res.json())
@@ -294,6 +327,31 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
             if (data && data[0]) {
               const phonetics = data[0].phonetics || [];
               const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${targetEnglishWord}/`;
+              
+              // Parse separate UK and US IPAs
+              let ipaUK = '';
+              let ipaUS = '';
+              phonetics.forEach(p => {
+                if (p.text) {
+                  const audioUrl = (p.audio || '').toLowerCase();
+                  if (audioUrl.includes('-uk') || audioUrl.includes('uk/') || audioUrl.includes('en-gb')) {
+                    ipaUK = p.text;
+                  } else if (audioUrl.includes('-us') || audioUrl.includes('us/') || audioUrl.includes('en-us')) {
+                    ipaUS = p.text;
+                  }
+                }
+              });
+
+              const textPhonetics = phonetics.filter(p => p.text);
+              if (!ipaUK && textPhonetics.length > 0) {
+                const ukCandidate = textPhonetics.find(p => (p.audio || '').toLowerCase().includes('uk')) || textPhonetics[0];
+                ipaUK = ukCandidate.text;
+              }
+              if (!ipaUS && textPhonetics.length > 0) {
+                const usCandidate = textPhonetics.find(p => (p.audio || '').toLowerCase().includes('us')) || (textPhonetics[1] || textPhonetics[0]);
+                ipaUS = usCandidate.text;
+              }
+
               const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
               const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || "";
               
@@ -318,13 +376,15 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
 
               return { 
                 ipa: foundIpa, 
+                ipaUK: ipaUK,
+                ipaUS: ipaUS,
                 example: meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '',
                 synonymsList: synonymsList
               };
             }
-            return { ipa: `/${targetEnglishWord}/`, example: '', synonymsList: [] };
+            return { ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [] };
           })
-          .catch(() => ({ ipa: `/${targetEnglishWord}/`, example: '', synonymsList: [] }));
+          .catch(() => ({ ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [] }));
       }
 
       const dictInfo = await dictPromise;
@@ -351,16 +411,18 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
 
       const localGrammar = isTargetSingleWord ? conjugateWithCompromise(targetEnglishWord) : null;
       const localCheck = isSourceEn ? checkLocalGrammarErrors(query) : { hasError: false, correctedText: "", explanation: "" };
-      // Check if result is already in notebook
+      
       const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === targetEnglishWord);
       if (alreadySaved) {
         setIsSaved(true);
       }
 
       setResult({
-        word: isSourceEn ? query.trim() : translationResult, // The English translation or English source
+        word: isSourceEn ? query.trim() : translationResult, 
         ipa: dictInfo.ipa || (isTargetSingleWord ? `/${targetEnglishWord}/` : ''),
-        vietnamese: isSourceEn ? translationResult : query.trim(), // The Vietnamese translation or Vietnamese source
+        ipaUK: dictInfo.ipaUK || '',
+        ipaUS: dictInfo.ipaUS || '',
+        vietnamese: isSourceEn ? translationResult : query.trim(), 
         partOfSpeech: localGrammar ? localGrammar.partOfSpeech : (isTargetSingleWord ? 'Từ đơn' : 'Cụm từ / Câu'),
         forms: localGrammar ? localGrammar.forms : null,
         example: dictInfo.example || (isTargetSingleWord ? `Used in: ${targetEnglishWord}` : 'Sentence translation'),
@@ -371,6 +433,10 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
         isCustom: true,
         isSaved: alreadySaved ? true : false
       });
+
+      const finalWord = isSourceEn ? query.trim() : translationResult;
+      const finalTrans = isSourceEn ? translationResult : query.trim();
+      updateSearchHistory(finalWord, finalTrans);
     } catch (err) {
       console.error("Global translation failed:", err);
       showToast("Có lỗi xảy ra khi dịch, vui lòng thử lại.", "error");
@@ -523,6 +589,66 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                 </div>
               )}
 
+              {!isLoading && !result && searchHistory.length > 0 && (
+                <div className="recent-searches-box animate-slideup" style={{
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid var(--border-light)'
+                }}>
+                  <h4 className="text-xs uppercase tracking-wider color-text-muted font-bold mb-3" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🕒 Lịch sử tra cứu gần đây:
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {searchHistory.map((item, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setQuery(item.word);
+                            handleTranslate(null, item.word);
+                          }}
+                          className="btn-secondary text-xs"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-glow)',
+                            background: 'rgba(255, 255, 255, 0.01)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <span style={{ fontWeight: 'bold' }}>{item.word}</span>
+                          <span className="color-text-muted" style={{ fontSize: '11px' }}>➔ {item.translation}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem("eng_app_search_history");
+                        setSearchHistory([]);
+                      }}
+                      className="btn-secondary text-xs"
+                      style={{
+                        padding: '4px 10px',
+                        border: '1px dotted rgba(239, 68, 68, 0.3)',
+                        background: 'transparent',
+                        color: 'rgba(239, 68, 68, 0.8)',
+                        alignSelf: 'flex-start',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        marginTop: '4px'
+                      }}
+                    >
+                      Xóa lịch sử
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {result && (
                 <div className="translator-result-box glass p-4 animate-slideup">
                   <div className="result-header flex justify-between items-start">
@@ -545,7 +671,18 @@ Hãy trả về một đối tượng JSON duy nhất có cấu trúc chính xá
                           </span>
                         )}
                       </h4>
-                      {result.ipa && <span className="result-ipa">{result.ipa}</span>}
+                      {result.ipaUK && result.ipaUS ? (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
+                          <span className="result-ipa" style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--color-secondary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                            🇬🇧 UK: {result.ipaUK}
+                          </span>
+                          <span className="result-ipa" style={{ background: 'rgba(124,58,237,0.06)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                            🇺🇸 US: {result.ipaUS}
+                          </span>
+                        </div>
+                      ) : result.ipa ? (
+                        <span className="result-ipa">{result.ipa}</span>
+                      ) : null}
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', width: '100%' }}>
                       <button className="speak-btn-large flex-1" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'US')} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>

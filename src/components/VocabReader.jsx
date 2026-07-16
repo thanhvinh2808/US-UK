@@ -152,19 +152,46 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
           if (data && data[0]) {
             const phonetics = data[0].phonetics || [];
             const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${cleanWord}/`;
+            
+            // Resolve UK and US IPAs
+            let ipaUK = '';
+            let ipaUS = '';
+            phonetics.forEach(p => {
+              if (p.text) {
+                const audioUrl = (p.audio || '').toLowerCase();
+                if (audioUrl.includes('-uk') || audioUrl.includes('uk/') || audioUrl.includes('en-gb')) {
+                  ipaUK = p.text;
+                } else if (audioUrl.includes('-us') || audioUrl.includes('us/') || audioUrl.includes('en-us')) {
+                  ipaUS = p.text;
+                }
+              }
+            });
+
+            const textPhonetics = phonetics.filter(p => p.text);
+            if (!ipaUK && textPhonetics.length > 0) {
+              const ukCandidate = textPhonetics.find(p => (p.audio || '').toLowerCase().includes('uk')) || textPhonetics[0];
+              ipaUK = ukCandidate.text;
+            }
+            if (!ipaUS && textPhonetics.length > 0) {
+              const usCandidate = textPhonetics.find(p => (p.audio || '').toLowerCase().includes('us')) || (textPhonetics[1] || textPhonetics[0]);
+              ipaUS = usCandidate.text;
+            }
+
             const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
             const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || `Used as: ${cleanWord}`;
-            return { ipa: foundIpa, example: `${meaning}. (E.g. ${sample})` };
+            return { ipa: foundIpa, ipaUK, ipaUS, example: `${meaning}. (E.g. ${sample})` };
           }
-          return { ipa: `/${cleanWord}/`, example: `This is a sentence containing "${cleanWord}".` };
+          return { ipa: `/${cleanWord}/`, ipaUK: '', ipaUS: '', example: `This is a sentence containing "${cleanWord}".` };
         })
-        .catch(() => ({ ipa: `/${cleanWord}/`, example: `This is a sentence containing "${cleanWord}".` }));
+        .catch(() => ({ ipa: `/${cleanWord}/`, ipaUK: '', ipaUS: '', example: `This is a sentence containing "${cleanWord}".` }));
 
       const [fetchedTranslation, fetchedDict] = await Promise.all([transPromise, dictPromise]);
 
       setSelectedWord({
         word: cleanWord,
         ipa: fetchedDict.ipa,
+        ipaUK: fetchedDict.ipaUK,
+        ipaUS: fetchedDict.ipaUS,
         vietnamese: fetchedTranslation,
         example: fetchedDict.example,
         isCustom: true
@@ -192,7 +219,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
 
     const wordToSave = {
       word: selectedWord.word,
-      ipa: selectedWord.ipa,
+      ipa: selectedWord.ipaUK && selectedWord.ipaUS ? `UK: ${selectedWord.ipaUK} | US: ${selectedWord.ipaUS}` : selectedWord.ipa,
       vietnamese: selectedWord.isCustom ? customTranslation : selectedWord.vietnamese,
       example: selectedWord.example,
       topic: topic.topic
@@ -380,7 +407,18 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                 </div>
               </div>
 
-              <div className="word-ipa mb-3">{selectedWord.ipa}</div>
+              {selectedWord.ipaUK && selectedWord.ipaUS ? (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  <span className="vocab-row-ipa" style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--color-secondary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                    🇬🇧 UK: {selectedWord.ipaUK}
+                  </span>
+                  <span className="vocab-row-ipa" style={{ background: 'rgba(124,58,237,0.06)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                    🇺🇸 US: {selectedWord.ipaUS}
+                  </span>
+                </div>
+              ) : (
+                <div className="word-ipa mb-3">{selectedWord.ipa}</div>
+              )}
 
               {selectedWord.isCustom ? (
                 <div className="custom-translation-input mb-4">
