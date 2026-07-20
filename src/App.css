@@ -2305,3 +2305,405 @@
   background-color: var(--color-primary-glow) !important;
   color: var(--color-primary) !important;
 }
+
+/* ===== SPACE TYPER GAME (USER RECOMMENDED) ===== */
+.space-typer-container {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at bottom, #0f172a 0%, #020617 100%);
+  border: 1px solid var(--color-border-light, #334155);
+}
+
+/* Sao nền */
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.9; }
+}
+
+/* Vạch phòng thủ đỏ */
+.defense-barrier {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 88%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ef4444, transparent);
+  box-shadow: 0 0 10px 2px rgba(239, 68, 68, 0.6);
+}
+
+/* SVG overlay cho laser/particle */
+.space-typer-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Từ rơi xuống */
+.falling-word-wrapper {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+.falling-word-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 8px;
+  padding: 6px 12px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  transition: all 0.15s ease;
+  color: #ffffff;
+}
+.falling-word-card.active-match {
+  border-color: #22d3ee;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.6);
+}
+.falling-word-card.dying {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+/* Pháo laser dưới đáy */
+.laser-cannon-turret-wrap {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 6;
+}
+.laser-cannon-barrel {
+  width: 6px;
+  height: 34px;
+  background: linear-gradient(180deg, #22d3ee, #0891b2);
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom center;
+  margin-bottom: -6px;
+  box-shadow: 0 0 8px #22d3ee;
+  transition: transform 0.1s ease-out;
+}
+.laser-cannon-input-base {
+  width: 100%;
+  background: #0f172a;
+  border: 2px solid #22d3ee;
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+}
+.turret-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f1f5f9;
+  font-family: monospace;
+  font-size: 14px;
+  text-align: center;
+}
+.turret-input::placeholder {
+  color: #64748b;
+}
+
+/* Animation cho laser */
+.laser-beam {
+  stroke-dasharray: 6;
+  animation: laser-shoot-effect 0.22s ease-out forwards;
+}
+@keyframes laser-shoot-effect {
+  0% { opacity: 1; stroke-width: 4px; }
+  100% { opacity: 0; stroke-width: 0px; }
+}
+
+/* Responsive Mobile Screen Optimizations for Space Typer and MiniGames Screen */
+.mini-games-screen {
+  padding: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+@media (min-width: 576px) {
+  .mini-games-screen {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 576px) {
+  .space-typer-container {
+    height: 350px;
+    border-radius: 8px;
+  }
+  .defense-barrier {
+    top: 84%;
+  }
+  
+  .falling-word-card {
+    padding: 4px 8px;
+    min-width: 85px;
+  }
+  .falling-word-wrapper span:first-child {
+    font-size: 12px !important;
+  }
+  .falling-word-wrapper span:last-child {
+    font-size: 8px !important;
+    margin-top: 2px;
+  }
+  
+  .laser-cannon-turret-wrap {
+    width: 120px;
+    bottom: 2px;
+  }
+  .laser-cannon-barrel {
+    height: 26px;
+    width: 5px;
+    margin-bottom: -4px;
+  }
+  .laser-cannon-input-base {
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+  .turret-input {
+    font-size: 12px;
+  }
+  
+  /* Make game buttons and lobbies scale down nicely */
+  .space-typer-game {
+    gap: 8px !important;
+  }
+  .space-typer-game h2 {
+    font-size: 1.15rem !important;
+  }
+  .space-typer-game p {
+    font-size: 0.8rem !important;
+    margin-bottom: 12px !important;
+  }
+}
+
+/* ===== MINI GAMES - MOBILE-FIRST LAYOUT ===== */
+
+/* Header: xếp dọc trên mobile, ngang trên desktop */
+.mg-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px;
+  text-align: left;
+}
+.mg-header h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+/* Lobby: luôn xếp dọc, full width trên mobile */
+.mg-lobby {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.mg-lobby-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.mg-lobby-title {
+  font-size: 20px;
+  text-align: center;
+}
+
+.mg-lobby-desc {
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* Khối tip: luôn xếp dọc, mỗi dòng full width */
+.mg-lobby-tips {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mg-tip-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  width: 100%;
+}
+.mg-tip-row span:first-child {
+  flex-shrink: 0;
+}
+.mg-tip-row span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mg-lobby-btn {
+  display: flex !important;
+  width: 100%;
+}
+
+/* Từ tablet trở lên, có thể nới rộng ra chút */
+@media (min-width: 640px) {
+  .mg-lobby {
+    padding: 32px 24px;
+  }
+  .mg-lobby-title {
+    font-size: 24px;
+  }
+  .mg-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  .mg-header h2 {
+    font-size: 24px;
+  }
+}
+
+/* ===== CORE UTILITY FALLBACKS FOR TAILWIND CLASSES USED IN THE WORKSPACE ===== */
+.flex-1 {
+  flex: 1 1 0% !important;
+}
+.mx-auto {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.max-w-md {
+  max-width: 28rem !important;
+}
+.max-w-xl {
+  max-width: 36rem !important;
+}
+.max-w-2xl {
+  max-width: 42rem !important;
+}
+.max-w-3xl {
+  max-width: 48rem !important;
+}
+.max-w-4xl {
+  max-width: 56rem !important;
+}
+.max-w-5xl {
+  max-width: 64rem !important;
+}
+.justify-center {
+  justify-content: center !important;
+}
+.items-center {
+  align-items: center !important;
+}
+.flex-col {
+  flex-direction: column !important;
+}
+
+/* Padding utilities */
+.px-2 { padding-left: 8px !important; padding-right: 8px !important; }
+.px-3 { padding-left: 12px !important; padding-right: 12px !important; }
+.px-4 { padding-left: 16px !important; padding-right: 16px !important; }
+.px-5 { padding-left: 20px !important; padding-right: 20px !important; }
+.px-6 { padding-left: 24px !important; padding-right: 24px !important; }
+.px-8 { padding-left: 32px !important; padding-right: 32px !important; }
+
+.py-1 { padding-top: 4px !important; padding-bottom: 4px !important; }
+.py-1\.5 { padding-top: 6px !important; padding-bottom: 6px !important; }
+.py-2 { padding-top: 8px !important; padding-bottom: 8px !important; }
+.py-2\.5 { padding-top: 10px !important; padding-bottom: 10px !important; }
+.py-3 { padding-top: 12px !important; padding-bottom: 12px !important; }
+.py-4 { padding-top: 16px !important; padding-bottom: 16px !important; }
+.py-5 { padding-top: 20px !important; padding-bottom: 20px !important; }
+.py-6 { padding-top: 24px !important; padding-bottom: 24px !important; }
+.py-8 { padding-top: 32px !important; padding-bottom: 32px !important; }
+
+/* Margin utilities */
+.mb-1 { margin-bottom: 4px !important; }
+.mb-5 { margin-bottom: 20px !important; }
+.mt-5 { margin-top: 20px !important; }
+.mt-6 { margin-top: 24px !important; }
+.mr-2 { margin-right: 8px !important; }
+.mr-3 { margin-right: 12px !important; }
+.mr-4 { margin-right: 16px !important; }
+.ml-2 { margin-left: 8px !important; }
+.ml-3 { margin-left: 12px !important; }
+.ml-4 { margin-left: 16px !important; }
+
+/* Gap utilities */
+.gap-1 { gap: 4px !important; }
+.gap-1\.5 { gap: 6px !important; }
+.gap-5 { gap: 20px !important; }
+.gap-6 { gap: 24px !important; }
+
+/* Grid systems */
+.grid {
+  display: grid !important;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 576px) {
+  .sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Dynamic quiz mode selections responsive wrap */
+.quiz-modes-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+@media (min-width: 576px) {
+  .quiz-modes-container {
+    flex-direction: row !important;
+  }
+}

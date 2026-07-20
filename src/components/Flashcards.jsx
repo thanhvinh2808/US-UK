@@ -205,7 +205,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
               {/* Mode Select */}
               <div className="mb-4">
                 <label className="text-xs color-text-muted block mb-1">Chế độ thử thách:</label>
-                <div className="flex gap-2">
+                <div className="quiz-modes-container flex gap-2">
                   <button 
                     className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active pulse-border' : ''}`}
                     style={{ borderColor: quizMode === 'mixed' ? 'var(--color-primary)' : '' }}
