@@ -125,6 +125,64 @@ export function conjugateWithCompromise(word) {
 
   // C. General Verbs: Using Compromise + Irregular Dictionary
   const doc = nlp(clean);
+  
+  // Determine if it is actually a verb
+  const isVerb = doc.match('#Verb').found || !!IRREGULAR_VERBS_LIST[clean];
+  
+  if (!isVerb) {
+    let partOfSpeech = "Danh từ (Noun)";
+    if (doc.match('#Adjective').found) {
+      partOfSpeech = "Tính từ (Adjective)";
+    } else if (doc.match('#Adverb').found) {
+      partOfSpeech = "Trạng từ (Adverb)";
+    } else if (doc.match('#Expression').found) {
+      partOfSpeech = "Thán từ (Expression)";
+    } else if (doc.match('#Preposition').found) {
+      partOfSpeech = "Giới từ (Preposition)";
+    } else if (doc.match('#Conjunction').found) {
+      partOfSpeech = "Liên từ (Conjunction)";
+    } else if (doc.match('#Pronoun').found) {
+      partOfSpeech = "Đại từ (Pronoun)";
+    } else if (doc.match('#Noun').found) {
+      partOfSpeech = "Danh từ (Noun)";
+    }
+
+    let plural = "N/A";
+    let comparative_superlative = "N/A";
+
+    if (doc.match('#Noun').found) {
+      const pluralCandidate = doc.nouns().toPlural().text().trim();
+      plural = pluralCandidate || getSForm(clean);
+    } else if (partOfSpeech === "Danh từ (Noun)") {
+      plural = getSForm(clean);
+    }
+
+    if (doc.match('#Adjective').found || doc.match('#Adverb').found) {
+      const adjConjs = doc.adjectives().conjugate()[0];
+      if (adjConjs && adjConjs.Comparative && adjConjs.Superlative) {
+        let comp = adjConjs.Comparative;
+        let superForm = adjConjs.Superlative;
+        if (clean.length > 7 || clean.endsWith('ful') || clean.endsWith('less') || clean.endsWith('ing') || clean.endsWith('ed')) {
+          comp = `more ${clean}`;
+          superForm = `most ${clean}`;
+        }
+        comparative_superlative = `${comp} / ${superForm}`;
+      } else {
+        comparative_superlative = `more ${clean} / most ${clean}`;
+      }
+    }
+
+    return {
+      partOfSpeech,
+      forms: {
+        present_simple: clean,
+        past_simple: 'N/A',
+        plural,
+        comparative_superlative
+      }
+    };
+  }
+
   let base = doc.verbs().toInfinitive().text().trim().toLowerCase();
   
   if (!base) {

@@ -321,8 +321,8 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       try {
         const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=en&dt=t&q=${encodeURIComponent(form.topicName)}`);
         const transData = await transRes.json();
-        if (transData && transData[0] && transData[0][0] && transData[0][0][0]) {
-          englishTopicName = transData[0][0][0].trim();
+        if (transData && transData[0]) {
+          englishTopicName = transData[0].map(s => s[0]).filter(Boolean).join('').trim();
           addLog(`-> Đã dịch thành công: "${englishTopicName}"`);
         }
       } catch (e) {
@@ -333,8 +333,8 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       try {
         const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(form.topicName)}`);
         const transData = await transRes.json();
-        if (transData && transData[0] && transData[0][0] && transData[0][0][0]) {
-          vietnameseTopicName = transData[0][0][0].trim();
+        if (transData && transData[0]) {
+          vietnameseTopicName = transData[0].map(s => s[0]).filter(Boolean).join('').trim();
           addLog(`-> Đã dịch nghĩa: "${vietnameseTopicName}"`);
         }
       } catch (e) {

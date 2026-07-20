@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
 import { playSound, speak, speakCompare } from '../utils/sounds';
-import { conjugateWithCompromise, getSForm } from '../utils/helpers/conjugationEngine';
+import { conjugateWithCompromise, getSForm, getIngForm } from '../utils/helpers/conjugationEngine';
 
 function checkLocalGrammarErrors(text) {
   let clean = text.trim();
@@ -29,6 +29,72 @@ function checkLocalGrammarErrors(text) {
   }
 
   const agreementReplacements = [
+    // Double Conjunctions
+    { 
+      regex: /\b(although|though|even though)\b([^.?!]+?)(?:,\s*)?\bbut\b/gi, 
+      replacement: "$1$2,", 
+      explanation: "Không sử dụng đồng thời 'although/though/even though' và 'but' trong cùng một câu ghép." 
+    },
+    { 
+      regex: /\b(because|since|as)\b([^.?!]+?)(?:,\s*)?\bso\b/gi, 
+      replacement: "$1$2,", 
+      explanation: "Không sử dụng đồng thời 'because/since/as' và 'so' trong cùng một câu ghép." 
+    },
+    // Tobe + base verb
+    { 
+      regex: /\b(I\s+am|I'm|i'm|Im|im|he\s+is|he's|He's|she\s+is|she's|She's|it\s+is|it's|It's|you\s+are|you're|You're|we\s+are|we're|We're|they\s+are|they're|They're)\s+(study|work|learn|read|write|cook|run|play|watch|talk|speak|listen|sing|dance|drive|swim|walk|sleep|eat|drink)\b/gi, 
+      replacement: (match, pronTobe, verb) => {
+        const cleanPronTobe = pronTobe.trim();
+        let newTobe = pronTobe;
+        if (cleanPronTobe.toLowerCase() === "im") newTobe = "I'm";
+        const ingVerb = getIngForm(verb.toLowerCase());
+        return `${newTobe} ${ingVerb}`;
+      }, 
+      explanation: "Sử dụng cấu trúc 'be + V-ing' để diễn tả hành động đang diễn ra (thì tiếp diễn)." 
+    },
+    // Wh-question with missing does on 3rd person singular + s-verb
+    { 
+      regex: /\b(where|how|when|why|Where|How|When|Why)\s+(he|she|it)\s+([a-zA-Z]+)s\b/g, 
+      replacement: (match, wh, subj, verb) => {
+        let baseVerb = verb;
+        if (verb.toLowerCase().endsWith("es") && (verb.toLowerCase().endsWith("goes") || verb.toLowerCase().endsWith("does") || verb.toLowerCase().endsWith("watches") || verb.toLowerCase().endsWith("fishes") || verb.toLowerCase().endsWith("classes"))) {
+          baseVerb = verb.slice(0, -2);
+        } else if (verb.toLowerCase().endsWith("s")) {
+          baseVerb = verb.slice(0, -1);
+        }
+        return `${wh} does ${subj} ${baseVerb}`;
+      }, 
+      explanation: "Trong câu hỏi Wh-question ở hiện tại đơn với ngôi thứ ba số ít, sử dụng trợ động từ 'does' đứng trước chủ ngữ và động từ chính ở dạng nguyên thể." 
+    },
+    // Suggest + pronoun + to-infinitive
+    { 
+      regex: /\b(suggest|recommend|suggested|recommended)\s+(him|her|them|us|me)\s+to\s+([a-zA-Z]+)\b/gi, 
+      replacement: (match, verb, pron, baseVerb) => {
+        const pronMap = { him: 'he', her: 'she', them: 'they', us: 'we', me: 'I' };
+        const subj = pronMap[pron.toLowerCase()] || pron;
+        return `${verb} that ${subj} ${baseVerb}`;
+      }, 
+      explanation: "Động từ 'suggest/recommend' không đi với cấu trúc tân ngữ + to-verb. Dùng 'suggest that [chủ ngữ] + verb nguyên thể' hoặc 'suggest + V-ing'." 
+    },
+    // Wish + am/is/are
+    { 
+      regex: /\b(wish|wishes)\s+(I|i|he|He|she|She|it|It|you|You|we|We|they|They)\s+(am|is|are)\b/g, 
+      replacement: "$1 $2 were", 
+      explanation: "Sau 'wish' diễn tả mong ước không có thật ở hiện tại, động từ tobe được chia ở dạng quá khứ giả định (were) cho tất cả các ngôi." 
+    },
+    // Since with duration
+    { 
+      regex: /\b(since)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|many|several)\s+(years|months|days|weeks|hours|minutes)\b/gi, 
+      replacement: "for $2 $3", 
+      explanation: "Dùng 'for' để chỉ khoảng thời gian (khoảng bao lâu), dùng 'since' để chỉ mốc thời gian (bắt đầu từ khi nào)." 
+    },
+    // For with specific year
+    { 
+      regex: /\b(for)\s+(19\d{2}|20\d{2})\b/g, 
+      replacement: "since $2", 
+      explanation: "Dùng 'since' thay vì 'for' trước mốc thời gian cụ thể (ví dụ: năm)." 
+    },
+    // Tobe agreements
     { regex: /\b(I|i)\s+(is|are)\b/g, replacement: "I am", explanation: "Chủ ngữ 'I' đi với động từ tobe là 'am'." },
     { regex: /\b(you|You)\s+(is|am)\b/g, replacement: "$1 are", explanation: "Chủ ngữ 'you' đi với động từ tobe là 'are'." },
     { regex: /\b(we|We)\s+(is|am)\b/g, replacement: "$1 are", explanation: "Chủ ngữ 'we' đi với động từ tobe là 'are'." },
@@ -99,14 +165,19 @@ function checkLocalGrammarErrors(text) {
 }
 
 async function checkGrammarOnline(text) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+
   try {
     const response = await fetch("https://api.languagetool.org/v2/check", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: `text=${encodeURIComponent(text)}&language=en-US&level=picky`
+      body: `text=${encodeURIComponent(text)}&language=en-US&level=picky`,
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     
     if (!response.ok) return null;
     
@@ -118,9 +189,25 @@ async function checkGrammarOnline(text) {
     const sortedMatches = [...data.matches].sort((a, b) => b.offset - a.offset);
     
     let correctedText = text;
+    
+    // Concurrently translate all match messages to prevent sequential fetch delays
+    const translationPromises = sortedMatches.map(async (match) => {
+      try {
+        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(match.message)}`);
+        const transData = await transRes.json();
+        if (transData && transData[0]) {
+          return transData[0].map(s => s[0]).filter(Boolean).join('').trim();
+        }
+      } catch (transErr) {
+        console.warn("Failed to translate grammar explanation:", transErr);
+      }
+      return match.message;
+    });
+    
+    const translatedMessages = await Promise.all(translationPromises);
     const explanations = [];
     
-    for (const match of sortedMatches) {
+    sortedMatches.forEach((match, idx) => {
       const originalWord = text.substring(match.offset, match.offset + match.length);
       const replacement = match.replacements && match.replacements[0] ? match.replacements[0].value : "";
       
@@ -128,19 +215,9 @@ async function checkGrammarOnline(text) {
         correctedText = correctedText.substring(0, match.offset) + replacement + correctedText.substring(match.offset + match.length);
       }
       
-      let explanationVi = match.message;
-      try {
-        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(match.message)}`);
-        const transData = await transRes.json();
-        if (transData && transData[0] && transData[0][0] && transData[0][0][0]) {
-          explanationVi = transData[0][0][0].trim();
-        }
-      } catch (transErr) {
-        console.warn(transErr);
-      }
-      
+      const explanationVi = (translatedMessages[idx] || match.message || "").trim();
       explanations.push(`- Lỗi "${originalWord}": ${explanationVi}${replacement ? ` (Gợi ý sửa: "${replacement}")` : ''}`);
-    }
+    });
     
     explanations.reverse();
     
@@ -150,7 +227,8 @@ async function checkGrammarOnline(text) {
       explanation: explanations.join('\n')
     };
   } catch (err) {
-    console.error("LanguageTool check error:", err);
+    clearTimeout(timeoutId);
+    console.error("LanguageTool check error or timeout:", err);
     return null;
   }
 }
@@ -164,6 +242,103 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
   const [direction, setDirection] = useState('en-vi');
   const inputRef = useRef(null);
   const [grammarMode, setGrammarMode] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionTimeoutRef = useRef(null);
+
+  const fetchSuggestions = (val) => {
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setSuggestions([]);
+      return;
+    }
+
+    suggestionTimeoutRef.current = setTimeout(async () => {
+      try {
+        const hl = direction === 'en-vi' ? 'en' : 'vi';
+        const callbackName = 'googleSuggest_' + Math.random().toString(36).substring(2, 10);
+        const url = `https://suggestqueries.google.com/complete/search?client=youtube&hl=${hl}&q=${encodeURIComponent(trimmed)}&jsonp=${callbackName}`;
+
+        const data = await new Promise((resolve, reject) => {
+          window[callbackName] = (resData) => {
+            cleanup();
+            resolve(resData);
+          };
+
+          const script = document.createElement('script');
+          script.src = url;
+          script.id = callbackName;
+          script.async = true;
+
+          const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('JSONP timeout'));
+          }, 3000);
+
+          function cleanup() {
+            clearTimeout(timeout);
+            const el = document.getElementById(callbackName);
+            if (el) el.remove();
+            delete window[callbackName];
+          }
+
+          script.onerror = () => {
+            cleanup();
+            reject(new Error('JSONP error'));
+          };
+
+          document.body.appendChild(script);
+        });
+
+        if (data && Array.isArray(data[1])) {
+          const words = data[1]
+            .map(item => Array.isArray(item) ? item[0] : item)
+            .filter(Boolean);
+          setSuggestions(words.slice(0, 5)); // show top 5 suggestions
+          setShowSuggestions(true);
+        }
+      } catch (e) {
+        console.warn("Failed to fetch autocomplete suggestions via JSONP:", e);
+      }
+    }, 250);
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    fetchSuggestions(val);
+  };
+
+  const handleSelectSuggestion = (suggestionText) => {
+    setQuery(suggestionText);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    handleTranslate(null, suggestionText);
+  };
+
+  const handleInputBlur = () => {
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
+  };
+
+  const handleInputFocus = () => {
+    if (suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Search History States & Actions
   const [searchHistory, setSearchHistory] = useState(() => {
@@ -278,9 +453,17 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
 
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
-      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(cleanQuery)}`)
+      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(queryToUse.trim())}`)
         .then(res => res.json())
-        .then(data => data && data[0] && data[0][0] && data[0][0][0] ? data[0][0][0] : "Không tìm thấy nghĩa");
+        .then(data => {
+          if (data && data[0]) {
+            return data[0]
+              .map(segment => segment[0])
+              .filter(Boolean)
+              .join('');
+          }
+          return "Không tìm thấy nghĩa";
+        });
 
       const translationResult = await transPromise;
       const targetEnglishWord = isSourceEn ? cleanQuery : translationResult.trim().toLowerCase();
@@ -319,6 +502,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                 ipaUS = usCandidate.text;
               }
 
+              const apiPos = data[0].meanings?.[0]?.partOfSpeech || "";
               const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
               const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || "";
               
@@ -346,12 +530,13 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                 ipaUK: ipaUK,
                 ipaUS: ipaUS,
                 example: meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '',
-                synonymsList: synonymsList
+                synonymsList: synonymsList,
+                apiPos: apiPos
               };
             }
-            return { ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [] };
+            return { ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' };
           })
-          .catch(() => ({ ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [] }));
+          .catch(() => ({ ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' }));
       }
 
       const dictInfo = await dictPromise;
@@ -361,7 +546,12 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
           const synonymsText = dictInfo.synonymsList.join(" | ");
           const synTransRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(synonymsText)}`)
             .then(res => res.json())
-            .then(data => data && data[0] && data[0][0] && data[0][0][0] ? data[0][0][0] : "");
+            .then(data => {
+              if (data && data[0]) {
+                return data[0].map(s => s[0]).filter(Boolean).join('');
+              }
+              return "";
+            });
           
           if (synTransRes) {
             const translatedWords = synTransRes.split(/\s*\|\s*/);
@@ -377,10 +567,61 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       }
 
       const localGrammar = isTargetSingleWord ? conjugateWithCompromise(targetEnglishWord) : null;
+      
+      const posMap = {
+        'noun': 'Danh từ (Noun)',
+        'verb': 'Động từ (Verb)',
+        'adjective': 'Tính từ (Adjective)',
+        'adverb': 'Trạng từ (Adverb)',
+        'pronoun': 'Đại từ (Pronoun)',
+        'preposition': 'Giới từ (Preposition)',
+        'conjunction': 'Liên từ (Conjunction)',
+        'interjection': 'Thán từ (Interjection)',
+        'abbreviation': 'Từ viết tắt (Abbreviation)',
+        'expression': 'Thán từ / Cảm thán (Expression)'
+      };
+
+      let finalPartOfSpeech = "";
+      if (isTargetSingleWord && dictInfo.apiPos && posMap[dictInfo.apiPos.toLowerCase()]) {
+        finalPartOfSpeech = posMap[dictInfo.apiPos.toLowerCase()];
+      } else if (localGrammar) {
+        finalPartOfSpeech = localGrammar.partOfSpeech;
+      } else {
+        finalPartOfSpeech = isTargetSingleWord ? 'Từ đơn' : 'Cụm từ / Câu';
+      }
+
+      let translatedExample = "";
+      if (isSourceEn && dictInfo.example) {
+        try {
+          const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(dictInfo.example)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data[0]) {
+                return data[0].map(s => s[0]).filter(Boolean).join('');
+              }
+              return "";
+            });
+          if (transRes) {
+            translatedExample = transRes.trim();
+          }
+        } catch (e) {
+          console.warn("Failed to translate definition:", e);
+        }
+      }
+
+      const englishTextToCheck = isSourceEn ? query.trim() : translationResult.trim();
+      const isWordInDictionary = isTargetSingleWord && !!(dictInfo.example || dictInfo.ipa || dictInfo.apiPos);
       let localCheck = { hasError: false, correctedText: "", explanation: "" };
-      if (isSourceEn) {
-        const localResult = checkLocalGrammarErrors(query);
-        const onlineCheck = await checkGrammarOnline(query);
+      
+      if (englishTextToCheck && !isWordInDictionary) {
+        const localResult = checkLocalGrammarErrors(englishTextToCheck);
+        
+        let onlineCheck = null;
+        try {
+          onlineCheck = await checkGrammarOnline(englishTextToCheck);
+        } catch (e) {
+          console.warn("Online grammar check failed or timed out:", e);
+        }
         
         if (onlineCheck && onlineCheck.hasError) {
           const combinedExplanations = [];
@@ -399,6 +640,13 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         } else {
           localCheck = localResult;
         }
+
+        // If after checking, the corrected text is identical to the checked text (or only differs by case), it's not a real grammar error
+        if (localCheck.correctedText.toLowerCase() === englishTextToCheck.toLowerCase()) {
+          localCheck.hasError = false;
+          localCheck.correctedText = "";
+          localCheck.explanation = "";
+        }
       }
       
       const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === targetEnglishWord);
@@ -412,12 +660,14 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         ipaUK: dictInfo.ipaUK || '',
         ipaUS: dictInfo.ipaUS || '',
         vietnamese: isSourceEn ? translationResult : query.trim(), 
-        partOfSpeech: localGrammar ? localGrammar.partOfSpeech : (isTargetSingleWord ? 'Từ đơn' : 'Cụm từ / Câu'),
+        partOfSpeech: finalPartOfSpeech,
         forms: localGrammar ? localGrammar.forms : null,
         example: dictInfo.example || (isTargetSingleWord ? `Used in: ${targetEnglishWord}` : 'Sentence translation'),
+        translatedExample: translatedExample,
         hasGrammarError: localCheck.hasError,
         correctedText: localCheck.correctedText,
         grammarErrorExplanation: localCheck.explanation,
+        originalCheckedText: englishTextToCheck,
         synonyms: localSynonyms,
         isCustom: true,
         isSaved: alreadySaved ? true : false
@@ -448,6 +698,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         ipa: result.ipa || "",
         vietnamese: result.vietnamese, // Vietnamese translation/source
         example: result.example || `Translated via Quick Lookup`,
+        translatedExample: result.translatedExample || "",
         partOfSpeech: result.partOfSpeech || "",
         forms: result.forms || null,
         hasGrammarError: result.hasGrammarError || false,
@@ -531,24 +782,69 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
 
             {/* Form */}
             <form onSubmit={handleTranslate} className="translator-form mt-4">
-              <div className="input-group">
-                <textarea
-                  ref={inputRef}
-                  placeholder={direction === 'en-vi' ? "Nhập từ tiếng Anh hoặc câu cần dịch..." : "Nhập từ tiếng Việt hoặc câu cần dịch..."}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (query.trim() && !isLoading) {
-                        handleTranslate(e);
+              <div className="input-group" style={{ position: 'relative', display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  <textarea
+                    ref={inputRef}
+                    placeholder={direction === 'en-vi' ? "Nhập từ tiếng Anh hoặc câu cần dịch..." : "Nhập từ tiếng Việt hoặc câu cần dịch..."}
+                    value={query}
+                    onChange={handleInputChange}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (query.trim() && !isLoading) {
+                          handleTranslate(e);
+                        }
                       }
-                    }
-                  }}
-                  className="translator-input glass"
-                  rows={1}
-                />
-                <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
+                    }}
+                    className="translator-input glass"
+                    rows={1}
+                    style={{ width: '100%' }}
+                  />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="suggestions-dropdown glass-glow" style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 1000,
+                      background: 'var(--bg-dark)',
+                      border: '1px solid var(--border-glow)',
+                      borderRadius: 'var(--radius-sm)',
+                      marginTop: '4px',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      boxShadow: 'var(--shadow-lg)'
+                    }}>
+                      {suggestions.map((item, idx) => (
+                        <div
+                          key={idx}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectSuggestion(item);
+                          }}
+                          style={{
+                            padding: '10px 14px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            color: 'var(--color-text-main)',
+                            borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid var(--border-light)',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                          className="suggestion-item"
+                        >
+                          <span style={{ opacity: 0.6 }}>🔍</span> <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()} style={{ alignSelf: 'flex-start', height: '48px' }}>
                   {isLoading ? <span className="spinner" /> : 'Tra cứu'}
                 </button>
               </div>
@@ -685,11 +981,15 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                   {result.hasGrammarError && result.correctedText && (
                     <div className="grammar-correction-box mt-3 p-3 glass" style={{ borderLeft: '4px solid var(--color-error)', background: 'rgba(239, 68, 68, 0.03)' }}>
                       <strong className="flex items-center gap-1 text-sm" style={{ color: 'var(--color-error)' }}>
-                        ⚠️ Phát hiện lỗi chính tả/ngữ pháp:
+                        ⚠️ Phát hiện lỗi chính tả/ngữ pháp (Tiếng Anh):
                       </strong>
                       <div className="mt-2 text-sm">
-                        <div className="color-text-muted text-xs">Câu bạn viết:</div>
-                        <del className="color-text-muted italic block mb-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>"{query}"</del>
+                        <div className="color-text-muted text-xs">
+                          {direction === 'en-vi' ? 'Câu bạn viết:' : 'Bản dịch tiếng Anh gốc:'}
+                        </div>
+                        <del className="color-text-muted italic block mb-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>
+                          "{result.originalCheckedText || query}"
+                        </del>
                         
                         <div className="color-text-muted text-xs mt-2">Gợi ý sửa đúng:</div>
                         <ins className="font-bold block mb-2" style={{ textDecoration: 'none', color: 'var(--color-success)' }}>
@@ -948,9 +1248,17 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                   )}
 
                   {result.example && (
-                    <div className="result-example-box mt-3">
-                      <strong className="color-text-muted text-xs block">VÍ DỤ / ĐỊNH NGHĨA:</strong>
+                    <div className="result-example-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
+                      <strong className="color-text-muted text-xs block mb-1">VÍ DỤ / ĐỊNH NGHĨA TIẾNG ANH:</strong>
                       <p className="result-example color-text-muted italic">"{result.example}"</p>
+                      {result.translatedExample && (
+                        <>
+                          <strong className="color-text-muted text-xs block mt-2 mb-1">DỊCH NGHĨA CHI TIẾT:</strong>
+                          <p className="result-example font-semibold" style={{ color: 'var(--color-success)', fontSize: '13px' }}>
+                            "{result.translatedExample}"
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
 

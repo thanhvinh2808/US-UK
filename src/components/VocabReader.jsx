@@ -144,7 +144,12 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
     try {
       const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(cleanWord)}`)
         .then(res => res.json())
-        .then(data => data && data[0] && data[0][0] && data[0][0][0] ? data[0][0][0] : "Từ mới");
+        .then(data => {
+          if (data && data[0]) {
+            return data[0].map(s => s[0]).filter(Boolean).join('');
+          }
+          return "Từ mới";
+        });
 
       const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`)
         .then(res => res.json())
