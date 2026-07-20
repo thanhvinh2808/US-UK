@@ -18,6 +18,10 @@ const MODAL_VERBS = {
 
 // 2. Spelling helpers for regular verbs
 export function getSForm(word) {
+  const lower = word.toLowerCase();
+  if (lower === "have") {
+    return word === "Have" ? "Has" : "has";
+  }
   if (word.endsWith("s") || word.endsWith("x") || word.endsWith("z") || word.endsWith("ch") || word.endsWith("sh")) {
     return word + "es";
   }

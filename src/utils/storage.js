@@ -143,7 +143,7 @@ export const storage = {
           return {
             ...item,
             ...sm2Result,
-            status: grade >= 4 ? "mastered" : "learning",
+            status: sm2Result.repetitions >= 3 ? "mastered" : "learning",
             lowGradeCount: (item.lowGradeCount || 0) + (isLowGrade ? 1 : 0)
           };
         }
