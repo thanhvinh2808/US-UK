@@ -88,9 +88,140 @@ function getIrregularPhrasal(base) {
   return null;
 }
 
+const NEGATIVE_CONTRACTIONS = {
+  "don't": { positive: "do", negation: "don't / do not" },
+  "do not": { positive: "do", negation: "don't / do not" },
+  "doesn't": { positive: "do", negation: "doesn't / does not" },
+  "does not": { positive: "do", negation: "doesn't / does not" },
+  "didn't": { positive: "do", negation: "didn't / did not" },
+  "did not": { positive: "do", negation: "didn't / did not" },
+  "can't": { positive: "can", negation: "cannot / can't" },
+  "cannot": { positive: "can", negation: "cannot / can't" },
+  "couldn't": { positive: "can", negation: "couldn't / could not" },
+  "could not": { positive: "can", negation: "couldn't / could not" },
+  "won't": { positive: "will", negation: "won't / will not" },
+  "will not": { positive: "will", negation: "won't / will not" },
+  "wouldn't": { positive: "will", negation: "wouldn't / would not" },
+  "would not": { positive: "will", negation: "wouldn't / would not" },
+  "shouldn't": { positive: "shall", negation: "shouldn't / should not" },
+  "should not": { positive: "shall", negation: "shouldn't / should not" },
+  "haven't": { positive: "have", negation: "haven't / have not" },
+  "have not": { positive: "have", negation: "haven't / have not" },
+  "hasn't": { positive: "have", negation: "hasn't / has not" },
+  "has not": { positive: "have", negation: "hasn't / has not" },
+  "hadn't": { positive: "have", negation: "hadn't / had not" },
+  "had not": { positive: "have", negation: "hadn't / had not" }
+};
+
+const IRREGULAR_ADJECTIVES = {
+  "many": { comp: "more", super: "most", pos: "Tính từ / Lượng từ (Adjective / Determiner)" },
+  "much": { comp: "more", super: "most", pos: "Tính từ / Lượng từ (Adjective / Determiner)" },
+  "little": { comp: "less", super: "least", pos: "Tính từ / Lượng từ (Adjective / Determiner)" },
+  "fun": { comp: "more fun", super: "most fun", pos: "Tính từ (Adjective)" },
+  "good": { comp: "better", super: "best", pos: "Tính từ (Adjective)" },
+  "well": { comp: "better", super: "best", pos: "Trạng từ / Tính từ (Adverb / Adjective)" },
+  "bad": { comp: "worse", super: "worst", pos: "Tính từ (Adjective)" },
+  "badly": { comp: "worse", super: "worst", pos: "Trạng từ (Adverb)" },
+  "far": { comp: "farther / further", super: "farthest / furthest", pos: "Tính từ / Trạng từ (Adjective / Adverb)" }
+};
+
+const PRIORITY_NOUNS = new Set([
+  "fish", "index", "book", "light", "face", "water", "paper", "oil", "interest", "plant", 
+  "page", "file", "record", "test", "check", "control", "sound", "hand", "eye", "head"
+]);
+
+const IRREGULAR_NOUN_PLURALS = {
+  "fish": "fish",
+  "index": "indexes / indices",
+  "child": "children",
+  "person": "people",
+  "mouse": "mice",
+  "foot": "feet",
+  "tooth": "teeth",
+  "ox": "oxen",
+  "goose": "geese",
+  "man": "men",
+  "woman": "women",
+  "sheep": "sheep",
+  "deer": "deer",
+  "series": "series",
+  "species": "species",
+  "datum": "data"
+};
+
 // 4. Compromise local conjugation
 export function conjugateWithCompromise(word) {
   const clean = word.toLowerCase().trim();
+
+  // 0. Special Case: Negative Contractions
+  if (NEGATIVE_CONTRACTIONS[clean]) {
+    const negInfo = NEGATIVE_CONTRACTIONS[clean];
+    const posWord = negInfo.positive;
+    
+    if (posWord === "can" || posWord === "will" || posWord === "shall") {
+      return {
+        partOfSpeech: "Động từ khuyết thiếu phủ định (Negative Modal Verb)",
+        forms: {
+          isModal: true,
+          present_simple: negInfo.negation,
+          past_simple: posWord === "can" ? "couldn't / could not" : (posWord === "will" ? "wouldn't / would not" : "shouldn't / should not"),
+          note: `Dạng phủ định của động từ khuyết thiếu '${posWord}'`
+        }
+      };
+    } else {
+      if (posWord === "do") {
+        return {
+          partOfSpeech: "Trợ động từ phủ định (Negative Auxiliary Verb)",
+          forms: {
+            present_simple: "don't / doesn't (do not / does not)",
+            present_continuous: "N/A",
+            present_perfect: "haven't / hasn't done (have/has not done)",
+            present_perfect_continuous: "N/A",
+            past_simple: "didn't (did not)",
+            past_continuous: "N/A",
+            past_perfect: "hadn't done (had not done)",
+            past_perfect_continuous: "N/A",
+            future_simple: "won't do (will not do)",
+            future_continuous: "N/A",
+            future_perfect: "won't have done",
+            future_perfect_continuous: "N/A"
+          }
+        };
+      } else if (posWord === "have") {
+        return {
+          partOfSpeech: "Động từ phủ định (Negative Verb)",
+          forms: {
+            present_simple: "haven't / hasn't (have/has not)",
+            present_continuous: "N/A",
+            present_perfect: "haven't / hasn't had",
+            present_perfect_continuous: "N/A",
+            past_simple: "hadn't (had not)",
+            past_continuous: "N/A",
+            past_perfect: "hadn't had",
+            past_perfect_continuous: "N/A",
+            future_simple: "won't have (will not have)",
+            future_continuous: "N/A",
+            future_perfect: "won't have had",
+            future_perfect_continuous: "N/A"
+          }
+        };
+      }
+    }
+  }
+
+  // 1. Special Case: Irregular Adjectives / Adverbs
+  if (IRREGULAR_ADJECTIVES[clean]) {
+    const adj = IRREGULAR_ADJECTIVES[clean];
+    return {
+      partOfSpeech: adj.pos,
+      forms: {
+        present_simple: clean,
+        past_simple: 'N/A',
+        plural: 'N/A',
+        comparative_superlative: `${adj.comp} / ${adj.super}`
+      }
+    };
+  }
 
   // A. Special Case: "be"
   if (clean === 'be' || clean === 'am' || clean === 'is' || clean === 'are' || clean === 'was' || clean === 'were' || clean === 'been') {
@@ -130,8 +261,8 @@ export function conjugateWithCompromise(word) {
   // C. General Verbs: Using Compromise + Irregular Dictionary
   const doc = nlp(clean);
   
-  // Determine if it is actually a verb
-  const isVerb = doc.match('#Verb').found || !!IRREGULAR_VERBS_LIST[clean];
+  // Determine if it is actually a verb (and not a priority noun)
+  const isVerb = (doc.match('#Verb').found || !!IRREGULAR_VERBS_LIST[clean]) && !PRIORITY_NOUNS.has(clean);
   
   if (!isVerb) {
     let partOfSpeech = "Danh từ (Noun)";
@@ -156,9 +287,9 @@ export function conjugateWithCompromise(word) {
 
     if (doc.match('#Noun').found) {
       const pluralCandidate = doc.nouns().toPlural().text().trim();
-      plural = pluralCandidate || getSForm(clean);
+      plural = IRREGULAR_NOUN_PLURALS[clean] || pluralCandidate || getSForm(clean);
     } else if (partOfSpeech === "Danh từ (Noun)") {
-      plural = getSForm(clean);
+      plural = IRREGULAR_NOUN_PLURALS[clean] || getSForm(clean);
     }
 
     if (doc.match('#Adjective').found || doc.match('#Adverb').found) {
