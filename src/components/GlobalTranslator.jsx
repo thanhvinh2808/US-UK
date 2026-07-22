@@ -453,19 +453,38 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
 
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
-      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(queryToUse.trim())}`)
+      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&q=${encodeURIComponent(queryToUse.trim())}`)
         .then(res => res.json())
         .then(data => {
+          let text = "Không tìm thấy nghĩa";
+          let meaningsByPos = [];
           if (data && data[0]) {
-            return data[0]
-              .map(segment => segment[0])
-              .filter(Boolean)
-              .join('');
+            text = data[0].map(segment => segment[0]).filter(Boolean).join('');
           }
-          return "Không tìm thấy nghĩa";
+          if (data && data[1] && Array.isArray(data[1])) {
+            const posMap = {
+              noun: '📘 Danh từ',
+              verb: '⚡ Động từ',
+              adjective: '🎨 Tính từ',
+              adverb: '🚀 Trạng từ',
+              preposition: '🔗 Giới từ',
+              conjunction: '🤝 Liên từ',
+              pronoun: '👤 Đại từ',
+              interjection: '💥 Thán từ'
+            };
+            meaningsByPos = data[1].map(item => {
+              const rawPos = item[0] || '';
+              const label = posMap[rawPos.toLowerCase()] || `📌 ${rawPos}`;
+              const list = (item[1] || []).slice(0, 6);
+              return { pos: rawPos, label, list };
+            }).filter(i => i.list && i.list.length > 0);
+          }
+          return { text, meaningsByPos };
         });
 
-      const translationResult = await transPromise;
+      const transData = await transPromise;
+      const translationResult = transData.text;
+      const meaningsByPos = transData.meaningsByPos;
       const targetEnglishWord = isSourceEn ? cleanQuery : translationResult.trim().toLowerCase();
       const isTargetSingleWord = !targetEnglishWord.includes(' ');
 
@@ -669,6 +688,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         grammarErrorExplanation: localCheck.explanation,
         originalCheckedText: englishTextToCheck,
         synonyms: localSynonyms,
+        meaningsByPos: meaningsByPos,
         isCustom: true,
         isSaved: alreadySaved ? true : false
       });
@@ -1012,6 +1032,27 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                       {direction === 'en-vi' ? result.vietnamese : result.word}
                     </p>
                   </div>
+
+                  {/* Phân loại các nghĩa theo từ loại (Danh từ, Động từ, Tính từ...) */}
+                  {result.meaningsByPos && result.meaningsByPos.length > 0 && (
+                    <div className="meanings-by-pos-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-primary)' }}>
+                      <strong className="color-text-muted text-xs block mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        📚 CÁC NGHĨA CHI TIẾT THEO TỪ LOẠI (DANH TỪ, ĐỘNG TỪ...):
+                      </strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {result.meaningsByPos.map((posGroup, idx) => (
+                          <div key={idx} style={{ fontSize: '13px' }}>
+                            <span style={{ fontWeight: 'bold', color: 'var(--color-primary-light)', marginRight: '6px' }}>
+                              {posGroup.label}:
+                            </span>
+                            <span className="color-text-main">
+                              {posGroup.list.join(', ')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {direction === 'vi-en' && (
                     <div className="result-meaning-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>

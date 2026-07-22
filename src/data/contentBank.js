@@ -221,5 +221,55 @@ export const contentBank = [
       { word: "strength", ipa: "/streŋθ/", vietnamese: "thế mạnh, điểm mạnh", example: "My greatest strength is my problem-solving ability." },
       { word: "collaborating", ipa: "/kəˈlæbəreɪtɪŋ/", vietnamese: "hợp tác, cộng tác", example: "Collaborating with others helps us learn faster." }
     ]
+  },
+
+  // =========================================================
+  // 5. IELTS ACADEMIC READING (C1) — Sustainable Technology
+  // =========================================================
+  {
+    id: "topic_ielts_renewable_energy",
+    topic: "IELTS Academic Reading",
+    level: "C1",
+    title: "Renewable Energy and Modern Agriculture",
+    reading_passage: "In recent decades, modern industrial plants have turned to renewable energy sources to reduce carbon emissions. Scientists present compelling evidence that solar panels and wind turbines can generate power efficiently while preserving natural habitats. However, critics object that high initial installation costs still present a financial barrier for small business owners. To address these concerns, financial institutions have launched green loan programs with low interest rates. Meanwhile, researchers conduct daily studies on plant biology, observing how crops spring up under controlled light and temperature conditions. The study records that proper soil management yields a higher volume of crops, which will eventually lead to sustainable agricultural practices worldwide.",
+    reading_passage_translation: "Trong những thập kỷ gần đây, các nhà máy công nghiệp hiện đại đã tìm đến các nguồn năng lượng tái tạo để giảm lượng khí thải carbon. Các nhà khoa học trình bày bằng chứng thuyết phục rằng các tấm pin mặt trời và tuabin gió có thể tạo ra điện hiệu quả trong khi vẫn bảo tồn môi trường sống tự nhiên. Tuy nhiên, các nhà phê bình phản đối rằng chi phí lắp đặt ban đầu cao vẫn tạo ra rào cản tài chính cho các chủ doanh nghiệp nhỏ. Để giải quyết những lo ngại này, các tổ chức tài chính đã khởi động các chương trình cho vay xanh với lãi suất thấp. Trong khi đó, các nhà nghiên cứu tiến hành các nghiên cứu hàng ngày về sinh học thực vật, quan sát cách các mầm cây mọc lên trong điều kiện ánh sáng và nhiệt độ được kiểm soát. Nghiên cứu ghi nhận rằng quản lý đất thích hợp mang lại sản lượng cây trồng cao hơn, điều này cuối cùng sẽ dẫn đến các thực hành nông nghiệp bền vững trên toàn thế giới.",
+    dialogues: [
+      { id: "ielts_diag_1", speaker: "Examiner", text: "Why have industrial plants turned to renewable energy sources in recent years?", vietnamese: "Tại sao các nhà máy công nghiệp lại chuyển sang các nguồn năng lượng tái tạo trong những năm gần đây?" },
+      { id: "ielts_diag_2", speaker: "Candidate", text: "Mainly to significantly reduce carbon emissions and align with global sustainability standards.", vietnamese: "Chủ yếu là để giảm đáng kể lượng khí thải carbon và phù hợp với các tiêu chuẩn bền vững toàn cầu." },
+      { id: "ielts_diag_3", speaker: "Examiner", text: "What main barrier do small business owners face when adopting green technologies?", vietnamese: "Rào cản chính nào mà các chủ doanh nghiệp nhỏ gặp phải khi áp dụng công nghệ xanh?" },
+      { id: "ielts_diag_4", speaker: "Candidate", text: "The primary challenge is the high initial installation cost, though low-interest loans are helping to address this issue.", vietnamese: "Thử thách chính là chi phí lắp đặt ban đầu cao, mặc dù các khoản vay lãi suất thấp đang giúp giải quyết vấn đề này." }
+    ],
+    default_vocabs: [
+      { word: "plants", ipa: "/plɑːnts/", vietnamese: "nhà máy, xưởng sản xuất (hoặc cây trồng)", example: "Industrial plants generate clean energy to reduce emissions." },
+      { word: "present", ipa: "/prɪˈzent/", vietnamese: "trình bày, đưa ra, gây ra", example: "Scientists present new evidence for solar efficiency." },
+      { word: "object", ipa: "/əbˈdʒekt/", vietnamese: "phản đối, không đồng ý", example: "Critics object to the high installation costs." },
+      { word: "address", ipa: "/əˈdres/", vietnamese: "giải quyết, xử lý", example: "Institutions launch programs to address financial concerns." },
+      { word: "interest", ipa: "/ˈɪntrəst/", vietnamese: "lãi suất (hoặc sự quan tâm)", example: "Green loan programs offer exceptionally low interest rates." },
+      { word: "conduct", ipa: "/kənˈdʌkt/", vietnamese: "tiến hành, thực hiện", example: "Researchers conduct daily experiments on crop biology." }
+    ]
+  },
+
+  // =========================================================
+  // 6. ADVANCED PROFICIENCY (C2) — Corporate Governance
+  // =========================================================
+  {
+    id: "topic_c2_corporate_governance",
+    topic: "C2 Proficiency Reading",
+    level: "C2",
+    title: "Corporate Governance & Economic Reform",
+    reading_passage: "During the fiscal board meeting, directors discussed how to charge the executive team with broader managerial oversight. The board agreed to issue a series of new compliance guidelines, aiming to subject all subsidiary branches to stricter audit procedures. Economists fine-tuned their financial models to account for potential market fluctuations, warning that a failure to compact operational costs might negatively impact the firm's total volume of international trade.",
+    reading_passage_translation: "Trong cuộc họp hội đồng quản trị tài chính, các giám đốc đã thảo luận về cách giao phó cho ban điều hành trách nhiệm giám sát quản lý rộng hơn. Hội đồng quản trị đã đồng ý ban hành một loạt các hướng dẫn tuân thủ mới, nhằm mục đích buộc tất cả các chi nhánh phụ thuộc phải tuân theo các thủ tục kiểm toán nghiêm ngặt hơn. Các nhà kinh tế đã điều chỉnh tinh vi các mô hình tài chính của họ để tính đến những biến động tiềm ẩn của thị trường, cảnh báo rằng việc không thể cắt giảm chi phí vận hành có thể ảnh hưởng tiêu cực đến tổng khối lượng thương mại quốc tế của công ty.",
+    dialogues: [
+      { id: "c2_diag_1", speaker: "Chairman", text: "We need to charge the team with full responsibility for audit compliance.", vietnamese: "Chúng ta cần giao phó cho đội ngũ trách nhiệm đầy đủ về việc tuân thủ kiểm toán." },
+      { id: "c2_diag_2", speaker: "Director", text: "Agreed. We will issue the updated regulations by the end of this quarter.", vietnamese: "Đồng ý. Chúng ta sẽ ban hành các quy định cập nhật vào cuối quý này." }
+    ],
+    default_vocabs: [
+      { word: "charge", ipa: "/tʃɑːrdʒ/", vietnamese: "giao phó, giao nhiệm vụ (hoặc sạc pin, tính phí)", example: "The board charged the committee with oversight." },
+      { word: "issue", ipa: "/ˈɪʃuː/", vietnamese: "ban hành, phát hành (hoặc vấn đề)", example: "The authority will issue new financial guidelines." },
+      { word: "subject", ipa: "/səbˈdʒekt/", vietnamese: "buộc phải tuân theo, khuất phục (hoặc môn học)", example: "All branches are subjected to annual audits." },
+      { word: "fine", ipa: "/faɪn/", vietnamese: "tinh chỉnh, điều chỉnh nhỏ (hoặc phạt tiền, tốt)", example: "Economists fine-tuned their economic predictions." },
+      { word: "compact", ipa: "/kəmˈpækt/", vietnamese: "cắt giảm, nén gọn (hoặc nhỏ gọn, hiệp ước)", example: "The company needs to compact its operating budget." },
+      { word: "volume", ipa: "/ˈvɑːljuːm/", vietnamese: "khối lượng, sản lượng (hoặc âm lượng)", example: "The firm recorded a massive volume of exports." }
+    ]
   }
 ];

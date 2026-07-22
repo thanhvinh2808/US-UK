@@ -140,16 +140,57 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
       return;
     }
 
-    // Query online APIs asynchronously
+    // Extract sentence context from reading passage
+    const sentences = topic.reading_passage.match(/[^.!?]+[.!?]+/g) || [topic.reading_passage];
+    const foundSentence = sentences.find(s => {
+      const wordsInS = s.toLowerCase().split(/\s+/).map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, ""));
+      return wordsInS.includes(cleanWord);
+    });
+    const sentenceContext = foundSentence ? foundSentence.trim() : "";
+
+    // Query online APIs asynchronously with dt=t and dt=bd (dictionary entries by POS)
     try {
-      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(cleanWord)}`)
+      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&dt=bd&q=${encodeURIComponent(cleanWord)}`)
         .then(res => res.json())
         .then(data => {
+          let mainTrans = "Từ mới";
+          let meaningsByPos = [];
           if (data && data[0]) {
-            return data[0].map(s => s[0]).filter(Boolean).join('');
+            mainTrans = data[0].map(s => s[0]).filter(Boolean).join('');
           }
-          return "Từ mới";
+          if (data && data[1] && Array.isArray(data[1])) {
+            const posMap = {
+              noun: '📘 Danh từ',
+              verb: '⚡ Động từ',
+              adjective: '🎨 Tính từ',
+              adverb: '🚀 Trạng từ',
+              preposition: '🔗 Giới từ',
+              conjunction: '🤝 Liên từ',
+              pronoun: '👤 Đại từ',
+              interjection: '💥 Thán từ'
+            };
+            meaningsByPos = data[1].map(item => {
+              const rawPos = item[0] || '';
+              const label = posMap[rawPos.toLowerCase()] || `📌 ${rawPos}`;
+              const list = (item[1] || []).slice(0, 5);
+              return { pos: rawPos, label, list };
+            }).filter(i => i.list && i.list.length > 0);
+          }
+          return { mainTrans, meaningsByPos };
         });
+
+      let sentenceTransPromise = Promise.resolve("");
+      if (sentenceContext) {
+        sentenceTransPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(sentenceContext)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data && data[0]) {
+              return data[0].map(s => s[0]).filter(Boolean).join('');
+            }
+            return "";
+          })
+          .catch(() => "");
+      }
 
       const dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`)
         .then(res => res.json())
@@ -190,18 +231,21 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
         })
         .catch(() => ({ ipa: `/${cleanWord}/`, ipaUK: '', ipaUS: '', example: `This is a sentence containing "${cleanWord}".` }));
 
-      const [fetchedTranslation, fetchedDict] = await Promise.all([transPromise, dictPromise]);
+      const [fetchedTranslation, sentenceTranslation, fetchedDict] = await Promise.all([transPromise, sentenceTransPromise, dictPromise]);
 
       setSelectedWord({
         word: cleanWord,
         ipa: fetchedDict.ipa,
         ipaUK: fetchedDict.ipaUK,
         ipaUS: fetchedDict.ipaUS,
-        vietnamese: fetchedTranslation,
+        vietnamese: fetchedTranslation.mainTrans,
+        meaningsByPos: fetchedTranslation.meaningsByPos,
+        sentenceContext: sentenceContext,
+        sentenceTranslation: sentenceTranslation,
         example: fetchedDict.example,
         isCustom: true
       });
-      setCustomTranslation(fetchedTranslation);
+      setCustomTranslation(fetchedTranslation.mainTrans);
     } catch (err) {
       console.error("Live translation failed:", err);
       setSelectedWord({
@@ -437,6 +481,44 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                 </div>
               ) : (
                 <div className="word-translation mb-4">{selectedWord.vietnamese}</div>
+              )}
+
+              {/* Meanings grouped by Part of Speech */}
+              {selectedWord.meaningsByPos && selectedWord.meaningsByPos.length > 0 && (
+                <div className="meanings-by-pos-box mb-4 p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-light)' }}>
+                  <span className="text-xs color-text-muted font-bold block mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📚 Các nghĩa theo từ loại (Phù hợp ngữ cảnh):
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedWord.meaningsByPos.map((posGroup, idx) => (
+                      <div key={idx} style={{ fontSize: '13px' }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--color-primary-light)', marginRight: '6px' }}>
+                          {posGroup.label}:
+                        </span>
+                        <span className="color-text-main">
+                          {posGroup.list.join(', ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sentence Context & Translation */}
+              {selectedWord.sentenceContext && (
+                <div className="sentence-context-box mb-4 p-3 rounded" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <span className="text-xs font-bold block mb-1" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>
+                    💡 Ngữ cảnh trong câu bài đọc:
+                  </span>
+                  <p className="text-sm font-semibold color-text-main italic mb-1" style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                    "{selectedWord.sentenceContext}"
+                  </p>
+                  {selectedWord.sentenceTranslation && (
+                    <p className="text-xs color-text-muted" style={{ fontSize: '12px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '4px', marginTop: '4px' }}>
+                      🇻🇳 Dịch câu: "{selectedWord.sentenceTranslation}"
+                    </p>
+                  )}
+                </div>
               )}
 
               <div className="word-example mb-4">
