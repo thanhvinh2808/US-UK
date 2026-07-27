@@ -87,7 +87,6 @@ export default function MinimalPairs({ onNavigateBack }) {
   const [selectedGroup, setSelectedGroup] = useState(MINIMAL_PAIRS_DATA[0]);
   const [activeTab, setActiveTab] = useState('learn'); // learn, listen_quiz, speak_quiz
   
-  // States for Listening Quiz
   const [quizPair, setQuizPair] = useState(null);
   const [targetWord, setTargetWord] = useState('');
   const [quizAccent, setQuizAccent] = useState('US');
@@ -95,15 +94,13 @@ export default function MinimalPairs({ onNavigateBack }) {
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [feedback, setFeedback] = useState('');
   
-  // States for Speaking Practice
   const [speakPair, setSpeakPair] = useState(null);
-  const [speakTarget, setSpeakTarget] = useState(''); // word1 or word2
+  const [speakTarget, setSpeakTarget] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [spokenText, setSpokenText] = useState('');
-  const [speakScore, setSpeakScore] = useState(null); // 'perfect', 'poor', etc
+  const [speakScore, setSpeakScore] = useState(null);
   const [recognition, setRecognition] = useState(null);
 
-  // Setup speech recognition
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -137,7 +134,6 @@ export default function MinimalPairs({ onNavigateBack }) {
     }
   }, []);
 
-  // Generate new quiz item
   const generateQuiz = (group) => {
     const currentGroup = group || selectedGroup;
     const randomIndex = Math.floor(Math.random() * currentGroup.pairs.length);
@@ -152,7 +148,6 @@ export default function MinimalPairs({ onNavigateBack }) {
     setSelectedAnswer(null);
     setFeedback('');
 
-    // Speak automatically
     setTimeout(() => {
       speak(target, { accent: randomAccent });
     }, 100);
@@ -173,9 +168,8 @@ export default function MinimalPairs({ onNavigateBack }) {
     }
   };
 
-  // Check user listening answer
   const handleAnswerClick = (word) => {
-    if (selectedAnswer) return; // already answered
+    if (selectedAnswer) return;
     setSelectedAnswer(word);
     
     const isCorrect = word.toLowerCase() === targetWord.toLowerCase();
@@ -188,30 +182,25 @@ export default function MinimalPairs({ onNavigateBack }) {
     if (isCorrect) {
       playSound('correct');
       vibrate(50);
-      setFeedback('Chính xác! Bạn nghe rất tốt. 🎉');
+      setFeedback('Chính xác! Bạn nghe phân biệt âm rất tốt. 🎉');
       if (newScore.correct >= 5 && newScore.correct === newScore.total) {
         confetti({ particleCount: 50, spread: 60 });
       }
     } else {
       playSound('incorrect');
       vibrate([50, 50]);
-      setFeedback(`Chưa đúng! Từ vừa phát âm là "${targetWord}". Hãy nghe và so sánh lại.`);
+      setFeedback(`Chưa đúng! Từ vừa phát âm là "${targetWord}". Bấm nút loa để nghe lại nhé.`);
     }
   };
 
-  // Replay audio during quiz
   const handleReplayQuiz = () => {
     if (targetWord) {
       speak(targetWord, { accent: quizAccent });
     }
   };
 
-  // Trigger speak recognition
   const handleToggleSpeakRecord = () => {
-    if (!recognition) {
-      alert("Trình duyệt của bạn không hỗ trợ tính năng nhận diện giọng nói.");
-      return;
-    }
+    if (!recognition) return;
     if (isRecording) {
       recognition.stop();
     } else {
@@ -236,7 +225,6 @@ export default function MinimalPairs({ onNavigateBack }) {
     }
   };
 
-  // Handle tab change
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSpeakScore(null);
@@ -252,25 +240,49 @@ export default function MinimalPairs({ onNavigateBack }) {
   };
 
   return (
-    <div className="minimal-pairs-screen animate-slideup p-6 glass">
-      <div className="flex justify-between items-center mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Quay về Dashboard
-        </button>
-        <h2 className="glow-text text-gradient">Minimal Pairs - Cặp âm dễ nhầm</h2>
+    <div className="minimal-pairs-studio-container animate-slideup" style={{ maxWidth: '1080px', margin: '0 auto' }}>
+      {/* Top Header Card */}
+      <div className="page-header glass p-6 mb-6 rounded-2xl flex justify-between items-center flex-wrap gap-4" style={{ background: 'var(--bg-card)', border: '2px solid var(--color-primary)' }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#ffffff', marginBottom: '8px' }}>
+            🎙️ PRONUNCIATION SOUND STAGE
+          </div>
+          <h1 style={{ fontSize: '1.9rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+            Luyện Âm Phân Biệt (Minimal Pairs Studio)
+          </h1>
+          <p className="color-text-muted text-xs mt-1" style={{ margin: 0 }}>
+            Luyện tập phân biệt các cặp từ đồng âm hoặc có khẩu hình gần giống nhau với công nghệ phản hồi âm bản xứ
+          </p>
+        </div>
+        {onNavigateBack && (
+          <button 
+            className="btn-secondary text-xs" 
+            onClick={onNavigateBack}
+            style={{ padding: '10px 18px', borderRadius: '10px', fontWeight: '700' }}
+          >
+            ← Quay lại Dashboard
+          </button>
+        )}
       </div>
 
-      {/* Sound selector tab */}
-      <div className="tabs-container flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* Top Sound Selector Carousel Bar */}
+      <div className="sound-selector-carousel flex gap-2 mb-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
         {MINIMAL_PAIRS_DATA.map((group) => (
           <button
             key={group.id}
             onClick={() => handleGroupSelect(group)}
-            className={`btn-secondary ${selectedGroup.id === group.id ? 'active-accent-btn' : ''}`}
+            className="btn-secondary text-xs"
             style={{
               whiteSpace: 'nowrap',
-              background: selectedGroup.id === group.id ? 'var(--color-primary-glow)' : 'transparent',
-              borderColor: selectedGroup.id === group.id ? 'var(--color-primary)' : 'var(--border-light)'
+              padding: '12px 20px',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '13.5px',
+              background: selectedGroup.id === group.id ? 'var(--color-primary)' : 'var(--bg-card)',
+              color: selectedGroup.id === group.id ? '#ffffff' : 'var(--color-text-main)',
+              borderColor: selectedGroup.id === group.id ? 'var(--color-primary)' : 'var(--border-light)',
+              boxShadow: selectedGroup.id === group.id ? '0 4px 16px var(--color-primary-glow)' : 'none',
+              transition: 'all 0.2s ease'
             }}
           >
             {group.title} ({group.phonetics.join(' - ')})
@@ -278,314 +290,369 @@ export default function MinimalPairs({ onNavigateBack }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Side: Detail & Description */}
-        <div className="lg:col-span-1 glass p-5 flex flex-col gap-4">
-          <h3 className="text-gradient font-bold text-lg">{selectedGroup.title}</h3>
-          <div className="phonetics-badge-row flex gap-2">
+      {/* Hero Stage Container */}
+      <div className="sound-stage-hero glass p-6 mb-6" style={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1.5px solid var(--border-light)' }}>
+        {/* Phonetics & Mouth Placement Guide Banner */}
+        <div className="p-4 mb-6" style={{ background: 'var(--bg-input)', borderRadius: '14px', borderLeft: '4px solid var(--color-primary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', color: 'var(--color-primary)' }}>{selectedGroup.title}</h3>
             {selectedGroup.phonetics.map((p, i) => (
-              <span key={i} className="badge-level font-bold text-base" style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)' }}>
+              <span key={i} style={{ background: 'var(--color-primary)', color: '#ffffff', padding: '2px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '800' }}>
                 {p}
               </span>
             ))}
           </div>
-          <p className="text-sm color-text-muted leading-relaxed" style={{ fontSize: '13.5px' }}>
+          <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.6 }} className="color-text-main font-medium">
             {selectedGroup.description}
           </p>
-          <div className="mt-auto border-t border-light pt-4">
-            <span className="text-xs color-text-muted">Mẹo học: Hãy nghe đi nghe lại hai từ kế nhau để nhận biết sự khác biệt nhỏ nhất trong cách chuyển động của môi và lưỡi.</span>
-          </div>
         </div>
 
-        {/* Right Side: Working Panels */}
-        <div className="lg:col-span-3 glass p-6 flex flex-col gap-6">
-          {/* Practice mode switcher */}
-          <div className="flex gap-3 border-b border-light pb-4">
-            <button
-              onClick={() => handleTabChange('learn')}
-              className={`pb-2 font-semibold text-sm cursor-pointer border-b-2 transition ${activeTab === 'learn' ? 'border-primary color-primary' : 'border-transparent color-text-muted'}`}
-              style={{ borderColor: activeTab === 'learn' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'learn' ? 'var(--color-primary)' : '' }}
-            >
-              📖 Học & So sánh âm
-            </button>
-            <button
-              onClick={() => handleTabChange('listen_quiz')}
-              className={`pb-2 font-semibold text-sm cursor-pointer border-b-2 transition ${activeTab === 'listen_quiz' ? 'border-primary color-primary' : 'border-transparent color-text-muted'}`}
-              style={{ borderColor: activeTab === 'listen_quiz' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'listen_quiz' ? 'var(--color-primary)' : '' }}
-            >
-              🎧 Trắc nghiệm nghe phân biệt
-            </button>
-            <button
-              onClick={() => handleTabChange('speak_quiz')}
-              className={`pb-2 font-semibold text-sm cursor-pointer border-b-2 transition ${activeTab === 'speak_quiz' ? 'border-primary color-primary' : 'border-transparent color-text-muted'}`}
-              style={{ borderColor: activeTab === 'speak_quiz' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'speak_quiz' ? 'var(--color-primary)' : '' }}
-            >
-              🎙️ Thực hành nói chuẩn âm
-            </button>
-          </div>
+        {/* Practice Mode Switcher Bar */}
+        <div className="mode-switcher-grid flex gap-3 mb-6 flex-wrap justify-center">
+          <button
+            onClick={() => handleTabChange('learn')}
+            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
+            style={{
+              borderRadius: '12px',
+              background: activeTab === 'learn' ? 'var(--color-primary)' : 'var(--bg-card)',
+              color: activeTab === 'learn' ? '#ffffff' : 'var(--color-text-main)',
+              border: activeTab === 'learn' ? 'none' : '1px solid var(--border-light)',
+              maxWidth: '260px'
+            }}
+          >
+            📖 1. So sánh âm bản xứ
+          </button>
+          <button
+            onClick={() => handleTabChange('listen_quiz')}
+            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
+            style={{
+              borderRadius: '12px',
+              background: activeTab === 'listen_quiz' ? 'var(--color-primary)' : 'var(--bg-card)',
+              color: activeTab === 'listen_quiz' ? '#ffffff' : 'var(--color-text-main)',
+              border: activeTab === 'listen_quiz' ? 'none' : '1px solid var(--border-light)',
+              maxWidth: '260px'
+            }}
+          >
+            🎧 2. Trắc nghiệm phản xạ
+          </button>
+          <button
+            onClick={() => handleTabChange('speak_quiz')}
+            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
+            style={{
+              borderRadius: '12px',
+              background: activeTab === 'speak_quiz' ? 'var(--color-primary)' : 'var(--bg-card)',
+              color: activeTab === 'speak_quiz' ? '#ffffff' : 'var(--color-text-main)',
+              border: activeTab === 'speak_quiz' ? 'none' : '1px solid var(--border-light)',
+              maxWidth: '260px'
+            }}
+          >
+            🎙️ 3. Phòng thu phát âm
+          </button>
+        </div>
 
-          {/* TAB 1: LEARN & COMPARE */}
-          {activeTab === 'learn' && (
-            <div className="flex flex-col gap-4 animate-slideup">
-              <h4 className="font-semibold text-sm text-gradient">Danh sách các cặp từ dễ nhầm:</h4>
-              <div className="vocab-list flex flex-col gap-3">
-                {selectedGroup.pairs.map((pair, idx) => (
-                  <div key={idx} className="vocab-row glass p-3 flex flex-wrap items-center justify-between gap-4">
-                    {/* Word 1 */}
-                    <div className="flex-1 flex items-center justify-between gap-2 p-2 rounded" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                      <div>
-                        <strong className="text-base color-text-dark font-bold">{pair.word1}</strong>
-                        <span className="text-xs color-text-muted ml-2">{pair.ipa1}</span>
-                        <div className="text-xs color-text-muted italic">{pair.mean1}</div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button className="row-speak-btn" onClick={() => speak(pair.word1, { accent: 'US' })} title="US Pronunciation">🇺🇸</button>
-                        <button className="row-speak-btn" onClick={() => speak(pair.word1, { accent: 'UK' })} title="UK Pronunciation">🇬🇧</button>
-                      </div>
-                    </div>
+        {/* MODE 1: DUAL-CARD VS SOUND STAGE */}
+        {activeTab === 'learn' && (
+          <div className="flex flex-col gap-6 animate-slideup">
+            {selectedGroup.pairs.map((pair, idx) => (
+              <div 
+                key={idx} 
+                className="vs-sound-battle-card glass p-6" 
+                style={{ 
+                  background: 'var(--bg-card)', 
+                  borderRadius: '18px', 
+                  border: '1.5px solid var(--border-light)',
+                  boxShadow: 'var(--shadow-lg)'
+                }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'center' }}>
+                  {/* Left Word Card A */}
+                  <div className="word-card-a p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                    <h2 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+                      {pair.word1}
+                    </h2>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginTop: '4px' }}>
+                      {pair.ipa1}
+                    </span>
+                    <p className="color-text-muted text-xs italic mt-1" style={{ margin: 0 }}>
+                      Nghĩa: {pair.mean1}
+                    </p>
 
-                    {/* Compare VS Section */}
-                    <div className="flex items-center justify-center p-2 rounded-full font-bold" style={{ color: 'var(--color-secondary)', background: 'var(--color-secondary-glow)', fontSize: '11px', minWidth: '40px' }}>
-                      🆚
-                    </div>
-
-                    {/* Word 2 */}
-                    <div className="flex-1 flex items-center justify-between gap-2 p-2 rounded" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                      <div>
-                        <strong className="text-base color-text-dark font-bold">{pair.word2}</strong>
-                        <span className="text-xs color-text-muted ml-2">{pair.ipa2}</span>
-                        <div className="text-xs color-text-muted italic">{pair.mean2}</div>
-                      </div>
-                      <div className="flex gap-1">
-                        <button className="row-speak-btn" onClick={() => speak(pair.word2, { accent: 'US' })} title="US Pronunciation">🇺🇸</button>
-                        <button className="row-speak-btn" onClick={() => speak(pair.word2, { accent: 'UK' })} title="UK Pronunciation">🇬🇧</button>
-                      </div>
-                    </div>
-
-                    {/* Compare both together */}
-                    <div>
-                      <button 
-                        className="btn-secondary flex gap-1 items-center" 
-                        onClick={() => speakCompare(`${pair.word1}. ${pair.word2}`)}
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
-                      >
-                        🔊 So sánh liên tục
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
+                      <button className="btn-secondary text-xs" onClick={() => speak(pair.word1, { accent: 'US' })} style={{ padding: '6px 12px', borderRadius: '8px', fontWeight: '700' }}>
+                        🔊 🇺🇸 US
+                      </button>
+                      <button className="btn-secondary text-xs" onClick={() => speak(pair.word1, { accent: 'UK' })} style={{ padding: '6px 12px', borderRadius: '8px', fontWeight: '700' }}>
+                        🔊 🇬🇧 UK
                       </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Center VS Action Divider */}
+                  <div className="vs-divider flex flex-col items-center justify-center gap-2">
+                    <span style={{ 
+                      background: 'var(--color-primary)', 
+                      color: '#ffffff', 
+                      padding: '6px 16px', 
+                      borderRadius: '20px', 
+                      fontSize: '14px', 
+                      fontWeight: '900',
+                      boxShadow: '0 4px 14px var(--color-primary-glow)'
+                    }}>
+                      VS
+                    </span>
+                    <button 
+                      className="btn-primary text-xs" 
+                      onClick={() => speakCompare(`${pair.word1}. ${pair.word2}`)}
+                      style={{ 
+                        padding: '10px 16px', 
+                        borderRadius: '10px', 
+                        fontWeight: '800',
+                        background: 'var(--color-primary)',
+                        color: '#ffffff',
+                        border: 'none',
+                        marginTop: '6px'
+                      }}
+                    >
+                      🔊 Nghe so sánh cả 2 từ
+                    </button>
+                  </div>
+
+                  {/* Right Word Card B */}
+                  <div className="word-card-b p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                    <h2 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+                      {pair.word2}
+                    </h2>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--color-primary)', display: 'block', marginTop: '4px' }}>
+                      {pair.ipa2}
+                    </span>
+                    <p className="color-text-muted text-xs italic mt-1" style={{ margin: 0 }}>
+                      Nghĩa: {pair.mean2}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
+                      <button className="btn-secondary text-xs" onClick={() => speak(pair.word2, { accent: 'US' })} style={{ padding: '6px 12px', borderRadius: '8px', fontWeight: '700' }}>
+                        🔊 🇺🇸 US
+                      </button>
+                      <button className="btn-secondary text-xs" onClick={() => speak(pair.word2, { accent: 'UK' })} style={{ padding: '6px 12px', borderRadius: '8px', fontWeight: '700' }}>
+                        🔊 🇬🇧 UK
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* MODE 2: LISTENING QUIZ */}
+        {activeTab === 'listen_quiz' && quizPair && (
+          <div className="flex flex-col items-center gap-6 py-6 animate-slideup" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div className="quiz-progress text-sm font-bold color-text-main">
+              Điểm số phản xạ: <strong style={{ color: 'var(--color-primary)', fontSize: '18px' }}>{score.correct}</strong> / {score.total} câu
+            </div>
+
+            <div className="quiz-audio-box flex flex-col items-center gap-3">
+              <button 
+                className="btn-primary"
+                onClick={handleReplayQuiz}
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'var(--color-primary)',
+                  color: '#ffffff',
+                  fontSize: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  boxShadow: '0 6px 24px var(--color-primary-glow)',
+                  cursor: 'pointer'
+                }}
+              >
+                🔊
+              </button>
+              <span className="text-xs color-text-muted font-semibold">Click để nghe lại từ vừa đọc ({quizAccent === 'US' ? 'Giọng Mỹ 🇺🇸' : 'Giọng Anh 🇬🇧'})</span>
+            </div>
+
+            <div className="quiz-options flex gap-4 w-full mt-4 flex-wrap">
+              <button
+                className="btn-secondary flex-1 py-5 justify-center font-extrabold text-xl"
+                onClick={() => handleAnswerClick(quizPair.word1)}
+                style={{
+                  borderRadius: '16px',
+                  border: '2px solid var(--color-primary)',
+                  background: selectedAnswer && quizPair.word1 === targetWord ? 'var(--color-success-glow)' : 'var(--bg-card)',
+                  color: 'var(--color-text-main)'
+                }}
+              >
+                {quizPair.word1}
+                <div className="text-xs font-normal color-text-muted mt-1">{quizPair.ipa1}</div>
+              </button>
+
+              <button
+                className="btn-secondary flex-1 py-5 justify-center font-extrabold text-xl"
+                onClick={() => handleAnswerClick(quizPair.word2)}
+                style={{
+                  borderRadius: '16px',
+                  border: '2px solid var(--color-primary)',
+                  background: selectedAnswer && quizPair.word2 === targetWord ? 'var(--color-success-glow)' : 'var(--bg-card)',
+                  color: 'var(--color-text-main)'
+                }}
+              >
+                {quizPair.word2}
+                <div className="text-xs font-normal color-text-muted mt-1">{quizPair.ipa2}</div>
+              </button>
+            </div>
+
+            {feedback && (
+              <div className="quiz-feedback-box glass p-5 text-center mt-2 w-full animate-slideup" style={{ borderRadius: '16px', background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                <p className="font-semibold text-sm mb-3" style={{ margin: 0, color: 'var(--color-text-main)' }}>{feedback}</p>
+                <button className="btn-primary py-3 px-8 justify-center mx-auto text-sm" onClick={() => generateQuiz()} style={{ borderRadius: '10px', background: 'var(--color-primary)', color: '#ffffff', fontWeight: '800' }}>
+                  Câu tiếp theo ➔
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MODE 3: SPEAKING PRACTICE STUDIO */}
+        {activeTab === 'speak_quiz' && speakPair && (
+          <div className="flex flex-col gap-6 py-2 animate-slideup" style={{ maxWidth: '640px', margin: '0 auto' }}>
+            <div>
+              <h4 className="font-semibold text-xs color-text-muted uppercase mb-3">1. Chọn từ muốn luyện thu âm:</h4>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setSpeakTarget(speakPair.word1);
+                    setSpeakScore(null);
+                    setSpokenText('');
+                  }}
+                  className="btn-secondary flex-1 justify-center py-4 font-extrabold"
+                  style={{
+                    borderRadius: '14px',
+                    border: '2px solid var(--color-primary)',
+                    background: speakTarget === speakPair.word1 ? 'var(--color-primary)' : 'var(--bg-card)',
+                    color: speakTarget === speakPair.word1 ? '#ffffff' : 'var(--color-text-main)'
+                  }}
+                >
+                  🗣️ {speakPair.word1} ({speakPair.ipa1})
+                </button>
+                <button
+                  onClick={() => {
+                    setSpeakTarget(speakPair.word2);
+                    setSpeakScore(null);
+                    setSpokenText('');
+                  }}
+                  className="btn-secondary flex-1 justify-center py-4 font-extrabold"
+                  style={{
+                    borderRadius: '14px',
+                    border: '2px solid var(--color-primary)',
+                    background: speakTarget === speakPair.word2 ? 'var(--color-primary)' : 'var(--bg-card)',
+                    color: speakTarget === speakPair.word2 ? '#ffffff' : 'var(--color-text-main)'
+                  }}
+                >
+                  🗣️ {speakPair.word2} ({speakPair.ipa2})
+                </button>
               </div>
             </div>
-          )}
 
-          {/* TAB 2: LISTENING QUIZ */}
-          {activeTab === 'listen_quiz' && quizPair && (
-            <div className="flex flex-col items-center gap-6 py-6 animate-slideup">
-              <div className="quiz-progress text-sm color-text-muted">
-                Điểm số: <strong className="color-primary">{score.correct}</strong> / {score.total} câu
+            <div className="glass p-6 text-center flex flex-col items-center gap-3" style={{ background: 'var(--bg-input)', borderRadius: '18px', border: '1.5px solid var(--border-light)' }}>
+              <span className="text-xs color-text-muted uppercase font-bold">Từ mục tiêu</span>
+              <span className="text-5xl font-extrabold" style={{ color: 'var(--color-primary)' }}>{speakTarget}</span>
+              <span className="text-xs color-text-muted italic">
+                Ý nghĩa: {speakTarget === speakPair.word1 ? speakPair.mean1 : speakPair.mean2}
+              </span>
+
+              <div className="flex gap-2 mt-2">
+                <button className="btn-secondary text-xs" onClick={() => speak(speakTarget, { accent: 'US' })} style={{ padding: '6px 14px', borderRadius: '8px' }}>🔊 US (Mỹ)</button>
+                <button className="btn-secondary text-xs" onClick={() => speak(speakTarget, { accent: 'UK' })} style={{ padding: '6px 14px', borderRadius: '8px' }}>🔊 UK (Anh)</button>
               </div>
+            </div>
 
-              <div className="quiz-audio-box flex flex-col items-center gap-4">
-                <button 
-                  className="btn-primary rounded-full w-20 h-20 flex items-center justify-center"
-                  onClick={handleReplayQuiz}
-                  style={{
-                    fontSize: '28px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--color-primary) 0%, #06b6d4 100%)',
-                    boxShadow: '0 0 25px rgba(6, 182, 212, 0.4)'
-                  }}
-                >
-                  🔊
-                </button>
-                <span className="text-xs color-text-muted">Click để nghe lại giọng đọc ({quizAccent === 'US' ? 'Mỹ 🇺🇸' : 'Anh 🇬🇧'})</span>
-              </div>
+            {/* Recording Box */}
+            <div className="flex flex-col items-center gap-3 py-2">
+              <button
+                className={`btn-primary rounded-full w-22 h-22 flex items-center justify-center ${isRecording ? 'pulse' : ''}`}
+                onClick={handleToggleSpeakRecord}
+                style={{
+                  width: '88px',
+                  height: '88px',
+                  borderRadius: '50%',
+                  background: isRecording ? 'var(--color-error)' : 'var(--color-primary)',
+                  boxShadow: isRecording ? '0 0 24px rgba(239, 68, 68, 0.5)' : '0 6px 24px var(--color-primary-glow)',
+                  fontSize: '32px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#ffffff'
+                }}
+              >
+                {isRecording ? '⏹' : '🎙️'}
+              </button>
+              <span className="text-xs color-text-muted font-medium">
+                {isRecording ? 'Đang lắng nghe giọng bạn... Đọc rõ rồi click dừng' : 'Bấm micro và đọc to từ phía trên'}
+              </span>
 
-              <div className="quiz-options flex gap-6 w-full max-w-md mt-4">
-                <button
-                  className={`btn-secondary flex-1 py-4 justify-center font-bold text-lg rounded-md ${
-                    selectedAnswer
-                      ? selectedAnswer.toLowerCase() === quizPair.word1.toLowerCase()
-                        ? targetWord.toLowerCase() === quizPair.word1.toLowerCase()
-                          ? 'correct-option'
-                          : 'wrong-option'
-                        : ''
-                      : ''
-                  }`}
-                  onClick={() => handleAnswerClick(quizPair.word1)}
-                  style={{
-                    border: '2px solid var(--border-light)',
-                    fontSize: '20px',
-                    backgroundColor: selectedAnswer && quizPair.word1 === targetWord ? 'rgba(16, 185, 129, 0.15)' : ''
-                  }}
-                >
-                  {quizPair.word1}
-                  <div className="text-xs font-normal color-text-muted mt-1">{quizPair.ipa1}</div>
-                </button>
-
-                <button
-                  className={`btn-secondary flex-1 py-4 justify-center font-bold text-lg rounded-md ${
-                    selectedAnswer
-                      ? selectedAnswer.toLowerCase() === quizPair.word2.toLowerCase()
-                        ? targetWord.toLowerCase() === quizPair.word2.toLowerCase()
-                          ? 'correct-option'
-                          : 'wrong-option'
-                        : ''
-                      : ''
-                  }`}
-                  onClick={() => handleAnswerClick(quizPair.word2)}
-                  style={{
-                    border: '2px solid var(--border-light)',
-                    fontSize: '20px',
-                    backgroundColor: selectedAnswer && quizPair.word2 === targetWord ? 'rgba(16, 185, 129, 0.15)' : ''
-                  }}
-                >
-                  {quizPair.word2}
-                  <div className="text-xs font-normal color-text-muted mt-1">{quizPair.ipa2}</div>
-                </button>
-              </div>
-
-              {feedback && (
-                <div className="quiz-feedback-box glass p-4 text-center mt-4 w-full max-w-md animate-slideup">
-                  <p className="font-medium text-sm leading-relaxed">{feedback}</p>
-                  <button className="btn-primary mt-3 py-2 px-6 justify-center mx-auto" onClick={() => generateQuiz()}>
-                    Tiếp theo →
-                  </button>
+              {spokenText && (
+                <div className="spoken-result-display animate-slideup mt-2 w-full p-4 rounded-xl text-center glass border border-light" style={{ borderRadius: '14px', background: 'var(--bg-card)' }}>
+                  <div className="text-xs color-text-muted mb-1">Hệ thống nhận diện được:</div>
+                  <div className="font-extrabold text-xl mb-2" style={{ color: 'var(--color-text-main)' }}>"{spokenText}"</div>
+                  
+                  {speakScore === 'perfect' && (
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-success-glow)', color: 'var(--color-success)', border: '1px solid var(--color-success)' }}>
+                      Xuất Sắc! Phát âm chuẩn 100% 🎯
+                    </span>
+                  )}
+                  {speakScore === 'good' && (
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-primary-glow)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                      Khá tốt! Gần đúng 🌟
+                    </span>
+                  )}
+                  {speakScore === 'try_again' && (
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-error-glow)', color: 'var(--color-error)', border: '1px solid var(--color-error)' }}>
+                      Thử lại nhé! Hãy chú ý bật khẩu hình chuẩn 🔁
+                    </span>
+                  )}
                 </div>
               )}
             </div>
-          )}
 
-          {/* TAB 3: SPEAKING PRACTICE */}
-          {activeTab === 'speak_quiz' && speakPair && (
-            <div className="flex flex-col gap-6 py-4 animate-slideup">
-              <div>
-                <h4 className="font-semibold text-sm mb-3">1. Chọn từ bạn muốn tập nói:</h4>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setSpeakTarget(speakPair.word1);
-                      setSpeakScore(null);
-                      setSpokenText('');
-                    }}
-                    className={`btn-secondary flex-1 justify-center py-3 font-semibold ${speakTarget === speakPair.word1 ? 'active-accent-btn' : ''}`}
-                    style={{
-                      border: '2px solid',
-                      borderColor: speakTarget === speakPair.word1 ? 'var(--color-primary)' : 'var(--border-light)',
-                      backgroundColor: speakTarget === speakPair.word1 ? 'var(--color-primary-glow)' : 'transparent'
-                    }}
-                  >
-                    🗣️ {speakPair.word1} ({speakPair.ipa1})
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSpeakTarget(speakPair.word2);
-                      setSpeakScore(null);
-                      setSpokenText('');
-                    }}
-                    className={`btn-secondary flex-1 justify-center py-3 font-semibold ${speakTarget === speakPair.word2 ? 'active-accent-btn' : ''}`}
-                    style={{
-                      border: '2px solid',
-                      borderColor: speakTarget === speakPair.word2 ? 'var(--color-primary)' : 'var(--border-light)',
-                      backgroundColor: speakTarget === speakPair.word2 ? 'var(--color-primary-glow)' : 'transparent'
-                    }}
-                  >
-                    🗣️ {speakPair.word2} ({speakPair.ipa2})
-                  </button>
-                </div>
-              </div>
+            {/* Pair index switcher */}
+            <div className="flex justify-between items-center mt-2 pt-4 border-t border-light" style={{ borderColor: 'var(--border-light)' }}>
+              <button
+                disabled={selectedGroup.pairs.indexOf(speakPair) === 0}
+                className="btn-secondary text-xs"
+                style={{ padding: '10px 18px', borderRadius: '10px', fontWeight: '700' }}
+                onClick={() => {
+                  const currentIdx = selectedGroup.pairs.indexOf(speakPair);
+                  const prevPair = selectedGroup.pairs[currentIdx - 1];
+                  setSpeakPair(prevPair);
+                  setSpeakTarget(prevPair.word1);
+                  setSpeakScore(null);
+                  setSpokenText('');
+                }}
+              >
+                ← Cặp từ trước
+              </button>
 
-              <div className="glass p-5 rounded-md text-center flex flex-col items-center gap-4">
-                <span className="text-xs color-text-muted uppercase tracking-wider font-semibold">Từ cần luyện</span>
-                <span className="text-4xl font-extrabold text-gradient">{speakTarget}</span>
-                <span className="text-sm color-text-muted italic">
-                  Ý nghĩa: {speakTarget === speakPair.word1 ? speakPair.mean1 : speakPair.mean2}
-                </span>
-
-                <div className="flex gap-2">
-                  <button className="btn-secondary" onClick={() => speak(speakTarget, { accent: 'US' })}>🔊 US (Mỹ)</button>
-                  <button className="btn-secondary" onClick={() => speak(speakTarget, { accent: 'UK' })}>🔊 UK (Anh)</button>
-                </div>
-              </div>
-
-              {/* Recording Box */}
-              <div className="flex flex-col items-center gap-4 py-4 border-t border-light mt-2">
-                <button
-                  className={`btn-primary rounded-full w-20 h-20 flex items-center justify-center ${isRecording ? 'pulse' : ''}`}
-                  onClick={handleToggleSpeakRecord}
-                  style={{
-                    borderRadius: '50%',
-                    background: isRecording ? 'linear-gradient(135deg, var(--color-error) 0%, #f43f5e 100%)' : 'linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%)',
-                    boxShadow: isRecording ? '0 0 25px rgba(244, 63, 94, 0.4)' : '0 0 25px rgba(59, 130, 246, 0.3)',
-                    fontSize: '24px'
-                  }}
-                >
-                  {isRecording ? '⏹️' : '🎙️'}
-                </button>
-                <span className="text-xs color-text-muted">
-                  {isRecording ? 'Đang lắng nghe... Nói dứt khoát rồi click dừng' : 'Click microphone và nói từ phía trên'}
-                </span>
-
-                {/* Spoken output results */}
-                {spokenText && (
-                  <div className="spoken-result-display animate-slideup mt-3 w-full max-w-md p-4 rounded-md text-center glass border border-light">
-                    <div className="text-xs color-text-muted mb-1">Hệ thống nghe được:</div>
-                    <div className="font-bold text-lg mb-2">"{spokenText}"</div>
-                    
-                    {speakScore === 'perfect' && (
-                      <span className="badge-level text-sm py-1 px-4 font-bold" style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-                        Xuất Sắc! Chuẩn 100% 🎯
-                      </span>
-                    )}
-                    {speakScore === 'good' && (
-                      <span className="badge-level text-sm py-1 px-4 font-bold" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-secondary)', borderColor: 'rgba(245, 158, 11, 0.3)' }}>
-                        Khá tốt! Gần đúng 🌟
-                      </span>
-                    )}
-                    {speakScore === 'try_again' && (
-                      <span className="badge-level text-sm py-1 px-4 font-bold" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: 'var(--color-error)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-                        Thử lại nhé! Hãy nghe kỹ âm xì hơi hoặc âm gió 🔁
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Pair index switcher */}
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-light">
-                <button
-                  disabled={selectedGroup.pairs.indexOf(speakPair) === 0}
-                  className="btn-secondary"
-                  onClick={() => {
-                    const currentIdx = selectedGroup.pairs.indexOf(speakPair);
-                    const prevPair = selectedGroup.pairs[currentIdx - 1];
-                    setSpeakPair(prevPair);
-                    setSpeakTarget(prevPair.word1);
-                    setSpeakScore(null);
-                    setSpokenText('');
-                  }}
-                >
-                  ← Cặp trước
-                </button>
-
-                <button
-                  disabled={selectedGroup.pairs.indexOf(speakPair) === selectedGroup.pairs.length - 1}
-                  className="btn-secondary"
-                  onClick={() => {
-                    const currentIdx = selectedGroup.pairs.indexOf(speakPair);
-                    const nextPair = selectedGroup.pairs[currentIdx + 1];
-                    setSpeakPair(nextPair);
-                    setSpeakTarget(nextPair.word1);
-                    setSpeakScore(null);
-                    setSpokenText('');
-                  }}
-                >
-                  Cặp tiếp theo →
-                </button>
-              </div>
+              <button
+                disabled={selectedGroup.pairs.indexOf(speakPair) === selectedGroup.pairs.length - 1}
+                className="btn-secondary text-xs"
+                style={{ padding: '10px 18px', borderRadius: '10px', fontWeight: '700' }}
+                onClick={() => {
+                  const currentIdx = selectedGroup.pairs.indexOf(speakPair);
+                  const nextPair = selectedGroup.pairs[currentIdx + 1];
+                  setSpeakPair(nextPair);
+                  setSpeakTarget(nextPair.word1);
+                  setSpeakScore(null);
+                  setSpokenText('');
+                }}
+              >
+                Cặp từ tiếp theo ➔
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

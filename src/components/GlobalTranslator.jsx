@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
 import { playSound, speak, speakCompare } from '../utils/sounds';
-import { conjugateWithCompromise, getSForm, getIngForm } from '../utils/helpers/conjugationEngine';
+import { conjugateWithCompromise, getSForm, getPastForm, getIngForm } from '../utils/helpers/conjugationEngine';
 
 function checkLocalGrammarErrors(text) {
   let clean = text.trim();
@@ -233,7 +233,7 @@ async function checkGrammarOnline(text) {
   }
 }
 
-export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
+export default function GlobalTranslator({ onSavedVocabChange, showToast, isPageMode = false, onNavigateBack }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -245,6 +245,114 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionTimeoutRef = useRef(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const startVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (showToast) showToast("Trình duyệt của bạn chưa hỗ trợ nhận diện giọng nói.", "error");
+      return;
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = direction === 'en-vi' ? 'en-US' : 'vi-VN';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        if (showToast) showToast("🎙️ Đang lắng nghe giọng nói...", "info");
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setQuery(transcript);
+        setIsListening(false);
+        fetchSuggestions(transcript);
+        handleTranslate(null, transcript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+        if (showToast) showToast("Không nhận diện được âm thanh, vui lòng thử lại.", "error");
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error("Voice input error", err);
+      setIsListening(false);
+    }
+  };
+
+  const handleCopy = (text, label) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    if (showToast) showToast(`Đã sao chép ${label || 'nội dung'}!`, "success");
+  };
+
+  const handleAiAnalysis = async () => {
+    if (!result || isAiLoading) return;
+    const wordToAnalyze = direction === 'en-vi' ? result.word : result.word;
+    if (!wordToAnalyze) return;
+
+    setIsAiLoading(true);
+    try {
+      const prompt = `Bạn là chuyên gia ngôn ngữ Anh-Việt cao cấp. Phân tích chi tiết và sâu sắc từ/cụm từ/câu sau: "${wordToAnalyze}" (Nghĩa dịch: "${result.vietnamese}").
+Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`\`\`json, không thêm text nào khác ngoài JSON) theo schema:
+{
+  "nuances": "Giải thích chi tiết sắc thái ngữ cảnh, độ trang trọng (formal/informal/slang), cảm xúc và hoàn cảnh sử dụng phù hợp nhất",
+  "collocations": [
+    {"phrase": "cụm 1", "vi": "nghĩa cụm 1"},
+    {"phrase": "cụm 2", "vi": "nghĩa cụm 2"},
+    {"phrase": "cụm 3", "vi": "nghĩa cụm 3"}
+  ],
+  "real_examples": [
+    {"en": "câu ví dụ tiếng Anh 1", "vi": "dịch tiếng Việt 1"},
+    {"en": "câu ví dụ tiếng Anh 2", "vi": "dịch tiếng Việt 2"}
+  ],
+  "alternatives": {
+    "formal": "cách nói trang trọng hơn",
+    "informal": "cách nói thông dụng",
+    "slang": "cách nói lóng (nếu có, không có để null)"
+  }
+}`;
+
+      const res = await fetch('/api/gemini-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!res.ok) throw new Error('AI proxy error');
+      const data = await res.json();
+      let rawText = typeof data === 'string' ? data : (data.text || data.content || data.response || '');
+      const cleaned = rawText.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      setAiAnalysis(parsed);
+      playSound("correct");
+    } catch (err) {
+      console.error("AI Analysis error:", err);
+      if (showToast) showToast("Không thể phân tích AI lúc này, vui lòng thử lại.", "error");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
   const fetchSuggestions = (val) => {
     if (suggestionTimeoutRef.current) {
@@ -340,11 +448,15 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
     };
   }, []);
 
-  // Search History States & Actions
+  // Search History States & Actions (Safeguarded against legacy plain string history)
   const [searchHistory, setSearchHistory] = useState(() => {
     try {
       const data = localStorage.getItem("eng_app_search_history");
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      if (!Array.isArray(parsed)) return [];
+      // Sanitize: filter out nulls or string primitives
+      return parsed.filter(item => item && typeof item === 'object' && item.word);
     } catch (e) {
       return [];
     }
@@ -353,12 +465,18 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
   const updateSearchHistory = (wordText, translationText) => {
     try {
       const historyData = localStorage.getItem("eng_app_search_history");
-      let list = historyData ? JSON.parse(historyData) : [];
+      let list = [];
+      if (historyData) {
+        const parsed = JSON.parse(historyData);
+        if (Array.isArray(parsed)) {
+          list = parsed.filter(item => item && typeof item === 'object' && item.word);
+        }
+      }
       
-      list = list.filter(item => item.word.toLowerCase() !== wordText.toLowerCase());
+      list = list.filter(item => item.word && item.word.toLowerCase() !== wordText.toLowerCase());
       list.unshift({
         word: wordText,
-        translation: translationText,
+        translation: translationText || "",
         timestamp: Date.now()
       });
       list = list.slice(0, 6);
@@ -399,6 +517,26 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handleSaveWord = () => {
+    if (!result) return;
+    const targetWord = result.word;
+    const vietnameseMeaning = result.vietnamese;
+    if (!targetWord) return;
+
+    storage.saveWord({
+      word: targetWord,
+      ipa: result.ipa || '',
+      vietnamese: vietnameseMeaning,
+      example: result.example || '',
+      topic: 'Tra dịch AI',
+      partOfSpeech: result.partOfSpeech || ''
+    });
+
+    setIsSaved(true);
+    if (onSavedVocabChange) onSavedVocabChange();
+    if (showToast) showToast(`Đã lưu "${targetWord}" vào Sổ tay từ vựng!`, 'success');
+  };
 
   const handleTranslate = async (e, overrideQuery) => {
     if (e) e.preventDefault();
@@ -453,7 +591,11 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
 
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
-      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&q=${encodeURIComponent(queryToUse.trim())}`)
+
+      // Strip leading articles (a, an, the, to) for headword dictionary lookup
+      const queryHeadword = isSourceEn ? cleanQuery.replace(/^(a|an|the|to)\s+/i, '').trim() : cleanQuery;
+
+      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&q=${encodeURIComponent(queryHeadword)}`)
         .then(res => res.json())
         .then(data => {
           let text = "Không tìm thấy nghĩa";
@@ -463,19 +605,19 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
           }
           if (data && data[1] && Array.isArray(data[1])) {
             const posMap = {
-              noun: '📘 Danh từ',
-              verb: '⚡ Động từ',
-              adjective: '🎨 Tính từ',
-              adverb: '🚀 Trạng từ',
-              preposition: '🔗 Giới từ',
-              conjunction: '🤝 Liên từ',
-              pronoun: '👤 Đại từ',
-              interjection: '💥 Thán từ'
+              noun: '📘 Danh từ (Noun)',
+              verb: '⚡ Động từ (Verb)',
+              adjective: '🎨 Tính từ (Adjective)',
+              adverb: '🚀 Trạng từ (Adverb)',
+              preposition: '🔗 Giới từ (Preposition)',
+              conjunction: '🤝 Liên từ (Conjunction)',
+              pronoun: '👤 Đại từ (Pronoun)',
+              interjection: '💥 Thán từ (Interjection)'
             };
             meaningsByPos = data[1].map(item => {
               const rawPos = item[0] || '';
               const label = posMap[rawPos.toLowerCase()] || `📌 ${rawPos}`;
-              const list = (item[1] || []).slice(0, 6);
+              const list = (item[1] || []).slice(0, 8);
               return { pos: rawPos, label, list };
             }).filter(i => i.list && i.list.length > 0);
           }
@@ -485,17 +627,19 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       const transData = await transPromise;
       const translationResult = transData.text;
       const meaningsByPos = transData.meaningsByPos;
-      const targetEnglishWord = isSourceEn ? cleanQuery : translationResult.trim().toLowerCase();
-      const isTargetSingleWord = !targetEnglishWord.includes(' ');
+      const targetEnglishWord = isSourceEn ? queryHeadword : translationResult.trim().toLowerCase();
+      
+      const rootEnglishWord = targetEnglishWord.replace(/^(a|an|the|to)\s+/i, '').trim();
+      const isTargetSingleWord = !rootEnglishWord.includes(' ');
 
       let dictPromise = Promise.resolve({ ipa: '', ipaUK: '', ipaUS: '', example: '', synonymsList: [] });
       if (isTargetSingleWord) {
-        dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${targetEnglishWord}`)
+        dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(rootEnglishWord)}`)
           .then(res => res.json())
           .then(data => {
             if (data && data[0]) {
               const phonetics = data[0].phonetics || [];
-              const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${targetEnglishWord}/`;
+              const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${rootEnglishWord}/`;
               
               // Parse separate UK and US IPAs
               let ipaUK = '';
@@ -541,7 +685,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                 }
               }
               const synonymsList = Array.from(new Set(synonyms))
-                .filter(s => s && s.trim() && s.toLowerCase() !== targetEnglishWord.toLowerCase())
+                .filter(s => s && s.trim() && s.toLowerCase() !== rootEnglishWord.toLowerCase())
                 .slice(0, 5);
 
               return { 
@@ -553,9 +697,9 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
                 apiPos: apiPos
               };
             }
-            return { ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' };
+            return { ipa: `/${rootEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' };
           })
-          .catch(() => ({ ipa: `/${targetEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' }));
+          .catch(() => ({ ipa: `/${rootEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' }));
       }
 
       const dictInfo = await dictPromise;
@@ -681,7 +825,7 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
         vietnamese: isSourceEn ? translationResult : query.trim(), 
         partOfSpeech: finalPartOfSpeech,
         forms: localGrammar ? localGrammar.forms : null,
-        example: dictInfo.example || (isTargetSingleWord ? `Used in: ${targetEnglishWord}` : 'Sentence translation'),
+        example: dictInfo.example || '',
         translatedExample: translatedExample,
         hasGrammarError: localCheck.hasError,
         correctedText: localCheck.correctedText,
@@ -708,38 +852,887 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
     speak(text, { accent: accent || localStorage.getItem('eng_app_voice_accent') || 'US', rate: 0.85 });
   };
 
-  const handleSaveWord = () => {
-    if (!result) return;
+  const renderTranslatorContent = () => (
+    <div className="lexicon-studio-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Direction Pills Bar - Dynamic Royal Blue System */}
+      <div className="direction-tabs-studio flex gap-3 justify-center flex-wrap" style={{ position: 'relative' }}>
+        <button 
+          type="button"
+          className={`btn-secondary text-xs px-6 py-3 ${direction === 'en-vi' ? 'active-pill' : ''}`}
+          style={{ 
+            borderRadius: '12px', 
+            border: direction === 'en-vi' ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+            background: direction === 'en-vi' ? 'var(--color-primary)' : 'var(--bg-card)',
+            color: direction === 'en-vi' ? '#ffffff' : 'var(--color-text-main)',
+            fontWeight: '700',
+            fontSize: '14px',
+            minHeight: '44px',
+            flex: '1 1 150px',
+            maxWidth: '240px',
+            transition: 'all 0.2s ease'
+          }}
+          onClick={() => {
+            setDirection('en-vi');
+            setQuery('');
+            setResult(null);
+            setAiAnalysis(null);
+          }}
+        >
+          🇬🇧 Anh ➔ 🇻🇳 Việt
+        </button>
+        <button 
+          type="button"
+          className={`btn-secondary text-xs px-6 py-3 ${direction === 'vi-en' ? 'active-pill' : ''}`}
+          style={{ 
+            borderRadius: '12px', 
+            border: direction === 'vi-en' ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+            background: direction === 'vi-en' ? 'var(--color-primary)' : 'var(--bg-card)',
+            color: direction === 'vi-en' ? '#ffffff' : 'var(--color-text-main)',
+            fontWeight: '700',
+            fontSize: '14px',
+            minHeight: '44px',
+            flex: '1 1 150px',
+            maxWidth: '240px',
+            transition: 'all 0.2s ease'
+          }}
+          onClick={() => {
+            setDirection('vi-en');
+            setQuery('');
+            setResult(null);
+            setAiAnalysis(null);
+          }}
+        >
+          🇻🇳 Việt ➔ 🇬🇧 Anh
+        </button>
+      </div>
 
-    try {
-      const isSourceEn = direction === 'en-vi';
-      const wordToSave = {
-        word: isSourceEn ? result.word : result.word, // English word is always stored in result.word
-        ipa: result.ipa || "",
-        vietnamese: result.vietnamese, // Vietnamese translation/source
-        example: result.example || `Translated via Quick Lookup`,
-        translatedExample: result.translatedExample || "",
-        partOfSpeech: result.partOfSpeech || "",
-        forms: result.forms || null,
-        hasGrammarError: result.hasGrammarError || false,
-        correctedText: result.correctedText || "",
-        grammarErrorExplanation: result.grammarErrorExplanation || "",
-        topic: "Quick Lookup"
-      };
+      {/* Solid Search Console */}
+      <form onSubmit={handleTranslate} className="translator-search-console">
+        <div style={{
+          position: 'relative',
+          display: 'flex',
+          gap: '12px',
+          background: 'var(--bg-card)',
+          padding: '8px',
+          borderRadius: '16px',
+          border: '2px solid var(--color-primary)',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ flex: '1 1 260px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <textarea
+                ref={inputRef}
+                placeholder={direction === 'en-vi' ? "Nhập từ tiếng Anh hoặc câu dài cần dịch..." : "Nhập từ tiếng Việt hoặc câu dài cần dịch..."}
+                value={query}
+                onChange={handleInputChange}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (query.trim() && !isLoading) {
+                      handleTranslate(e);
+                    }
+                  }
+                }}
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: '12px 90px 12px 16px',
+                  fontSize: '15px',
+                  fontFamily: 'var(--font-sans)',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'var(--color-text-main)',
+                  resize: 'none',
+                  lineHeight: 1.5
+                }}
+              />
+              {/* Action Cluster inside Search Console */}
+              <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      setResult(null);
+                      setAiAnalysis(null);
+                    }}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.08)',
+                      border: 'none',
+                      color: 'var(--color-text-muted)',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Xóa nội dung"
+                  >
+                    ✕
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={startVoiceInput}
+                  style={{
+                    background: isListening ? 'var(--color-error)' : 'var(--color-primary-glow)',
+                    border: '1px solid var(--color-primary)',
+                    color: isListening ? '#ffffff' : 'var(--color-primary)',
+                    borderRadius: '50%',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  title="Nhập bằng giọng nói (Voice Input)"
+                >
+                  🎙️
+                </button>
+              </div>
+            </div>
 
-      const newList = storage.saveWord(wordToSave);
-      if (newList && newList.length > 0) {
-        setIsSaved(true);
-        onSavedVocabChange();
-        showToast("Đã lưu từ vào sổ tay!", "success");
-        playSound("correct");
-      } else {
-        showToast("Không thể lưu từ, vui lòng thử lại.", "error");
-      }
-    } catch (e) {
-      showToast("Không thể lưu từ, vui lòng thử lại.", "error");
-    }
-  };
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="suggestions-dropdown" style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 1000,
+                background: 'var(--bg-card)',
+                border: '2px solid var(--color-primary)',
+                borderRadius: '12px',
+                marginTop: '6px',
+                maxHeight: '220px',
+                overflowY: 'auto'
+              }}>
+                {suggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectSuggestion(item);
+                    }}
+                    style={{
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: 'var(--color-text-main)',
+                      borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid var(--border-light)',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                    className="suggestion-item"
+                  >
+                    <span style={{ opacity: 0.5, fontSize: '12px' }}>🔍</span>
+                    <span style={{ fontWeight: '500' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            disabled={isLoading || !query.trim()} 
+            style={{ 
+              height: '54px', 
+              minWidth: '120px', 
+              borderRadius: '12px',
+              fontSize: '15px',
+              fontWeight: '700',
+              background: 'var(--color-primary)',
+              color: '#ffffff',
+              border: 'none',
+              flex: '0 0 auto',
+              alignSelf: 'center'
+            }}
+          >
+            {isLoading ? <span className="spinner" /> : 'Tra cứu ✨'}
+          </button>
+        </div>
+      </form>
+
+      {/* Results & History Section */}
+      <div className="translator-results-container">
+        {isLoading && (
+          <div className="text-center p-8 glass rounded-2xl" style={{ border: '1.5px solid var(--color-primary)' }}>
+            <span className="spinner-large" />
+            <p className="color-text-muted mt-3 font-semibold text-sm">
+              Đang tra cứu từ điển...
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !result && searchHistory && searchHistory.length > 0 && (
+          <div className="recent-searches-box glass p-4 animate-slideup" style={{
+            borderRadius: '16px',
+            border: '1px solid var(--border-light)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 className="text-xs uppercase tracking-wider color-text-muted font-bold flex items-center gap-2" style={{ margin: 0 }}>
+                🕒 LỊCH SỬ TRA CỨU:
+              </h4>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem("eng_app_search_history");
+                  setSearchHistory([]);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-error)',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}
+              >
+                Xóa lịch sử
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {searchHistory.map((item, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    if (item && item.word) {
+                      setQuery(item.word);
+                      handleTranslate(null, item.word);
+                    }
+                  }}
+                  className="btn-secondary text-xs"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-card)',
+                    color: 'var(--color-text-main)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{item?.word || ''}</span>
+                  {item?.translation && <span className="color-text-muted" style={{ fontSize: '11px' }}>➔ {item.translation}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="translator-result-box glass p-6 animate-slideup" style={{ borderRadius: '16px', border: '2px solid var(--color-primary)', background: 'var(--bg-card)' }}>
+            {/* Header Result Card */}
+            <div className="result-header flex justify-between items-start flex-wrap gap-4" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <h3 className="result-word" style={{ margin: 0, fontSize: '2.2rem', fontWeight: '800', color: 'var(--color-text-main)' }}>
+                    {direction === 'en-vi' ? result.word : result.word}
+                  </h3>
+                  {result.source && (
+                    <span className="badge-source text-xs" style={{ 
+                      fontSize: '11px', 
+                      padding: '4px 10px', 
+                      borderRadius: '6px',
+                      background: 'var(--color-primary)',
+                      color: '#ffffff',
+                      fontWeight: '700'
+                    }}>
+                      {result.source === 'cache' ? 'Cache' : (result.source === 'compromise' ? 'Local Engine' : 'Gemini AI')}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(`${result.word} (${result.ipa || ''}) - ${result.vietnamese}`, 'từ & bản dịch')}
+                    style={{
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-light)',
+                      color: 'var(--color-text-main)',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontWeight: '600'
+                    }}
+                    title="Sao chép từ & bản dịch"
+                  >
+                    📋 Sao chép
+                  </button>
+                </div>
+
+                {/* Phonetics Bar */}
+                {result.ipaUK && result.ipaUS ? (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', border: '1px solid var(--border-light)' }}>
+                      🇬🇧 UK: {result.ipaUK}
+                    </span>
+                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', border: '1px solid var(--border-light)' }}>
+                      🇺🇸 US: {result.ipaUS}
+                    </span>
+                  </div>
+                ) : result.ipa ? (
+                  <span className="result-ipa" style={{ fontSize: '15px', color: 'var(--color-primary)', fontWeight: '600', marginTop: '6px', display: 'inline-block' }}>{result.ipa}</span>
+                ) : null}
+              </div>
+
+              {/* Voice Player Actions */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button className="btn-secondary text-xs" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'US')} style={{ padding: '8px 14px', borderRadius: '8px', fontWeight: '700' }}>
+                  🔊 🇺🇸 US
+                </button>
+                <button className="btn-secondary text-xs" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'UK')} style={{ padding: '8px 14px', borderRadius: '8px', fontWeight: '700' }}>
+                  🔊 🇬🇧 UK
+                </button>
+                <button className="btn-secondary text-xs" onClick={() => speakCompare(direction === 'en-vi' ? result.word : result.word)} style={{ padding: '8px 14px', borderRadius: '8px', fontWeight: '700' }}>
+                  🆚 So sánh
+                </button>
+              </div>
+            </div>
+
+            {/* Part of Speech Badge */}
+            {result.partOfSpeech && (
+              <div className="mt-3">
+                <span style={{
+                  background: 'var(--color-primary)',
+                  color: '#ffffff',
+                  padding: '4px 14px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase'
+                }}>
+                  {result.partOfSpeech}
+                </span>
+              </div>
+            )}
+
+            {/* Grammar Warning Box */}
+            {result.hasGrammarError && result.correctedText && (
+              <div className="grammar-correction-box mt-4 p-4" style={{ borderLeft: '4px solid var(--color-error)', background: 'var(--color-error-glow)', borderRadius: '8px' }}>
+                <strong className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-error)' }}>
+                  ⚠️ Lỗi ngữ pháp:
+                </strong>
+                <div className="mt-2 text-sm">
+                  <del className="color-text-muted italic block mb-1" style={{ color: 'var(--color-error)' }}>
+                    "{result.originalCheckedText || query}"
+                  </del>
+                  <ins className="font-bold block mb-2" style={{ textDecoration: 'none', color: 'var(--color-text-main)' }}>
+                    ✓ Sửa đúng: "{result.correctedText}"
+                  </ins>
+                  <p className="color-text-main italic p-2 rounded mt-1" style={{ background: 'var(--bg-input)', fontSize: '13px', whiteSpace: 'pre-line' }}>
+                    {result.grammarErrorExplanation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Primary Translation Box */}
+            <div className="result-meaning-box mt-4 p-4" style={{ background: 'var(--bg-input)', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)' }}>
+              <strong className="color-text-muted text-xs uppercase block mb-1">
+                {direction === 'en-vi' ? 'DỊCH NGHĨA CHÍNH (TIẾNG VIỆT):' : 'DỊCH NGHĨA CHÍNH (TIẾNG ANH):'}
+              </strong>
+              <p style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--color-primary)', margin: 0 }}>
+                {direction === 'en-vi' ? result.vietnamese : result.word}
+              </p>
+            </div>
+
+            {/* Categorized POS Meanings (Rendered as Clean Pill Tags) */}
+            {result.meaningsByPos && result.meaningsByPos.length > 0 && (
+              <div className="meanings-by-pos-box mt-4 p-5" style={{ borderLeft: '4px solid var(--color-primary)', borderRadius: '12px', background: 'var(--bg-input)' }}>
+                <strong className="color-text-muted text-xs uppercase block mb-3 font-bold" style={{ color: 'var(--color-primary)' }}>
+                  📚 CÁC NGHĨA CHI TIẾT THEO TỪ LOẠI:
+                </strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {result.meaningsByPos.map((posGroup, idx) => (
+                    <div key={idx} style={{ background: 'var(--bg-card)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                      <span style={{ fontWeight: '800', color: 'var(--color-primary)', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                        {posGroup.label}:
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {posGroup.list.map((m, mIdx) => (
+                          <span 
+                            key={mIdx} 
+                            style={{ 
+                              background: 'var(--bg-input)', 
+                              color: 'var(--color-text-main)', 
+                              padding: '4px 10px', 
+                              borderRadius: '6px', 
+                              fontSize: '13px', 
+                              fontWeight: '600',
+                              border: '1px solid var(--border-light)'
+                            }}
+                          >
+                            {m.normalize ? m.normalize("NFC") : m}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Synonyms Grid (Deduplicated & Cleaned) */}
+            {result.synonyms && result.synonyms.length > 0 && (() => {
+              const uniqueSynonyms = [];
+              const seen = new Set();
+              result.synonyms.forEach(item => {
+                const lower = (item.word || '').toLowerCase();
+                if (lower && !seen.has(lower)) {
+                  seen.add(lower);
+                  uniqueSynonyms.push(item);
+                }
+              });
+
+              if (uniqueSynonyms.length === 0) return null;
+
+              return (
+                <div className="synonyms-box mt-4 p-5" style={{ borderLeft: '4px solid var(--color-primary)', borderRadius: '12px', background: 'var(--bg-input)' }}>
+                  <strong className="color-text-muted text-xs uppercase block mb-3 font-bold" style={{ color: 'var(--color-primary)' }}>
+                    💡 TỪ ĐỒNG NGHĨA (SYNONYMS):
+                  </strong>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {uniqueSynonyms.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{ 
+                          background: 'var(--bg-card)', 
+                          border: '1px solid var(--border-light)',
+                          borderRadius: '8px',
+                          padding: '8px 14px',
+                          flex: '1 1 140px',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}
+                      >
+                        <span style={{ fontWeight: '800', color: 'var(--color-primary)', fontSize: '14px' }}>{item.word}</span>
+                        {item.vietnamese && item.vietnamese !== item.word && (
+                          <span className="color-text-muted" style={{ fontSize: '11px', marginTop: '2px' }}>{item.vietnamese}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ⚡ Dedicated 12 Tenses Verb & Word Forms Conjugation Table */}
+            {result.word && !result.word.trim().replace(/^(a|an|the|to)\s+/i, '').includes(" ") && (
+              <div className="result-forms mt-5 p-5" style={{ borderRadius: '14px', border: '2px solid var(--color-primary)', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <strong style={{ color: 'var(--color-primary)', fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⚡ BẢNG CHIA ĐỘNG TỪ 12 THÌ & DẠNG TỪ (VERB CONJUGATION):
+                  </strong>
+
+                  <div className="flex gap-2">
+                    <button 
+                      type="button"
+                      className="text-xs px-3 py-1.5 rounded-lg"
+                      style={{
+                        background: grammarMode !== 'non-verb' ? 'var(--color-primary)' : 'var(--bg-input)',
+                        color: grammarMode !== 'non-verb' ? '#ffffff' : 'var(--color-text-main)',
+                        fontWeight: '700',
+                        border: '1px solid var(--color-primary)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setGrammarMode('verb')}
+                    >
+                      ⚡ 12 Thì Động từ
+                    </button>
+                    <button 
+                      type="button"
+                      className="text-xs px-3 py-1.5 rounded-lg"
+                      style={{
+                        background: grammarMode === 'non-verb' ? 'var(--color-primary)' : 'var(--bg-input)',
+                        color: grammarMode === 'non-verb' ? '#ffffff' : 'var(--color-text-main)',
+                        fontWeight: '700',
+                        border: '1px solid var(--color-primary)',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setGrammarMode('non-verb')}
+                    >
+                      📘 Dạng Danh / Tính từ
+                    </button>
+                  </div>
+                </div>
+                
+                {(() => {
+                  const targetWord = (result.word || '').trim().toLowerCase().replace(/^(a|an|the|to)\s+/i, '');
+                  const conjugated = conjugateWithCompromise(targetWord);
+                  
+                  let verbForms = conjugated.forms;
+                  if (grammarMode !== 'non-verb' && (!verbForms || !verbForms.present_continuous || verbForms.past_simple === 'N/A')) {
+                    const base = targetWord;
+                    const s_form = getSForm(base);
+                    const v2 = getPastForm(base);
+                    const v3 = v2;
+                    const ing_form = getIngForm(base);
+                    verbForms = {
+                      present_simple: `${base} / ${s_form}`,
+                      present_continuous: `am / is / are ${ing_form}`,
+                      present_perfect: `have / has ${v3}`,
+                      present_perfect_continuous: `have / has been ${ing_form}`,
+                      past_simple: v2,
+                      past_continuous: `was / were ${ing_form}`,
+                      past_perfect: `had ${v3}`,
+                      past_perfect_continuous: `had been ${ing_form}`,
+                      future_simple: `will ${base}`,
+                      future_continuous: `will be ${ing_form}`,
+                      future_perfect: `will have ${v3}`,
+                      future_perfect_continuous: `will have been ${ing_form}`
+                    };
+                  }
+
+                  const currentForms = (grammarMode === 'non-verb')
+                    ? {
+                        present_simple: targetWord,
+                        past_simple: 'N/A',
+                        plural: getSForm(targetWord),
+                        comparative_superlative: `more ${targetWord} / most ${targetWord}`
+                      }
+                    : verbForms;
+
+                  if (!currentForms) return null;
+
+                  if (grammarMode !== 'non-verb') {
+                    if (currentForms.isModal) {
+                      return (
+                        <div className="flex flex-col gap-2 text-xs">
+                          <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                            <div className="tense-card-item p-3 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                              <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600', display: 'block' }}>Hiện tại (Present)</span>
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '800', fontSize: '14px' }}>{currentForms.present_simple}</code>
+                            </div>
+                            {currentForms.past_simple && currentForms.past_simple !== 'N/A' && (
+                              <div className="tense-card-item p-3 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600', display: 'block' }}>Quá khứ (Past)</span>
+                                <code style={{ color: 'var(--color-primary)', fontWeight: '800', fontSize: '14px' }}>{currentForms.past_simple}</code>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="tenses-grid mt-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* Present */}
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                          <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>🕒 NÓM THÌ HIỆN TẠI (PRESENT TENSES)</strong>
+                          <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Hiện tại đơn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.present_simple}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Hiện tại tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.present_continuous}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Hiện tại hoàn thành:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.present_perfect}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Hiện tại HT tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.present_perfect_continuous}</code>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Past */}
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                          <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>⏳ NHÓM THÌ QUÁ KHỨ (PAST TENSES)</strong>
+                          <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Quá khứ đơn (V2/ed):</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.past_simple}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Quá khứ tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.past_continuous}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Quá khứ hoàn thành (V3):</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.past_perfect}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Quá khứ HT tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.past_perfect_continuous}</code>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Future */}
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                          <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>🚀 NHÓM THÌ TƯƠNG LAI (FUTURE TENSES)</strong>
+                          <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Tương lai đơn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.future_simple}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Tương lai tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.future_continuous}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Tương lai hoàn thành:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.future_perfect}</code>
+                            </div>
+                            <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                              <span className="text-xs color-text-muted block">Tương lai HT tiếp diễn:</span> 
+                              <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '13px' }}>{currentForms.future_perfect_continuous}</code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                        {currentForms.present_simple && (
+                          <div className="tense-card-item p-3 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                            <span className="text-xs color-text-muted block font-semibold">Dạng nguyên mẫu:</span> 
+                            <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '14px' }}>{currentForms.present_simple}</code>
+                          </div>
+                        )}
+                        {currentForms.plural && (
+                          <div className="tense-card-item p-3 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                            <span className="text-xs color-text-muted block font-semibold">Dạng số nhiều (Plural):</span> 
+                            <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '14px' }}>{currentForms.plural}</code>
+                          </div>
+                        )}
+                        {currentForms.comparative_superlative && (
+                          <div className="tense-card-item p-3 rounded-lg" style={{ background: 'var(--bg-input)' }}>
+                            <span className="text-xs color-text-muted block font-semibold">Cấp so sánh (More/Most):</span> 
+                            <code style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '14px' }}>{currentForms.comparative_superlative}</code>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            )}
+
+            {/* Definition & Example */}
+            {result.example && (
+              <div className="result-example-box mt-4 p-4" style={{ borderLeft: '4px solid var(--color-primary)', borderRadius: '8px', background: 'var(--bg-input)' }}>
+                <strong className="color-text-muted text-xs uppercase block mb-1">VÍ DỤ TIẾNG ANH:</strong>
+                <p className="result-example color-text-muted italic" style={{ fontSize: '15px' }}>"{result.example}"</p>
+                {result.translatedExample && (
+                  <p className="result-example font-semibold mt-2" style={{ color: 'var(--color-primary)', fontSize: '14px' }}>
+                    ➔ "{result.translatedExample}"
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ✨ Gemini AI Deep Insights Hub */}
+            <div className="ai-deep-analysis-section mt-5">
+              {!aiAnalysis ? (
+                <button
+                  type="button"
+                  className="btn-primary w-full justify-center py-4 text-sm"
+                  onClick={handleAiAnalysis}
+                  disabled={isAiLoading}
+                  style={{
+                    background: 'var(--color-primary)',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '800',
+                    color: '#ffffff',
+                    border: 'none'
+                  }}
+                >
+                  {isAiLoading ? <span className="spinner" /> : '✨ 🤖 Phân tích AI sâu (Sắc thái, Collocations & Ví dụ)'}
+                </button>
+              ) : (
+                <div className="ai-analysis-card p-5 rounded-xl glass animate-slideup" style={{
+                  background: 'var(--bg-card)',
+                  border: '2px solid var(--color-primary)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid var(--border-light)' }}>
+                    <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--color-primary)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🤖 PHÂN TÍCH CHUYÊN SÂU TỪ GIA SƯ AI
+                    </h4>
+                    <button 
+                      onClick={() => setAiAnalysis(null)} 
+                      style={{ background: 'none', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer', fontSize: '16px' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Nuances */}
+                  {aiAnalysis.nuances && (
+                    <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
+                      <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
+                        💡 SẮC THÁI & HOÀN CẢNH SỬ DỤNG:
+                      </strong>
+                      <p style={{ fontSize: '14px', margin: 0, lineHeight: 1.6 }} className="color-text-main">
+                        {aiAnalysis.nuances}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Collocations */}
+                  {aiAnalysis.collocations && aiAnalysis.collocations.length > 0 && (
+                    <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
+                      <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                        🗣️ CỤM TỪ CỐ ĐỊNH / COLLOCATIONS HAY GẶP:
+                      </strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {aiAnalysis.collocations.map((col, idx) => (
+                          <div key={idx} style={{ fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                            <span style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{col.phrase}</span>
+                            <span className="color-text-muted text-xs">{col.vi}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Real-world Examples */}
+                  {aiAnalysis.real_examples && aiAnalysis.real_examples.length > 0 && (
+                    <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
+                      <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                        💬 VÍ DỤ THỰC TẾ CHUẨN BẢN XỨ:
+                      </strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {aiAnalysis.real_examples.map((ex, idx) => (
+                          <div key={idx} style={{ fontSize: '14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button 
+                                type="button" 
+                                onClick={() => handleSpeak(ex.en, 'US')} 
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                title="Phát âm"
+                              >
+                                🔊
+                              </button>
+                              <span style={{ color: 'var(--color-text-main)', fontWeight: '600' }}>"{ex.en}"</span>
+                            </div>
+                            <div className="color-text-muted italic text-xs ml-6 mt-1">➔ {ex.vi}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Alternatives */}
+                  {aiAnalysis.alternatives && (
+                    <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
+                      <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                        🎭 CÁCH DIỄN ĐẠT THAY THẾ (FORMAL / INFORMAL / SLANG):
+                      </strong>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', fontSize: '13px' }}>
+                        {aiAnalysis.alternatives.formal && (
+                          <div className="p-3 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                            <span className="color-text-muted text-xs block">Trang trọng:</span>
+                            <span style={{ fontWeight: '700', color: 'var(--color-text-main)' }}>{aiAnalysis.alternatives.formal}</span>
+                          </div>
+                        )}
+                        {aiAnalysis.alternatives.informal && (
+                          <div className="p-3 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                            <span className="color-text-muted text-xs block">Thường ngày:</span>
+                            <span style={{ fontWeight: '700', color: 'var(--color-text-main)' }}>{aiAnalysis.alternatives.informal}</span>
+                          </div>
+                        )}
+                        {aiAnalysis.alternatives.slang && aiAnalysis.alternatives.slang !== 'null' && (
+                          <div className="p-3 rounded-lg" style={{ background: 'var(--bg-card)' }}>
+                            <span className="color-text-muted text-xs block">Tiếng lóng (Slang):</span>
+                            <span style={{ fontWeight: '700', color: 'var(--color-error)' }}>{aiAnalysis.alternatives.slang}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Save Button Action */}
+            <div className="result-actions mt-5 flex gap-3">
+              {isSaved ? (
+                <button className="btn-secondary w-full justify-center py-3" disabled style={{ borderRadius: '12px' }}>
+                  ✓ Đã có trong sổ tay
+                </button>
+              ) : (
+                <button className="btn-primary w-full justify-center py-3" onClick={handleSaveWord} style={{ borderRadius: '12px', fontSize: '15px', background: 'var(--color-primary)', color: '#ffffff' }}>
+                  ⭐ Lưu vào sổ tay
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !result && (
+          <div className="translator-empty p-8 text-center glass rounded-2xl" style={{ border: '1px solid var(--border-light)' }}>
+            <span className="icon-huge" style={{ fontSize: '48px', display: 'block', marginBottom: '12px' }}>💡</span>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px' }}>Next-Gen AI Lexicon Console</h3>
+            <p className="color-text-muted text-sm">
+              {direction === 'en-vi' 
+                ? 'Nhập từ/câu tiếng Anh bất kỳ (vd: "amazing", "hit the books") để trải nghiệm tra cứu từ điển US-UK kết hợp Gia sư AI 1:1!'
+                : 'Nhập từ/câu tiếng Việt bất kỳ (vd: "tuyệt vời", "tôi đang chuẩn bị đi làm") để dịch sang tiếng Anh chuẩn bản xứ.'
+              }
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isPageMode) {
+    return (
+      <div className="translator-page animate-slideup" style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
+        {/* Dynamic Royal Blue Page Header */}
+        <div className="page-header glass p-6 mb-6 rounded-xl flex justify-between items-center flex-wrap gap-4" style={{
+          background: 'var(--bg-card)',
+          border: '2px solid var(--color-primary)'
+        }}>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#ffffff', marginBottom: '8px' }}>
+              ⚡ POWERED BY GEMINI AI & DICTIONARY API
+            </div>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+              🔍 AI Lexicon Studio (US-UK)
+            </h1>
+            <p className="color-text-muted text-xs mt-1" style={{ margin: 0 }}>
+              Hệ thống tra cứu từ điển chuyên sâu, phân tích ngữ pháp, 12 thì & sắc thái hội thoại
+            </p>
+          </div>
+          {onNavigateBack && (
+            <button 
+              className="btn-secondary text-xs" 
+              onClick={onNavigateBack}
+              style={{ padding: '10px 18px', borderRadius: '8px', fontWeight: '700' }}
+            >
+              ← Quay lại Dashboard
+            </button>
+          )}
+        </div>
+
+        <div className="translator-page-card glass p-6 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
+          {renderTranslatorContent()}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -755,580 +1748,13 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast }) {
       {/* Modal Overlay */}
       {isOpen && (
         <div className="modal-overlay" onClick={() => setIsOpen(false)}>
-          <div className="modal-content translator-modal glass-glow" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content translator-modal glass-glow" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', borderRadius: '24px' }}>
             {/* Modal Header */}
-            <div className="modal-header">
-              <h3>🔍 Tra từ & Dịch nhanh</h3>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800' }}>🔍 AI Lexicon Studio</h3>
               <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
             </div>
-
-            {/* Language Direction Toggle Buttons */}
-            <div className="direction-tabs mt-4 flex gap-3 justify-center">
-              <button 
-                type="button"
-                className={`btn-secondary text-xs px-4 py-2 ${direction === 'en-vi' ? 'active pulse-border' : ''}`}
-                style={{ 
-                  borderRadius: 'var(--radius-sm)', 
-                  borderColor: direction === 'en-vi' ? 'var(--color-primary)' : 'var(--border-light)',
-                  background: direction === 'en-vi' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                  color: direction === 'en-vi' ? 'var(--color-primary)' : 'var(--color-text-muted)'
-                }}
-                onClick={() => {
-                  setDirection('en-vi');
-                  setQuery('');
-                  setResult(null);
-                }}
-              >
-                🇬🇧 Anh ➔ 🇻🇳 Việt
-              </button>
-              <button 
-                type="button"
-                className={`btn-secondary text-xs px-4 py-2 ${direction === 'vi-en' ? 'active pulse-border' : ''}`}
-                style={{ 
-                  borderRadius: 'var(--radius-sm)', 
-                  borderColor: direction === 'vi-en' ? 'var(--color-primary)' : 'var(--border-light)',
-                  background: direction === 'vi-en' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                  color: direction === 'vi-en' ? 'var(--color-primary)' : 'var(--color-text-muted)'
-                }}
-                onClick={() => {
-                  setDirection('vi-en');
-                  setQuery('');
-                  setResult(null);
-                }}
-              >
-                🇻🇳 Việt ➔ 🇬🇧 Anh
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleTranslate} className="translator-form mt-4">
-              <div className="input-group" style={{ position: 'relative', display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                  <textarea
-                    ref={inputRef}
-                    placeholder={direction === 'en-vi' ? "Nhập từ tiếng Anh hoặc câu cần dịch..." : "Nhập từ tiếng Việt hoặc câu cần dịch..."}
-                    value={query}
-                    onChange={handleInputChange}
-                    onFocus={handleInputFocus}
-                    onBlur={handleInputBlur}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (query.trim() && !isLoading) {
-                          handleTranslate(e);
-                        }
-                      }
-                    }}
-                    className="translator-input glass"
-                    rows={1}
-                    style={{ width: '100%' }}
-                  />
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div className="suggestions-dropdown glass-glow" style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      zIndex: 1000,
-                      background: 'var(--bg-dark)',
-                      border: '1px solid var(--border-glow)',
-                      borderRadius: 'var(--radius-sm)',
-                      marginTop: '4px',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      boxShadow: 'var(--shadow-lg)'
-                    }}>
-                      {suggestions.map((item, idx) => (
-                        <div
-                          key={idx}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleSelectSuggestion(item);
-                          }}
-                          style={{
-                            padding: '10px 14px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            color: 'var(--color-text-main)',
-                            borderBottom: idx === suggestions.length - 1 ? 'none' : '1px solid var(--border-light)',
-                            textAlign: 'left',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                          }}
-                          className="suggestion-item"
-                        >
-                          <span style={{ opacity: 0.6 }}>🔍</span> <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()} style={{ alignSelf: 'flex-start', height: '48px' }}>
-                  {isLoading ? <span className="spinner" /> : 'Tra cứu'}
-                </button>
-              </div>
-
-            </form>
-
-            {/* Results Section */}
-            <div className="translator-results-container mt-5">
-              {isLoading && (
-                <div className="text-center p-6">
-                  <span className="spinner-large" />
-                  <p className="color-text-muted mt-2">
-                    Đang tra cứu từ điển nhanh...
-                  </p>
-                </div>
-              )}
-
-              {!isLoading && !result && searchHistory.length > 0 && (
-                <div className="recent-searches-box animate-slideup" style={{
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid var(--border-light)'
-                }}>
-                  <h4 className="text-xs uppercase tracking-wider color-text-muted font-bold mb-3" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🕒 Lịch sử tra cứu gần đây:
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {searchHistory.map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setQuery(item.word);
-                            handleTranslate(null, item.word);
-                          }}
-                          className="btn-secondary text-xs"
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--border-glow)',
-                            background: 'rgba(255, 255, 255, 0.01)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <span style={{ fontWeight: 'bold' }}>{item.word}</span>
-                          <span className="color-text-muted" style={{ fontSize: '11px' }}>➔ {item.translation}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => {
-                        localStorage.removeItem("eng_app_search_history");
-                        setSearchHistory([]);
-                      }}
-                      className="btn-secondary text-xs"
-                      style={{
-                        padding: '4px 10px',
-                        border: '1px dotted rgba(239, 68, 68, 0.3)',
-                        background: 'transparent',
-                        color: 'rgba(239, 68, 68, 0.8)',
-                        alignSelf: 'flex-start',
-                        cursor: 'pointer',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        marginTop: '4px'
-                      }}
-                    >
-                      Xóa lịch sử
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {result && (
-                <div className="translator-result-box glass p-4 animate-slideup">
-                  <div className="result-header flex justify-between items-start">
-                    <div>
-                      {/* Displays English word first */}
-                      <h4 className="result-word">
-                        {direction === 'en-vi' ? result.word : result.word}
-                        {result.source && (
-                          <span className="badge-source ml-2 text-xs" style={{ 
-                            fontSize: '10px', 
-                            padding: '2px 6px', 
-                            borderRadius: '4px',
-                            background: result.source === 'cache' ? 'rgba(34, 197, 94, 0.15)' : (result.source === 'compromise' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(139, 92, 246, 0.15)'),
-                            color: result.source === 'cache' ? '#4ade80' : (result.source === 'compromise' ? '#60a5fa' : '#a78bfa'),
-                            border: '1px solid currentColor',
-                            display: 'inline-block',
-                            verticalAlign: 'middle'
-                          }}>
-                            {result.source === 'cache' ? 'Cache' : (result.source === 'compromise' ? 'Local Engine' : 'Gemini AI')}
-                          </span>
-                        )}
-                      </h4>
-                      {result.ipaUK && result.ipaUS ? (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', marginBottom: '4px' }}>
-                          <span className="result-ipa" style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--color-secondary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                            🇬🇧 UK: {result.ipaUK}
-                          </span>
-                          <span className="result-ipa" style={{ background: 'rgba(124,58,237,0.06)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                            🇺🇸 US: {result.ipaUS}
-                          </span>
-                        </div>
-                      ) : result.ipa ? (
-                        <span className="result-ipa">{result.ipa}</span>
-                      ) : null}
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px', width: '100%' }}>
-                      <button className="speak-btn-large flex-1" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'US')} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
-                        🇺🇸 US
-                      </button>
-                      <button className="speak-btn-large flex-1" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'UK')} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
-                        🇬🇧 UK
-                      </button>
-                      <button className="speak-btn-large flex-1" onClick={() => speakCompare(direction === 'en-vi' ? result.word : result.word)} style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}>
-                        🆚 So sánh
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Từ loại & vai trò ngữ pháp */}
-                  {result.partOfSpeech && (
-                    <div className="result-pos mt-3">
-                      <span className="badge-pos">{result.partOfSpeech}</span>
-                    </div>
-                  )}
-
-                  {/* Cảnh báo và gợi ý sửa lỗi ngữ pháp */}
-                  {result.hasGrammarError && result.correctedText && (
-                    <div className="grammar-correction-box mt-3 p-3 glass" style={{ borderLeft: '4px solid var(--color-error)', background: 'rgba(239, 68, 68, 0.03)' }}>
-                      <strong className="flex items-center gap-1 text-sm" style={{ color: 'var(--color-error)' }}>
-                        ⚠️ Phát hiện lỗi chính tả/ngữ pháp (Tiếng Anh):
-                      </strong>
-                      <div className="mt-2 text-sm">
-                        <div className="color-text-muted text-xs">
-                          {direction === 'en-vi' ? 'Câu bạn viết:' : 'Bản dịch tiếng Anh gốc:'}
-                        </div>
-                        <del className="color-text-muted italic block mb-1" style={{ color: 'rgba(239, 68, 68, 0.8)' }}>
-                          "{result.originalCheckedText || query}"
-                        </del>
-                        
-                        <div className="color-text-muted text-xs mt-2">Gợi ý sửa đúng:</div>
-                        <ins className="font-bold block mb-2" style={{ textDecoration: 'none', color: 'var(--color-success)' }}>
-                          "{result.correctedText}"
-                        </ins>
-                        
-                        <div className="color-text-muted text-xs mt-2">Giải thích chi tiết:</div>
-                        <p className="color-text-main italic p-2 rounded mt-1" style={{ background: 'rgba(0, 0, 0, 0.2)', fontSize: '13px', whiteSpace: 'pre-line' }}>
-                          {result.grammarErrorExplanation}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="result-meaning-box mt-4 p-3 glass">
-                    <strong className="color-text-muted text-xs block mb-1">
-                      {direction === 'en-vi' ? 'DỊCH NGHĨA TIẾNG VIỆT:' : 'DỊCH NGHĨA TIẾNG ANH:'}
-                    </strong>
-                    <p className="result-translation">
-                      {direction === 'en-vi' ? result.vietnamese : result.word}
-                    </p>
-                  </div>
-
-                  {/* Phân loại các nghĩa theo từ loại (Danh từ, Động từ, Tính từ...) */}
-                  {result.meaningsByPos && result.meaningsByPos.length > 0 && (
-                    <div className="meanings-by-pos-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-primary)' }}>
-                      <strong className="color-text-muted text-xs block mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        📚 CÁC NGHĨA CHI TIẾT THEO TỪ LOẠI (DANH TỪ, ĐỘNG TỪ...):
-                      </strong>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {result.meaningsByPos.map((posGroup, idx) => (
-                          <div key={idx} style={{ fontSize: '13px' }}>
-                            <span style={{ fontWeight: 'bold', color: 'var(--color-primary-light)', marginRight: '6px' }}>
-                              {posGroup.label}:
-                            </span>
-                            <span className="color-text-main">
-                              {posGroup.list.join(', ')}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {direction === 'vi-en' && (
-                    <div className="result-meaning-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
-                      <strong className="color-text-muted text-xs block mb-1">CÂU TIẾNG VIỆT GỐC:</strong>
-                      <p className="result-translation original-text">
-                        {result.vietnamese}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Các nghĩa tương tự & Từ đồng nghĩa */}
-                  {result.synonyms && result.synonyms.length > 0 && (
-                    <div className="synonyms-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
-                      <strong className="color-text-muted text-xs block mb-2">
-                        💡 TỪ ĐỒNG NGHĨA / CÂU TƯƠNG TỰ (KÈM DỊCH NGHĨA):
-                      </strong>
-                      <div className="flex flex-wrap gap-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {result.synonyms.map((item, idx) => (
-                          <div 
-                            key={idx} 
-                            className="synonym-tag p-2 rounded" 
-                            style={{ 
-                              background: 'rgba(255, 255, 255, 0.03)', 
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
-                              borderRadius: '6px',
-                              padding: '8px',
-                              flex: '1 1 200px',
-                              minWidth: '150px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '2px'
-                            }}
-                          >
-                            <span className="font-semibold" style={{ color: 'var(--color-primary)', fontSize: '13px' }}>{item.word}</span>
-                            <span className="color-text-muted" style={{ fontSize: '11px' }}>{item.vietnamese}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-
-                  {/* Biến thể các thì hiện tại / quá khứ đơn / 12 thì */}
-                  {result.forms && (
-                    <div className="result-forms mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-primary)' }}>
-                      
-                      {/* POS ambiguity toggle */}
-                      {result.word && !result.word.trim().includes(" ") && (
-                        <div className="flex gap-2 mb-3 border-b pb-2" style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}>
-                          <button 
-                            type="button"
-                            className={`text-xs px-3 py-1 rounded`}
-                            style={{
-                              background: grammarMode === 'verb' ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)',
-                              color: grammarMode === 'verb' ? '#000' : 'var(--color-text-muted)',
-                              fontWeight: grammarMode === 'verb' ? 'bold' : 'normal',
-                              border: 'none',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => setGrammarMode('verb')}
-                          >
-                            Chia động từ (Verb - 12 Thì)
-                          </button>
-                          <button 
-                            type="button"
-                            className={`text-xs px-3 py-1 rounded`}
-                            style={{
-                              background: grammarMode === 'non-verb' ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)',
-                              color: grammarMode === 'non-verb' ? '#000' : 'var(--color-text-muted)',
-                              fontWeight: grammarMode === 'non-verb' ? 'bold' : 'normal',
-                              border: 'none',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => setGrammarMode('non-verb')}
-                          >
-                            Dạng Danh từ / Tính từ (Noun / Adj)
-                          </button>
-                        </div>
-                      )}
-
-                      <strong className="color-text-muted text-xs block mb-2">CÁC DẠNG CỦA TỪ / NGỮ PHÁP CHI TIẾT:</strong>
-                      
-                      {(() => {
-                        const targetWord = result.word ? result.word.trim().toLowerCase() : '';
-                        const currentForms = grammarMode === 'verb'
-                          ? ((result.forms && result.forms.present_continuous) ? result.forms : conjugateWithCompromise(targetWord).forms)
-                          : ((result.forms && (result.forms.plural || result.forms.comparative_superlative)) 
-                              ? result.forms 
-                              : {
-                                  present_simple: result.word,
-                                  past_simple: 'N/A',
-                                  plural: getSForm(targetWord),
-                                  comparative_superlative: `more ${targetWord} / most ${targetWord}`
-                                });
-
-                        if (!currentForms) return null;
-
-                        if (grammarMode === 'verb') {
-                          // Check if it is a modal verb
-                          if (currentForms.isModal) {
-                            return (
-                              <div className="flex flex-col gap-2 text-xs">
-                                <div className="tense-grid-responsive">
-                                  <div className="tense-card-item">
-                                    <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại (Present)</span>
-                                    <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_simple}</code>
-                                  </div>
-                                  {currentForms.past_simple && currentForms.past_simple !== 'N/A' && (
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ (Past)</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_simple}</code>
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="color-text-muted italic text-xs mt-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '6px' }}>
-                                  💡 {currentForms.note || 'Động từ khuyết thiếu không chia đầy đủ 12 thì.'}
-                                </p>
-                              </div>
-                            );
-                          }
-
-                          // 12 Tenses
-                          return (
-                            <>
-                              <div className="tenses-grid mt-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Present Tenses */}
-                                <div className="tense-group p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-light)', borderRadius: '8px' }}>
-                                  <strong className="text-xs block mb-3" style={{ color: 'var(--color-primary)', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', letterSpacing: '0.5px' }}>🕒 THÌ HIỆN TẠI (PRESENT)</strong>
-                                  <div className="tense-grid-responsive">
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại đơn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_simple}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_continuous}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại hoàn thành</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_perfect}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại HT tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_perfect_continuous}</code>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Past Tenses */}
-                                <div className="tense-group p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-light)', borderRadius: '8px' }}>
-                                  <strong className="text-xs block mb-3" style={{ color: 'var(--color-primary)', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', letterSpacing: '0.5px' }}>⏳ THÌ QUÁ KHỨ (PAST)</strong>
-                                  <div className="tense-grid-responsive">
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ đơn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_simple}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_continuous}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ hoàn thành</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_perfect}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ HT tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_perfect_continuous}</code>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Future Tenses */}
-                                <div className="tense-group p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-light)', borderRadius: '8px' }}>
-                                  <strong className="text-xs block mb-3" style={{ color: 'var(--color-primary)', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', letterSpacing: '0.5px' }}>🚀 THÌ TƯƠNG LAI (FUTURE)</strong>
-                                  <div className="tense-grid-responsive">
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Tương lai đơn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.future_simple}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Tương lai tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.future_continuous}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Tương lai hoàn thành</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.future_perfect}</code>
-                                    </div>
-                                    <div className="tense-card-item">
-                                      <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Tương lai HT tiếp diễn</span>
-                                      <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.future_perfect_continuous}</code>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <p className="color-text-muted italic mt-3" style={{ fontSize: '11px', borderTop: '1px dotted rgba(255, 255, 255, 0.1)', paddingTop: '8px' }}>
-                                * Ghi chú: Động từ "am/is/are", "was/were", "have/has" được chia tùy theo chủ ngữ tương ứng (I / You / We / They / He / She / It).
-                              </p>
-                            </>
-                          );
-                        } else {
-                          // Noun/Adjective Mode
-                          return (
-                            <div className="tense-grid-responsive">
-                              {currentForms.present_simple && currentForms.present_simple !== 'N/A' && (
-                                <div className="tense-card-item">
-                                  <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Hiện tại / Nguyên mẫu</span>
-                                  <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.present_simple}</code>
-                                </div>
-                              )}
-                              {currentForms.past_simple && currentForms.past_simple !== 'N/A' && (
-                                <div className="tense-card-item">
-                                  <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Quá khứ / So sánh</span>
-                                  <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.past_simple}</code>
-                                </div>
-                              )}
-                              {currentForms.plural && currentForms.plural !== 'N/A' && (
-                                <div className="tense-card-item">
-                                  <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>Số nhiều (Plural)</span>
-                                  <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.plural}</code>
-                                </div>
-                              )}
-                              {currentForms.comparative_superlative && currentForms.comparative_superlative !== 'N/A' && (
-                                <div className="tense-card-item">
-                                  <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontWeight: '600' }}>So sánh hơn / nhất</span>
-                                  <code style={{ color: 'var(--color-secondary)', fontWeight: '600', whiteSpace: 'normal', wordBreak: 'normal' }}>{currentForms.comparative_superlative}</code>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  )}
-
-                  {result.example && (
-                    <div className="result-example-box mt-3 p-3 glass" style={{ borderLeft: '3px solid var(--color-secondary)' }}>
-                      <strong className="color-text-muted text-xs block mb-1">VÍ DỤ / ĐỊNH NGHĨA TIẾNG ANH:</strong>
-                      <p className="result-example color-text-muted italic">"{result.example}"</p>
-                      {result.translatedExample && (
-                        <>
-                          <strong className="color-text-muted text-xs block mt-2 mb-1">DỊCH NGHĨA CHI TIẾT:</strong>
-                          <p className="result-example font-semibold" style={{ color: 'var(--color-success)', fontSize: '13px' }}>
-                            "{result.translatedExample}"
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="result-actions mt-4 flex gap-3">
-                    {isSaved ? (
-                      <button className="btn-secondary w-full justify-center" disabled>
-                        ✓ Đã có trong sổ tay
-                      </button>
-                    ) : (
-                      <button className="btn-primary w-full justify-center" onClick={handleSaveWord}>
-                        ⭐ Lưu vào sổ tay
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {!isLoading && !result && (
-                <div className="translator-empty p-6 text-center color-text-muted">
-                  <span className="icon-huge">💡</span>
-                  <p className="mt-2">
-                    {direction === 'en-vi' 
-                      ? 'Nhập từ tiếng Anh (ví dụ: "amazing", "take a look") để xem phát âm, dịch nghĩa và lưu vào sổ tay ôn tập.'
-                      : 'Nhập từ/câu tiếng Việt (ví dụ: "tuyệt vời", "tôi đang đi học") để xem dịch nghĩa tiếng Anh, phát âm và lưu vào sổ tay.'
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
+            {renderTranslatorContent()}
           </div>
         </div>
       )}

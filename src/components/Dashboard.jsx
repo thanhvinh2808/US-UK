@@ -58,103 +58,109 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
 
   return (
     <div className="dashboard animate-slideup">
-      {/* Header section */}
-      <div className="dashboard-header glass p-6 mb-8">
-        <div>
-          <h1 className="glow-text text-gradient">Welcome back, Language Learner!</h1>
-          <p className="color-text-muted mt-2">Ready to level up your English skills today? Choose a topic below or review your vocabulary.</p>
+      {/* Clean Welcome Banner */}
+      <div className="dashboard-header glass p-6 mb-8 flex justify-between items-center flex-wrap gap-4" style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border-light)' }}>
+        <div style={{ flex: '1 1 300px' }}>
+          <h1 style={{ fontSize: '1.7rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+            Xin chào! Cùng rèn luyện phản xạ tiếng Anh hôm nay 🚀
+          </h1>
+          <p className="color-text-muted text-sm mt-1.5" style={{ margin: 0 }}>
+            Lựa chọn chủ đề bên dưới để luyện nghe, nói, viết hoặc tra cứu từ mới bằng trí tuệ nhân tạo Gemini AI.
+          </p>
         </div>
-        <div className="header-actions flex flex-wrap gap-2 mt-4 md:mt-0">
+        
+        {reviewsDue > 0 ? (
           <button 
             className="btn-primary" 
             onClick={() => onNavigate('flashcards')}
-            disabled={reviewsDue === 0}
             style={{ 
-              background: reviewsDue > 0 ? 'linear-gradient(135deg, #a855f7 0%, #06b6d4 100%)' : 'rgba(255,255,255,0.05)',
-              boxShadow: reviewsDue > 0 ? '0 0 20px rgba(6, 182, 212, 0.4)' : 'none'
+              background: 'var(--color-primary)',
+              color: '#ffffff',
+              borderRadius: '12px',
+              fontWeight: '700',
+              padding: '12px 22px',
+              boxShadow: '0 4px 16px var(--color-primary-glow)'
             }}
           >
-            Review Cards {reviewsDue > 0 && <span className="badge-count">{reviewsDue}</span>}
+            🔥 Ôn tập {reviewsDue} từ cần nhớ
           </button>
-          
-          <button className="btn-secondary" onClick={() => onNavigate('notebook')}>
-            Notebook ({savedVocabCount})
-          </button>
-          
+        ) : (
           <button 
-            className="btn-secondary flex items-center gap-1" 
-            onClick={() => onNavigate('minimal_pairs')}
+            className="btn-secondary" 
+            onClick={() => onNavigate('translator')}
             style={{ 
-              border: '1px solid var(--color-primary)', 
-              background: 'rgba(124, 58, 237, 0.08)',
-              color: 'var(--color-primary)'
+              border: '1.5px solid var(--color-primary)',
+              color: 'var(--color-primary)',
+              borderRadius: '12px',
+              fontWeight: '700',
+              padding: '10px 18px'
             }}
           >
-            🎙️ Minimal Pairs
+            🔍 Tra từ AI [Ctrl + K]
           </button>
-
-          <button 
-            className="btn-secondary flex items-center gap-1" 
-            onClick={() => onNavigate('idioms_handbook')}
-            style={{ 
-              border: '1px solid var(--color-secondary)', 
-              background: 'rgba(245, 158, 11, 0.08)',
-              color: 'var(--color-secondary)'
-            }}
-          >
-            📙 Idioms & Phrasal Verbs
-          </button>
-
-          <button 
-            className="btn-secondary flex items-center gap-1" 
-            onClick={() => onNavigate('mini_games')}
-            style={{ 
-              border: '1px solid var(--color-success)', 
-              background: 'rgba(16, 185, 129, 0.08)',
-              color: 'var(--color-success)'
-            }}
-          >
-            🎮 Playzone (Games)
-          </button>
-
-          <button 
-            className="btn-secondary flex items-center gap-1" 
-            onClick={() => onNavigate('tenses_handbook')}
-            style={{ 
-              border: '1px solid rgba(59, 130, 246, 0.5)', 
-              background: 'rgba(59, 130, 246, 0.08)',
-              color: '#3b82f6'
-            }}
-          >
-            📚 12 Thì Tiếng Anh
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Stats Cards Row */}
+      {/* Professional Stats Cards Row */}
       <div className="stats-grid mb-8">
-        <div className="stat-card glass-glow p-5">
-          <div className="stat-info">
-            <h3>{stats.streak} Days</h3>
-            <p>Daily Streak</p>
+        <div className="stat-card glass p-5" style={{ borderRadius: '16px', border: '1px solid var(--border-light)' }}>
+          <div className="stat-info w-full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="color-text-muted text-xs font-semibold uppercase">Chuỗi Học Tập</span>
+              <span style={{ fontSize: '18px' }}>🔥</span>
+            </div>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '4px', margin: 0 }}>
+              {stats.streak} ngày liên tiếp
+            </h3>
+            <p className="text-xs color-text-muted mt-1">Duy trì thói quen học mỗi ngày</p>
           </div>
         </div>
-        <div className="stat-card glass p-5">
-          <div className="stat-info">
-            <h3>{stats.points} XP</h3>
-            <p>Total Experience Points</p>
+
+        <div className="stat-card glass p-5" style={{ borderRadius: '16px', border: '1px solid var(--border-light)' }}>
+          <div className="stat-info w-full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="color-text-muted text-xs font-semibold uppercase">Cấp Độ Hiện Tại</span>
+              <span style={{ fontSize: '18px' }}>🎯</span>
+            </div>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '4px', margin: 0 }}>
+              Level {stats.level} ({stats.points} XP)
+            </h3>
+            {/* XP Progress Bar */}
+            <div style={{ width: '100%', height: '6px', background: 'var(--bg-input)', borderRadius: '10px', marginTop: '8px', overflow: 'hidden' }}>
+              <div style={{ 
+                width: `${Math.min(100, (stats.points / 1000) * 100)}%`, 
+                height: '100%', 
+                background: 'var(--color-primary)',
+                borderRadius: '10px',
+                transition: 'width 0.5s ease'
+              }} />
+            </div>
           </div>
         </div>
-        <div className="stat-card glass p-5">
-          <div className="stat-info">
-            <h3>{savedVocabCount} Words</h3>
-            <p>Saved in Notebook</p>
+
+        <div className="stat-card glass p-5" style={{ borderRadius: '16px', border: '1px solid var(--border-light)' }}>
+          <div className="stat-info w-full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="color-text-muted text-xs font-semibold uppercase">Sổ Tay Từ Vựng</span>
+              <span style={{ fontSize: '18px' }}>📙</span>
+            </div>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '4px', margin: 0 }}>
+              {savedVocabCount} từ đã lưu
+            </h3>
+            <p className="text-xs color-text-muted mt-1">Sẵn sàng ôn luyện lại</p>
           </div>
         </div>
-        <div className="stat-card glass p-5">
-          <div className="stat-info">
-            <h3>{stats.completedModules}</h3>
-            <p>Modules Completed</p>
+
+        <div className="stat-card glass p-5" style={{ borderRadius: '16px', border: '1px solid var(--border-light)' }}>
+          <div className="stat-info w-full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="color-text-muted text-xs font-semibold uppercase">Bài Học Hoàn Thành</span>
+              <span style={{ fontSize: '18px' }}>✨</span>
+            </div>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '4px', margin: 0 }}>
+              {stats.completedModules} bài học
+            </h3>
+            <p className="text-xs color-text-muted mt-1">Tích lũy kiến thức mỗi ngày</p>
           </div>
         </div>
       </div>
@@ -179,11 +185,11 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
           }}>
             {heatmapGrid.map((week, wIdx) => 
               week.map((day, dIdx) => {
-                let cellBg = 'rgba(255, 255, 255, 0.05)';
+                let cellBg = 'var(--bg-input)';
                 if (day.count > 0) {
-                  if (day.count <= 2) cellBg = 'rgba(159, 122, 234, 0.3)'; // light purple
-                  else if (day.count <= 5) cellBg = 'rgba(159, 122, 234, 0.6)'; // medium purple
-                  else cellBg = 'rgba(124, 58, 237, 1)'; // dark primary purple
+                  if (day.count <= 2) cellBg = 'var(--color-primary-glow)';
+                  else if (day.count <= 5) cellBg = 'var(--color-primary-light)';
+                  else cellBg = 'var(--color-primary)';
                 }
                 
                 return (
@@ -206,10 +212,10 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
         {/* Heatmap Legend */}
         <div className="flex justify-end gap-2 items-center text-xs color-text-muted mt-3">
           <span>Ít học</span>
-          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(255,255,255,0.05)' }}></div>
-          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(159, 122, 234, 0.3)' }}></div>
-          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(159, 122, 234, 0.6)' }}></div>
-          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'rgba(124, 58, 237, 1)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--bg-input)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--color-primary-glow)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--color-primary-light)' }}></div>
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: 'var(--color-primary)' }}></div>
           <span>Chăm chỉ 🔥</span>
         </div>
       </div>

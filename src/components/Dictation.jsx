@@ -64,8 +64,9 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
     }
   }, [isFinished, scores]);
 
-  const dialogue = topic.dialogues[currentIdx];
-  const targetText = dialogue ? dialogue.text : '';
+  const dialogues = topic?.dialogues || [];
+  const dialogue = dialogues[currentIdx] || null;
+  const targetText = dialogue ? dialogue.text : (topic?.topic || '');
 
   // Clean words list for comparison
   const getCleanWords = (text) => {

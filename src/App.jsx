@@ -33,12 +33,38 @@ function sortTopicsByLevel(topics) {
   return [...topics].sort((a, b) => {
     const valA = LEVEL_VALUES[a.level] || 1;
     const valB = LEVEL_VALUES[b.level] || 1;
-    return valA - valB; // Low to high
+    return valA - valB;
   });
 }
 
+// Clean SVG Vector Icons Component for Professional UX
+const NavSvgIcon = ({ iconType }) => {
+  switch (iconType) {
+    case 'home':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+    case 'search':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+    case 'notebook':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+    case 'flashcards':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
+    case 'pairs':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
+    case 'tenses':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>;
+    case 'idioms':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>;
+    case 'games':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M8 10v4"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg>;
+    case 'admin':
+      return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+    default:
+      return null;
+  }
+};
+
 function App() {
-  const [activeScreen, setActiveScreen] = useState('dashboard'); // dashboard, topic_detail, reader, dictation, pronunciation, flashcards, notebook
+  const [activeScreen, setActiveScreen] = useState('dashboard');
   const [selectedTopic, setSelectedTopic] = useState(null);
   
   const [stats, setStats] = useState(() => storage.getUserStats());
@@ -47,58 +73,43 @@ function App() {
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
   const [theme, setTheme] = useState(() => localStorage.getItem('eng_app_theme') || 'light');
   const [voiceAccent, setVoiceAccent] = useState(() => localStorage.getItem('eng_app_voice_accent') || 'US');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'info') => {
     setToast({ message, type, id: Date.now() });
   };
 
-  // Check network status
+  // Keyboard shortcut Ctrl + K / Cmd + K for AI Lexicon Studio
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setActiveScreen('translator');
+        showToast('Đã mở Tra từ AI [Ctrl + K]', 'info');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     const handleOffline = () => showToast('Mất kết nối mạng. Một số tính năng có thể không hoạt động.', 'error');
     window.addEventListener('offline', handleOffline);
     return () => window.removeEventListener('offline', handleOffline);
   }, []);
 
-  // Initialize and track daily activity + daily notification reminders
   useEffect(() => {
     const updatedStats = storage.recordActivity();
     setStats(updatedStats);
     setProgress(storage.getTopicProgress());
     setSavedVocabCount(storage.getSavedVocab().length);
 
-    // Request Notification permission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-
-    // Trigger daily study reminder if they haven't learned today yet
-    if ("Notification" in window && Notification.permission === "granted") {
-      const today = new Date().toDateString();
-      const lastActiveDate = updatedStats.lastActive ? new Date(updatedStats.lastActive).toDateString() : null;
-      
-      if (lastActiveDate !== today) {
-        const now = Date.now();
-        const reviewsDue = storage.getSavedVocab()
-          .filter(item => !item.nextReviewDate || new Date(item.nextReviewDate) <= now).length;
-          
-        if (reviewsDue > 0) {
-          setTimeout(() => {
-            try {
-              new Notification("V-English Luyện Tập Hàng Ngày", {
-                body: `Bạn có ${reviewsDue} từ vựng cần ôn tập hôm nay để duy trì streak ${updatedStats.streak} ngày!`,
-                icon: '/favicon.ico'
-              });
-            } catch (e) {
-              console.warn("Could not display notification:", e);
-            }
-          }, 2000);
-        }
-      }
-    }
   }, []);
 
-  // Sync theme attribute
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -113,7 +124,7 @@ function App() {
     const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
     setVoiceAccent(newAccent);
     localStorage.setItem('eng_app_voice_accent', newAccent);
-    showToast(`Đã đổi giọng nói mặc định sang ${newAccent === 'US' ? 'Mỹ (en-US) 🇺🇸' : 'Anh (en-GB) 🇬🇧'}`, 'success');
+    showToast(`Đã đổi giọng đọc mặc định sang ${newAccent === 'US' ? 'Mỹ (en-US) 🇺🇸' : 'Anh (en-GB) 🇬🇧'}`, 'success');
   };
 
   const refreshState = () => {
@@ -130,27 +141,31 @@ function App() {
   const handleSelectTopic = (topic) => {
     setSelectedTopic(topic);
     setActiveScreen('topic_detail');
+    setIsMobileMenuOpen(false);
   };
 
   const handleSelectModule = (moduleKey) => {
     setActiveScreen(moduleKey);
+    setIsMobileMenuOpen(false);
   };
 
   const handleNavigate = (screenKey) => {
     setActiveScreen(screenKey);
+    setIsMobileMenuOpen(false);
   };
 
   const handleBackToDashboard = () => {
     refreshState();
     setActiveScreen('dashboard');
+    setIsMobileMenuOpen(false);
   };
 
   const handleBackToTopicDetail = () => {
     refreshState();
     setActiveScreen('topic_detail');
+    setIsMobileMenuOpen(false);
   };
 
-  // Determine user level letter based on experience points
   const calculateLevel = (points) => {
     if (points >= 1000) return 'B2';
     if (points >= 500) return 'B1';
@@ -166,198 +181,295 @@ function App() {
     }
   }, [stats.points]);
 
+  const navMenuItems = [
+    { id: 'dashboard', iconType: 'home', label: 'Trang chủ Dashboard' },
+    { id: 'translator', iconType: 'search', label: 'Tra từ & Dịch AI', badge: 'Ctrl+K' },
+    { id: 'notebook', iconType: 'notebook', label: `Sổ tay từ (${savedVocabCount})` },
+    { id: 'flashcards', iconType: 'flashcards', label: 'Ôn tập Flashcards' },
+    { id: 'minimal_pairs', iconType: 'pairs', label: 'Luyện phát âm Pairs' },
+    { id: 'tenses_handbook', iconType: 'tenses', label: '12 Thì Tiếng Anh' },
+    { id: 'idioms_handbook', iconType: 'idioms', label: 'Idioms & Cụm từ' },
+    { id: 'mini_games', iconType: 'games', label: 'Playzone Mini Games' },
+    { id: 'admin', iconType: 'settings', label: 'Quản trị hệ thống' },
+  ];
+
   return (
-    <div className="app-container">
-      {/* Sleek Glassmorphism Topbar */}
-      <header className="app-topbar glass mb-8">
-        <div className="logo-container" onClick={handleBackToDashboard}>
-          <span className="logo-text text-gradient" style={{ fontWeight: '800', letterSpacing: '-0.03em' }}>V-English</span>
+    <div className="app-layout-dock">
+      {/* 🟢 Desktop Left Sidebar Control Dock */}
+      <aside className="app-sidebar-dock glass">
+        <div className="sidebar-header" onClick={handleBackToDashboard}>
+          <div className="brand-logo-pill">
+            <span className="brand-icon">V</span>
+            <span className="brand-name">V-English</span>
+          </div>
+          <span className="brand-subtitle">EdTech Learning Studio</span>
         </div>
 
-        <div className="user-status-bar">
-          <button 
-            className="btn-secondary" 
-            onClick={toggleTheme}
-            title="Chuyển chế độ sáng/tối"
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '14px', 
-              borderRadius: 'var(--radius-sm)',
-              borderColor: 'var(--border-glow)',
-              background: 'rgba(245, 158, 11, 0.05)',
-              cursor: 'pointer'
-            }}
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-          <button 
-            className="btn-secondary" 
-            onClick={toggleVoiceAccent}
-            title="Chuyển giọng đọc US/UK"
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '14px', 
-              borderRadius: 'var(--radius-sm)',
-              borderColor: 'var(--border-glow)',
-              background: 'rgba(16, 185, 129, 0.05)',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            {voiceAccent === 'US' ? '🇺🇸 US' : '🇬🇧 UK'}
-          </button>
-          <button 
-            className="btn-secondary" 
-            onClick={() => handleNavigate('admin')}
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '13px', 
-              borderRadius: 'var(--radius-sm)',
-              borderColor: 'var(--border-glow)',
-              background: 'rgba(168, 85, 247, 0.05)'
-            }}
-          >
-            Admin
-          </button>
-          <div className="status-badge streak" title="Daily study streak">
-            Streak: {stats.streak} Days
+        {/* Navigation Items (Single Line, Clean Vector SVG Icons) */}
+        <nav className="sidebar-nav">
+          {navMenuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleNavigate(item.id)}
+              className={`sidebar-nav-item ${activeScreen === item.id ? 'active' : ''}`}
+            >
+              <span className="nav-item-icon">
+                <NavSvgIcon iconType={item.iconType} />
+              </span>
+              <span className="nav-item-label">{item.label}</span>
+              {item.badge && <span className="nav-shortcut-badge">{item.badge}</span>}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom Utility Controls */}
+        <div className="sidebar-footer">
+          <div className="sidebar-stats-row">
+            <div className="stat-badge-mini" title="Daily Streak">
+              Streak: <strong>{stats.streak}d</strong>
+            </div>
+            <div className="stat-badge-mini" title="Experience Points">
+              XP: <strong>{stats.points}</strong>
+            </div>
+            <div className="stat-badge-mini" title="Level">
+              Level: <strong>{stats.level}</strong>
+            </div>
           </div>
-          <div className="status-badge xp" title="Experience Points">
-            {stats.points} XP
-          </div>
-          <div className="status-badge" title="Current Level">
-            Level {stats.level}
+
+          <div className="sidebar-actions-row">
+            <button 
+              className="sidebar-action-btn" 
+              onClick={toggleTheme}
+              title="Đổi giao diện Sáng / Tối"
+            >
+              {theme === 'light' ? '🌙 Chế độ tối' : '☀️ Chế độ sáng'}
+            </button>
+
+            <button 
+              className="sidebar-action-btn" 
+              onClick={toggleVoiceAccent}
+              title="Đổi giọng phát âm US / UK"
+            >
+              {voiceAccent === 'US' ? '🇺🇸 Giọng US' : '🇬🇧 Giọng UK'}
+            </button>
           </div>
         </div>
-      </header>
+      </aside>
 
-      {/* Main Content Router */}
-      <main className="app-main-content">
-        {activeScreen === 'dashboard' && (
-          <Dashboard 
-            stats={stats}
-            progress={progress}
-            savedVocabCount={savedVocabCount}
-            onSelectTopic={handleSelectTopic}
-            onNavigate={handleNavigate}
-            topics={topicsList}
-          />
-        )}
+      {/* 🔵 Right Workspace Main Content Area */}
+      <div className="app-workspace">
+        {/* Active Screen Router */}
+        <main className="workspace-main">
+          {activeScreen === 'dashboard' && (
+            <Dashboard 
+              stats={stats}
+              progress={progress}
+              savedVocabCount={savedVocabCount}
+              onSelectTopic={handleSelectTopic}
+              onNavigate={handleNavigate}
+              topics={topicsList}
+            />
+          )}
 
-        {activeScreen === 'admin' && (
-          <AdminPanel 
-            onNavigateBack={handleBackToDashboard}
-            onTopicsListChange={refreshTopicsList}
-          />
-        )}
+          {activeScreen === 'translator' && (
+            <GlobalTranslator 
+              isPageMode={true}
+              onNavigateBack={handleBackToDashboard}
+              onSavedVocabChange={refreshState}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'topic_detail' && selectedTopic && (
-          <TopicDetail 
-            topic={selectedTopic}
-            progress={progress}
-            onSelectModule={handleSelectModule}
-            onNavigateBack={handleBackToDashboard}
-          />
-        )}
+          {activeScreen === 'admin' && (
+            <AdminPanel 
+              onNavigateBack={handleBackToDashboard}
+              onTopicsListChange={refreshTopicsList}
+            />
+          )}
 
-        {activeScreen === 'reader' && selectedTopic && (
-          <VocabReader 
-            topic={selectedTopic}
-            onSavedVocabChange={refreshState}
-            onComplete={refreshState}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'topic_detail' && selectedTopic && (
+            <TopicDetail 
+              topic={selectedTopic}
+              progress={progress}
+              onSelectModule={handleSelectModule}
+              onNavigateBack={handleBackToDashboard}
+            />
+          )}
 
-        {activeScreen === 'dictation' && selectedTopic && (
-          <Dictation 
-            topic={selectedTopic}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'reader' && selectedTopic && (
+            <VocabReader 
+              topic={selectedTopic}
+              onSavedVocabChange={refreshState}
+              onComplete={refreshState}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'pronunciation' && selectedTopic && (
-          <Pronunciation 
-            topic={selectedTopic}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'dictation' && selectedTopic && (
+            <Dictation 
+              topic={selectedTopic}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'grammar' && selectedTopic && (
-          <GrammarLab
-            topic={selectedTopic}
-            onComplete={refreshState}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'pronunciation' && selectedTopic && (
+            <Pronunciation 
+              topic={selectedTopic}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'writing' && selectedTopic && (
-          <Writing
-            topic={selectedTopic}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'grammar' && selectedTopic && (
+            <GrammarLab
+              topic={selectedTopic}
+              onComplete={refreshState}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'flashcards' && (
-          <Flashcards 
-            onNavigateBack={handleBackToDashboard}
-            onSavedVocabChange={refreshState}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'writing' && selectedTopic && (
+            <Writing
+              topic={selectedTopic}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'notebook' && (
-          <VocabNotebook 
-            onNavigateBack={handleBackToDashboard}
-            onSavedVocabChange={refreshState}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'flashcards' && (
+            <Flashcards 
+              onNavigateBack={handleBackToDashboard}
+              onSavedVocabChange={refreshState}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'tenses_handbook' && (
-          <TensesHandbook 
-            onNavigateBack={handleBackToDashboard}
-          />
-        )}
+          {activeScreen === 'notebook' && (
+            <VocabNotebook 
+              onNavigateBack={handleBackToDashboard}
+              onSavedVocabChange={refreshState}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'minimal_pairs' && (
-          <MinimalPairs 
-            onNavigateBack={handleBackToDashboard}
-          />
-        )}
+          {activeScreen === 'tenses_handbook' && (
+            <TensesHandbook 
+              onNavigateBack={handleBackToDashboard}
+            />
+          )}
 
-        {activeScreen === 'shadowing' && selectedTopic && (
-          <Shadowing 
-            topic={selectedTopic}
-            onNavigateBack={handleBackToTopicDetail}
-            showToast={showToast}
-          />
-        )}
+          {activeScreen === 'minimal_pairs' && (
+            <MinimalPairs 
+              onNavigateBack={handleBackToDashboard}
+            />
+          )}
 
-        {activeScreen === 'idioms_handbook' && (
-          <IdiomsHandbook 
-            onNavigateBack={handleBackToDashboard}
-          />
-        )}
+          {activeScreen === 'shadowing' && selectedTopic && (
+            <Shadowing 
+              topic={selectedTopic}
+              onNavigateBack={handleBackToTopicDetail}
+              showToast={showToast}
+            />
+          )}
 
-        {activeScreen === 'mini_games' && (
-          <MiniGames 
-            onNavigateBack={handleBackToDashboard}
-            showToast={showToast}
-          />
-        )}
-      </main>
-      
-      {/* Global Dictionary/Translation Floating Widget */}
-      <GlobalTranslator 
-        onSavedVocabChange={refreshState} 
-        showToast={showToast} 
-      />
+          {activeScreen === 'idioms_handbook' && (
+            <IdiomsHandbook 
+              onNavigateBack={handleBackToDashboard}
+            />
+          )}
+
+          {activeScreen === 'mini_games' && (
+            <MiniGames 
+              onNavigateBack={handleBackToDashboard}
+              showToast={showToast}
+            />
+          )}
+        </main>
+      </div>
+
+      {/* 📱 Mobile Bottom Sheet Modal Menu */}
+      {isMobileMenuOpen && (
+        <div className="mobile-sheet-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="mobile-sheet-content glass animate-slideup" onClick={(e) => e.stopPropagation()}>
+            <div className="mobile-sheet-handle-bar" />
+            <div className="mobile-sheet-header">
+              <h3 className="mobile-sheet-title">Dịch vụ & Chức năng</h3>
+              <button className="mobile-sheet-close" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+            </div>
+
+            <div className="mobile-sheet-grid">
+              {navMenuItems.map((item) => (
+                <button
+                  key={item.id}
+                  className={`mobile-grid-card ${activeScreen === item.id ? 'active' : ''}`}
+                  onClick={() => handleNavigate(item.id)}
+                >
+                  <span className="mobile-card-icon">
+                    <NavSvgIcon iconType={item.iconType} />
+                  </span>
+                  <span className="mobile-card-label">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📱 Native Mobile Bottom Navigation Bar */}
+      <nav className="mobile-bottom-bar glass">
+        <button 
+          className={`mobile-bottom-item ${activeScreen === 'dashboard' ? 'active' : ''}`}
+          onClick={() => handleNavigate('dashboard')}
+        >
+          <span className="bottom-item-icon">
+            <NavSvgIcon iconType="home" />
+          </span>
+          <span className="bottom-item-text">Trang chủ</span>
+        </button>
+
+        <button 
+          className={`mobile-bottom-item ${activeScreen === 'translator' ? 'active' : ''}`}
+          onClick={() => handleNavigate('translator')}
+        >
+          <span className="bottom-item-icon">
+            <NavSvgIcon iconType="search" />
+          </span>
+          <span className="bottom-item-text">Tra từ AI</span>
+        </button>
+
+        <button 
+          className={`mobile-bottom-item ${activeScreen === 'notebook' ? 'active' : ''}`}
+          onClick={() => handleNavigate('notebook')}
+        >
+          <span className="bottom-item-icon">
+            <NavSvgIcon iconType="notebook" />
+          </span>
+          <span className="bottom-item-text">Sổ tay</span>
+        </button>
+
+        <button 
+          className={`mobile-bottom-item ${activeScreen === 'flashcards' ? 'active' : ''}`}
+          onClick={() => handleNavigate('flashcards')}
+        >
+          <span className="bottom-item-icon">
+            <NavSvgIcon iconType="flashcards" />
+          </span>
+          <span className="bottom-item-text">Flashcards</span>
+        </button>
+
+        <button 
+          className={`mobile-bottom-item ${isMobileMenuOpen ? 'active' : ''}`}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <span className="bottom-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </span>
+          <span className="bottom-item-text">Menu</span>
+        </button>
+      </nav>
 
       {/* Toast Notification Container */}
       {toast && (

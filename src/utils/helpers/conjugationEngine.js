@@ -261,8 +261,16 @@ export function conjugateWithCompromise(word) {
   // C. General Verbs: Using Compromise + Irregular Dictionary
   const doc = nlp(clean);
   
+  // List of common dual-part-of-speech words that frequently act as main verbs (e.g. live, work, study, play)
+  const COMMON_DUAL_VERBS = new Set([
+    "live", "work", "study", "play", "love", "like", "walk", "talk", "run", "call", "help", 
+    "watch", "start", "stop", "change", "move", "open", "close", "look", "cook", "clean", 
+    "wash", "drink", "eat", "sleep", "sing", "dance", "drive", "swim", "fly", "hope", "wish",
+    "use", "try", "need", "want", "ask", "feel", "leave", "put", "mean", "keep", "let", "begin"
+  ]);
+
   // Determine if it is actually a verb (and not a priority noun)
-  const isVerb = (doc.match('#Verb').found || !!IRREGULAR_VERBS_LIST[clean]) && !PRIORITY_NOUNS.has(clean);
+  const isVerb = (doc.match('#Verb').found || !!IRREGULAR_VERBS_LIST[clean] || COMMON_DUAL_VERBS.has(clean)) && !PRIORITY_NOUNS.has(clean);
   
   if (!isVerb) {
     let partOfSpeech = "Danh từ (Noun)";
