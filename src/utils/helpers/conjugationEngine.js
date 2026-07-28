@@ -1,6 +1,6 @@
 import nlp from 'compromise';
-import { IRREGULAR_VERBS_LIST } from './irregularVerbs';
-import { storage } from '../storage';
+import { IRREGULAR_VERBS_LIST } from './irregularVerbs.js';
+import { storage } from '../storage.js';
 
 // 1. Modal verbs mapping
 const MODAL_VERBS = {
