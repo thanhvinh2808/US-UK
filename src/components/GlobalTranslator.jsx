@@ -538,7 +538,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
     if (showToast) showToast(`Đã lưu "${targetWord}" vào Sổ tay từ vựng!`, 'success');
   };
 
-  const handleTranslate = async (e, overrideQuery) => {
+  const handleTranslate = async (e, overrideQuery, forceOriginal = false) => {
     if (e) e.preventDefault();
     const queryToUse = overrideQuery || query;
     const cleanQuery = queryToUse.trim().toLowerCase();
@@ -551,7 +551,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
     try {
       const isSourceEn = direction === 'en-vi';
 
-      if (isSourceEn) {
+      if (isSourceEn && forceOriginal) {
         const savedEntry = storage.getSavedVocab().find(w => w.word.toLowerCase() === cleanQuery);
         if (savedEntry) {
           if (savedEntry.forms && savedEntry.forms.present_continuous) {
@@ -587,52 +587,70 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         }
       }
 
-
-
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
 
       // Strip leading articles (a, an, the, to) for headword dictionary lookup
       const queryHeadword = isSourceEn ? cleanQuery.replace(/^(a|an|the|to)\s+/i, '').trim() : cleanQuery;
 
-      const transPromise = fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&q=${encodeURIComponent(queryHeadword)}`)
+      // Primary fetch to Google Translate API with quality check (&dt=qc)
+      const primaryTransRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&dt=qc&dt=rm&q=${encodeURIComponent(queryHeadword)}`)
         .then(res => res.json())
-        .then(data => {
-          let text = "Không tìm thấy nghĩa";
-          let meaningsByPos = [];
-          if (data && data[0]) {
-            text = data[0].map(segment => segment[0]).filter(Boolean).join('');
-          }
-          if (data && data[1] && Array.isArray(data[1])) {
-            const posMap = {
-              noun: '📘 Danh từ (Noun)',
-              verb: '⚡ Động từ (Verb)',
-              adjective: '🎨 Tính từ (Adjective)',
-              adverb: '🚀 Trạng từ (Adverb)',
-              preposition: '🔗 Giới từ (Preposition)',
-              conjunction: '🤝 Liên từ (Conjunction)',
-              pronoun: '👤 Đại từ (Pronoun)',
-              interjection: '💥 Thán từ (Interjection)'
-            };
-            meaningsByPos = data[1].map(item => {
-              const rawPos = item[0] || '';
-              const label = posMap[rawPos.toLowerCase()] || `📌 ${rawPos}`;
-              const list = (item[1] || []).slice(0, 8);
-              return { pos: rawPos, label, list };
-            }).filter(i => i.list && i.list.length > 0);
-          }
-          return { text, meaningsByPos };
-        });
+        .catch(() => null);
 
-      const transData = await transPromise;
-      const translationResult = transData.text;
-      const meaningsByPos = transData.meaningsByPos;
-      const targetEnglishWord = isSourceEn ? queryHeadword : translationResult.trim().toLowerCase();
-      
+      let spellSuggestion = null;
+      if (primaryTransRes && primaryTransRes[7] && primaryTransRes[7][1]) {
+        const rawSug = String(primaryTransRes[7][1]).replace(/<[^>]*>/g, '').trim();
+        if (rawSug && rawSug.toLowerCase() !== queryHeadword.toLowerCase()) {
+          spellSuggestion = rawSug;
+        }
+      }
+
+      let activeQueryHeadword = queryHeadword;
+      let isAutoCorrected = false;
+
+      if (spellSuggestion && !forceOriginal) {
+        activeQueryHeadword = spellSuggestion;
+        isAutoCorrected = true;
+      }
+
+      let activeTransData = primaryTransRes;
+      if (isAutoCorrected && activeQueryHeadword.toLowerCase() !== queryHeadword.toLowerCase()) {
+        activeTransData = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&dt=qc&dt=rm&q=${encodeURIComponent(activeQueryHeadword)}`)
+          .then(res => res.json())
+          .catch(() => primaryTransRes);
+      }
+
+      let text = "Không tìm thấy nghĩa";
+      let meaningsByPos = [];
+      if (activeTransData && activeTransData[0]) {
+        text = activeTransData[0].map(segment => segment[0]).filter(Boolean).join('');
+      }
+      if (activeTransData && activeTransData[1] && Array.isArray(activeTransData[1])) {
+        const posMap = {
+          noun: '📘 Danh từ (Noun)',
+          verb: '⚡ Động từ (Verb)',
+          adjective: '🎨 Tính từ (Adjective)',
+          adverb: '🚀 Trạng từ (Adverb)',
+          preposition: '🔗 Giới từ (Preposition)',
+          conjunction: '🤝 Liên từ (Conjunction)',
+          pronoun: '👤 Đại từ (Pronoun)',
+          interjection: '💥 Thán từ (Interjection)'
+        };
+        meaningsByPos = activeTransData[1].map(item => {
+          const rawPos = item[0] || '';
+          const label = posMap[rawPos.toLowerCase()] || `📌 ${rawPos}`;
+          const list = (item[1] || []).slice(0, 8);
+          return { pos: rawPos, label, list };
+        }).filter(i => i.list && i.list.length > 0);
+      }
+
+      const translationResult = text;
+      const targetEnglishWord = isSourceEn ? activeQueryHeadword : translationResult.trim().toLowerCase();
       const rootEnglishWord = targetEnglishWord.replace(/^(a|an|the|to)\s+/i, '').trim();
       const isTargetSingleWord = !rootEnglishWord.includes(' ');
 
-      let dictPromise = Promise.resolve({ ipa: '', ipaUK: '', ipaUS: '', example: '', synonymsList: [] });
+      let dictPromise = Promise.resolve({ ipa: '', ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' });
       if (isTargetSingleWord) {
         dictPromise = fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(rootEnglishWord)}`)
           .then(res => res.json())
@@ -640,7 +658,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             if (data && data[0]) {
               const phonetics = data[0].phonetics || [];
               const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${rootEnglishWord}/`;
-              
+
               // Parse separate UK and US IPAs
               let ipaUK = '';
               let ipaUS = '';
@@ -668,18 +686,14 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               const apiPos = data[0].meanings?.[0]?.partOfSpeech || "";
               const meaning = data[0].meanings?.[0]?.definitions?.[0]?.definition || "";
               const sample = data[0].meanings?.[0]?.definitions?.[0]?.example || "";
-              
+
               let synonyms = [];
               if (data[0].meanings) {
                 for (const m of data[0].meanings) {
-                  if (m.synonyms) {
-                    synonyms.push(...m.synonyms);
-                  }
+                  if (m.synonyms) synonyms.push(...m.synonyms);
                   if (m.definitions) {
                     for (const d of m.definitions) {
-                      if (d.synonyms) {
-                        synonyms.push(...d.synonyms);
-                      }
+                      if (d.synonyms) synonyms.push(...d.synonyms);
                     }
                   }
                 }
@@ -688,8 +702,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 .filter(s => s && s.trim() && s.toLowerCase() !== rootEnglishWord.toLowerCase())
                 .slice(0, 5);
 
-              return { 
-                ipa: foundIpa, 
+              return {
+                ipa: foundIpa,
                 ipaUK: ipaUK,
                 ipaUS: ipaUS,
                 example: meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '',
@@ -702,7 +716,38 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           .catch(() => ({ ipa: `/${rootEnglishWord}/`, ipaUK: '', ipaUS: '', example: '', synonymsList: [], apiPos: '' }));
       }
 
-      const dictInfo = await dictPromise;
+      let dictInfo = await dictPromise;
+
+      // Fallback Datamuse spell check if Google Translate didn't offer a suggestion but dictionary lookup failed
+      if (!spellSuggestion && isSourceEn && isTargetSingleWord && !dictInfo.example && !dictInfo.apiPos) {
+        try {
+          const sugRes = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(rootEnglishWord)}`).then(r => r.json());
+          if (sugRes && sugRes.length > 0 && sugRes[0].word) {
+            const topWord = sugRes[0].word.trim();
+            if (topWord.toLowerCase() !== rootEnglishWord.toLowerCase() && sugRes[0].score > 500) {
+              spellSuggestion = topWord;
+              if (!forceOriginal) {
+                activeQueryHeadword = spellSuggestion;
+                isAutoCorrected = true;
+                const corrDict = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(spellSuggestion)}`)
+                  .then(r => r.json())
+                  .catch(() => null);
+                if (corrDict && corrDict[0]) {
+                  const phonetics = corrDict[0].phonetics || [];
+                  dictInfo.ipa = phonetics.find(p => p.text)?.text || corrDict[0].phonetic || `/${spellSuggestion}/`;
+                  dictInfo.apiPos = corrDict[0].meanings?.[0]?.partOfSpeech || "";
+                  const meaning = corrDict[0].meanings?.[0]?.definitions?.[0]?.definition || "";
+                  const sample = corrDict[0].meanings?.[0]?.definitions?.[0]?.example || "";
+                  dictInfo.example = meaning ? `${meaning}${sample ? ` (E.g. ${sample})` : ''}` : '';
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Datamuse spell check fallback error:", e);
+        }
+      }
+
       let localSynonyms = [];
       if (dictInfo.synonymsList && dictInfo.synonymsList.length > 0) {
         try {
@@ -715,7 +760,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               }
               return "";
             });
-          
+
           if (synTransRes) {
             const translatedWords = synTransRes.split(/\s*\|\s*/);
             localSynonyms = dictInfo.synonymsList.map((word, idx) => ({
@@ -730,7 +775,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
       }
 
       const localGrammar = isTargetSingleWord ? conjugateWithCompromise(targetEnglishWord) : null;
-      
+
       const posMap = {
         'noun': 'Danh từ (Noun)',
         'verb': 'Động từ (Verb)',
@@ -772,29 +817,29 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         }
       }
 
-      const englishTextToCheck = isSourceEn ? query.trim() : translationResult.trim();
+      const englishTextToCheck = isSourceEn ? activeQueryHeadword : translationResult.trim();
       const isWordInDictionary = isTargetSingleWord && !!(dictInfo.example || dictInfo.ipa || dictInfo.apiPos);
       let localCheck = { hasError: false, correctedText: "", explanation: "" };
-      
+
       if (englishTextToCheck && !isWordInDictionary) {
         const localResult = checkLocalGrammarErrors(englishTextToCheck);
-        
+
         let onlineCheck = null;
         try {
           onlineCheck = await checkGrammarOnline(englishTextToCheck);
         } catch (e) {
           console.warn("Online grammar check failed or timed out:", e);
         }
-        
+
         if (onlineCheck && onlineCheck.hasError) {
           const combinedExplanations = [];
           if (localResult.hasError) {
             combinedExplanations.push(localResult.explanation);
           }
           combinedExplanations.push(onlineCheck.explanation);
-          
+
           const mergedCorrected = checkLocalGrammarErrors(onlineCheck.correctedText);
-          
+
           localCheck = {
             hasError: true,
             correctedText: mergedCorrected.correctedText,
@@ -804,25 +849,28 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           localCheck = localResult;
         }
 
-        // If after checking, the corrected text is identical to the checked text (or only differs by case), it's not a real grammar error
         if (localCheck.correctedText.toLowerCase() === englishTextToCheck.toLowerCase()) {
           localCheck.hasError = false;
           localCheck.correctedText = "";
           localCheck.explanation = "";
         }
       }
-      
-      const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === targetEnglishWord);
+
+      const displayWord = isSourceEn ? activeQueryHeadword : translationResult;
+      const alreadySaved = storage.getSavedVocab().find(w => w.word.toLowerCase() === displayWord.toLowerCase());
       if (alreadySaved) {
         setIsSaved(true);
       }
 
       setResult({
-        word: isSourceEn ? query.trim() : translationResult, 
+        word: displayWord,
+        originalQuery: queryToUse.trim(),
+        spellSuggestion: spellSuggestion,
+        isAutoCorrected: isAutoCorrected,
         ipa: dictInfo.ipa || (isTargetSingleWord ? `/${targetEnglishWord}/` : ''),
         ipaUK: dictInfo.ipaUK || '',
         ipaUS: dictInfo.ipaUS || '',
-        vietnamese: isSourceEn ? translationResult : query.trim(), 
+        vietnamese: isSourceEn ? translationResult : queryToUse.trim(),
         partOfSpeech: finalPartOfSpeech,
         forms: localGrammar ? localGrammar.forms : null,
         example: dictInfo.example || '',
@@ -837,8 +885,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         isSaved: alreadySaved ? true : false
       });
 
-      const finalWord = isSourceEn ? query.trim() : translationResult;
-      const finalTrans = isSourceEn ? translationResult : query.trim();
+      const finalWord = displayWord;
+      const finalTrans = isSourceEn ? translationResult : queryToUse.trim();
       updateSearchHistory(finalWord, finalTrans);
     } catch (err) {
       console.error("Global translation failed:", err);
@@ -1136,6 +1184,72 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
         {result && (
           <div className="translator-result-box glass p-6 animate-slideup" style={{ borderRadius: '16px', border: '2px solid var(--color-primary)', background: 'var(--bg-card)' }}>
+            {/* Spell Correction / Did You Mean Banner */}
+            {result.isAutoCorrected && result.originalQuery && (
+              <div className="spell-suggestion-banner p-3.5 mb-5 flex items-center justify-between flex-wrap gap-2 animate-fadeIn" style={{ 
+                background: 'rgba(59, 130, 246, 0.08)', 
+                border: '1.5px solid var(--color-primary)', 
+                borderRadius: '12px', 
+                fontSize: '14px',
+                color: 'var(--color-text-main)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>✨</span>
+                  <span>
+                    Đang hiện bản dịch cho <strong style={{ color: 'var(--color-primary)', fontWeight: '700' }}>{result.word}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleTranslate(e, result.originalQuery, true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--color-primary)',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Chuyển sang dịch {result.originalQuery}
+                </button>
+              </div>
+            )}
+
+            {!result.isAutoCorrected && result.spellSuggestion && (
+              <div className="spell-suggestion-banner p-3.5 mb-5 flex items-center justify-between flex-wrap gap-2 animate-fadeIn" style={{ 
+                background: 'var(--bg-input)', 
+                border: '1px dashed var(--color-primary)', 
+                borderRadius: '12px', 
+                fontSize: '14px',
+                color: 'var(--color-text-main)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>💡</span>
+                  <span>
+                    Có phải bạn muốn tìm: <strong style={{ color: 'var(--color-primary)', fontWeight: '700' }}>{result.spellSuggestion}</strong>?
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleTranslate(e, result.spellSuggestion, false)}
+                  style={{
+                    background: 'var(--color-primary)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '5px 14px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Dịch từ {result.spellSuggestion}
+                </button>
+              </div>
+            )}
+
             {/* Header Result Card */}
             <div className="result-header flex justify-between items-start flex-wrap gap-4" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
               <div>
