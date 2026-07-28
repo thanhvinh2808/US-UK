@@ -52,10 +52,15 @@ function checkLocalGrammarErrors(text) {
       }, 
       explanation: "Sử dụng cấu trúc 'be + V-ing' để diễn tả hành động đang diễn ra (thì tiếp diễn)." 
     },
-    // Wh-question with missing does on 3rd person singular + s-verb
+    // Wh-question with missing does on 3rd person singular + s-verb (Bug 2 fix: exclude was, is, has, does)
     { 
       regex: /\b(where|how|when|why|Where|How|When|Why)\s+(he|she|it)\s+([a-zA-Z]+)s\b/g, 
       replacement: (match, wh, subj, verb) => {
+        const fullVerb = verb + 's';
+        const lowerFull = fullVerb.toLowerCase();
+        if (lowerFull === 'was' || lowerFull === 'is' || lowerFull === 'has' || lowerFull === 'does') {
+          return match;
+        }
         let baseVerb = verb;
         if (verb.toLowerCase().endsWith("es") && (verb.toLowerCase().endsWith("goes") || verb.toLowerCase().endsWith("does") || verb.toLowerCase().endsWith("watches") || verb.toLowerCase().endsWith("fishes") || verb.toLowerCase().endsWith("classes"))) {
           baseVerb = verb.slice(0, -2);
@@ -101,7 +106,10 @@ function checkLocalGrammarErrors(text) {
     { regex: /\b(is|am|Is|Am)\s+you\b/g, replacement: (m, aux) => `${/^[A-Z]/.test(aux) ? 'Are' : 'are'} you`, explanation: "Trong câu hỏi, chủ ngữ 'you' đi với động từ tobe là 'are' ('are you' chứ không phải 'is/am you')." },
     { regex: /\b(are|am|Are|Am)\s+(he|she|it)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Is' : 'is'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ số ít 'he/she/it' đi với động từ tobe là 'is' ('is he/she/it')." },
     { regex: /\b(does|Does)\s+(I|i|you|You|we|We|they|They)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Do' : 'do'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ số nhiều và 'I', 'you' dùng trợ động từ 'do' ('do you', 'do they')." },
+
+    // Bug 1 fix: Only match question 'do he/she' when not preceded by modal verbs, 'to', etc.
     { regex: /(?<!\b(?:can|could|should|would|will|may|might|must|cannot|can't|couldn't|shouldn't|wouldn't|won't|don't|doesn't|didn't|to|let|make|help|I|you|we|they|he|she|it|this|that|please|just|always|never)\s+)\b(do|Do)\s+(he|He|she|She)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Does' : 'does'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ ngôi thứ ba số ít dùng trợ động từ 'does' ('does he', 'does she')." },
+
     { regex: /\b(what|What)\s+(timing|timming)\s+is\s+it\b/g, replacement: "$1 time is it", explanation: "Câu hỏi giờ giấc chuẩn tiếng Anh sử dụng danh từ 'time' ('What time is it') chứ không dùng 'timing'." },
     { regex: /\b(we|they|people|these|those|We|They|People|These|Those)\s+a\s+([a-zA-Z]+)\b/g, replacement: "$1 are $2", explanation: "Dùng động từ tobe số nhiều 'are' thay vì từ đơn 'a' đứng sau chủ ngữ/danh từ số nhiều." },
     { regex: /\b(where|how|when|why|Where|How|When|Why)\s+(you|they|we)\s+(go|live|work|like|want|do|study|learn|see|eat|drink|have|play|say|call)\b/g, replacement: "$1 do $2 $3", explanation: "Trong câu hỏi có từ để hỏi (wh-question), cần thêm trợ động từ 'do' trước chủ ngữ." },
@@ -110,8 +118,9 @@ function checkLocalGrammarErrors(text) {
     { regex: /\b(I|i|we|We|they|They|you|You)\s+am\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "$1 $2", explanation: "Không dùng động từ tobe 'am/are' đi liền trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn." },
     { regex: /\b(I'm|i'm|Im|im)\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "I $2", explanation: "Không dùng 'I'm' trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn (dùng 'I' thay vì 'I'm')." },
     { regex: /\b(I'm|i'm|Im|im)\s+(study|work|learn|read|write|cook|run|play|watch)\b/g, replacement: "I am $2ing", explanation: "Dùng động từ đuôi -ing sau 'I am' để tạo thì hiện tại tiếp diễn." },
-    { regex: /\b(anh|Anh)\b/g, replacement: "and", explanation: "Từ nối 'and' bị viết nhầm/gõ nhầm thành từ 'anh'." },
-    // Suggest + pronoun + to-infinitive -> suggest that [subj] [baseVerb] (Subjunctive mood)
+    // Bug 5 fix: Removed 'anh' -> 'and' rule completely to avoid corrupting names or repeating 'and'
+
+    // Bug 3 fix: Suggest / Recommend rules placed LAST so subjunctive mood is protected
     { 
       regex: /\b(suggest|recommend|suggested|recommended)\s+(him|her|them|us|me)\s+to\s+([a-zA-Z]+)\b/gi, 
       replacement: (match, verb, pron, baseVerb) => {
@@ -139,23 +148,40 @@ function checkLocalGrammarErrors(text) {
     }
   }
 
-  const aBeforeVowelsRegex = /\b(a|A)\s+([aeiou][a-z]*)\b/g;
-  corrected = corrected.replace(aBeforeVowelsRegex, (fullMatch, art, word) => {
-    const vowelWord = word.toLowerCase();
-    if (!vowelWord.startsWith("uni") && !vowelWord.startsWith("one")) {
+  // Bug 4 fix: Phonetic-aware a / an logic
+  const consonantSoundVowels = /\b(user|university|unicorn|unique|useful|unit|united|universe|utensil|utopia|ubiquitous|euro|european|one|oneself|ufo)\b/i;
+  const silentHWords = /\b(hour|hours|honest|honor|honour|honorable|honourable|heir|heiress)\b/i;
+  const vowelSoundAcronyms = /\b([FHLMNRSX][A-Z0-9]{1,4})\b/; // MBA, MP3, HR, SMS, etc.
+
+  // 1. Fix "a" before words requiring "an"
+  const aToAnRegex = /\b(a|A)\s+([a-zA-Z0-9]+)\b/g;
+  corrected = corrected.replace(aToAnRegex, (fullMatch, art, word) => {
+    const lowerWord = word.toLowerCase();
+    const isVowelStart = /^[aeiou]/i.test(word);
+    const isSilentH = silentHWords.test(lowerWord);
+    const isVowelAcronym = vowelSoundAcronyms.test(word);
+    const isConsonantSoundVowel = consonantSoundVowels.test(lowerWord);
+
+    if ((isVowelStart && !isConsonantSoundVowel) || isSilentH || isVowelAcronym) {
       const correctArt = art === 'A' ? 'An' : 'an';
-      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng nguyên âm '${word}'.`);
+      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng âm nguyên âm '${word}'.`);
       return `${correctArt} ${word}`;
     }
     return fullMatch;
   });
 
-  const anBeforeConsonantsRegex = /\b(an|An)\s+([bcdfghjklmnpqrstvwxyz][a-z]*)\b/g;
-  corrected = corrected.replace(anBeforeConsonantsRegex, (fullMatch, art, word) => {
-    const consWord = word.toLowerCase();
-    if (!consWord.startsWith("hour") && !consWord.startsWith("honest") && !consWord.startsWith("honor")) {
+  // 2. Fix "an" before words requiring "a"
+  const anToARegex = /\b(an|An)\s+([a-zA-Z0-9]+)\b/g;
+  corrected = corrected.replace(anToARegex, (fullMatch, art, word) => {
+    const lowerWord = word.toLowerCase();
+    const isConsonantStart = /^[bcdfghjklmnpqrstvwxyz]/i.test(word);
+    const isSilentH = silentHWords.test(lowerWord);
+    const isVowelAcronym = vowelSoundAcronyms.test(word);
+    const isConsonantSoundVowel = consonantSoundVowels.test(lowerWord);
+
+    if ((isConsonantStart && !isSilentH && !isVowelAcronym) || isConsonantSoundVowel) {
       const correctArt = art === 'An' ? 'A' : 'a';
-      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng phụ âm '${word}'.`);
+      explanations.push(`Dùng mạo từ '${correctArt}' thay vì '${art}' trước từ bắt đầu bằng âm phụ âm '${word}'.`);
       return `${correctArt} ${word}`;
     }
     return fullMatch;
