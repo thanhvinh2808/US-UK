@@ -66,16 +66,6 @@ function checkLocalGrammarErrors(text) {
       }, 
       explanation: "Trong câu hỏi Wh-question ở hiện tại đơn với ngôi thứ ba số ít, sử dụng trợ động từ 'does' đứng trước chủ ngữ và động từ chính ở dạng nguyên thể." 
     },
-    // Suggest + pronoun + to-infinitive
-    { 
-      regex: /\b(suggest|recommend|suggested|recommended)\s+(him|her|them|us|me)\s+to\s+([a-zA-Z]+)\b/gi, 
-      replacement: (match, verb, pron, baseVerb) => {
-        const pronMap = { him: 'he', her: 'she', them: 'they', us: 'we', me: 'I' };
-        const subj = pronMap[pron.toLowerCase()] || pron;
-        return `${verb} that ${subj} ${baseVerb}`;
-      }, 
-      explanation: "Động từ 'suggest/recommend' không đi với cấu trúc tân ngữ + to-verb. Dùng 'suggest that [chủ ngữ] + verb nguyên thể' hoặc 'suggest + V-ing'." 
-    },
     // Wish + am/is/are
     { 
       regex: /\b(wish|wishes)\s+(I|i|he|He|she|She|it|It|you|You|we|We|they|They)\s+(am|is|are)\b/g, 
@@ -111,7 +101,7 @@ function checkLocalGrammarErrors(text) {
     { regex: /\b(is|am|Is|Am)\s+you\b/g, replacement: (m, aux) => `${/^[A-Z]/.test(aux) ? 'Are' : 'are'} you`, explanation: "Trong câu hỏi, chủ ngữ 'you' đi với động từ tobe là 'are' ('are you' chứ không phải 'is/am you')." },
     { regex: /\b(are|am|Are|Am)\s+(he|she|it)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Is' : 'is'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ số ít 'he/she/it' đi với động từ tobe là 'is' ('is he/she/it')." },
     { regex: /\b(does|Does)\s+(I|i|you|You|we|We|they|They)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Do' : 'do'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ số nhiều và 'I', 'you' dùng trợ động từ 'do' ('do you', 'do they')." },
-    { regex: /\b(do|Do)\s+(he|He|she|She|it|It)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Does' : 'does'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ ngôi thứ ba số ít dùng trợ động từ 'does' ('does he', 'does she')." },
+    { regex: /(?<!\b(?:can|could|should|would|will|may|might|must|cannot|can't|couldn't|shouldn't|wouldn't|won't|don't|doesn't|didn't|to|let|make|help|I|you|we|they|he|she|it|this|that|please|just|always|never)\s+)\b(do|Do)\s+(he|He|she|She)\b/g, replacement: (m, aux, subj) => `${/^[A-Z]/.test(aux) ? 'Does' : 'does'} ${subj}`, explanation: "Trong câu hỏi, chủ ngữ ngôi thứ ba số ít dùng trợ động từ 'does' ('does he', 'does she')." },
     { regex: /\b(what|What)\s+(timing|timming)\s+is\s+it\b/g, replacement: "$1 time is it", explanation: "Câu hỏi giờ giấc chuẩn tiếng Anh sử dụng danh từ 'time' ('What time is it') chứ không dùng 'timing'." },
     { regex: /\b(we|they|people|these|those|We|They|People|These|Those)\s+a\s+([a-zA-Z]+)\b/g, replacement: "$1 are $2", explanation: "Dùng động từ tobe số nhiều 'are' thay vì từ đơn 'a' đứng sau chủ ngữ/danh từ số nhiều." },
     { regex: /\b(where|how|when|why|Where|How|When|Why)\s+(you|they|we)\s+(go|live|work|like|want|do|study|learn|see|eat|drink|have|play|say|call)\b/g, replacement: "$1 do $2 $3", explanation: "Trong câu hỏi có từ để hỏi (wh-question), cần thêm trợ động từ 'do' trước chủ ngữ." },
@@ -120,7 +110,26 @@ function checkLocalGrammarErrors(text) {
     { regex: /\b(I|i|we|We|they|They|you|You)\s+am\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "$1 $2", explanation: "Không dùng động từ tobe 'am/are' đi liền trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn." },
     { regex: /\b(I'm|i'm|Im|im)\s+(feel|like|love|hate|agree|disagree|think)\b/g, replacement: "I $2", explanation: "Không dùng 'I'm' trước động từ thường chỉ trạng thái/cảm xúc ở hiện tại đơn (dùng 'I' thay vì 'I'm')." },
     { regex: /\b(I'm|i'm|Im|im)\s+(study|work|learn|read|write|cook|run|play|watch)\b/g, replacement: "I am $2ing", explanation: "Dùng động từ đuôi -ing sau 'I am' để tạo thì hiện tại tiếp diễn." },
-    { regex: /\b(anh|Anh)\b/g, replacement: "and", explanation: "Từ nối 'and' bị viết nhầm/gõ nhầm thành từ 'anh'." }
+    { regex: /\b(anh|Anh)\b/g, replacement: "and", explanation: "Từ nối 'and' bị viết nhầm/gõ nhầm thành từ 'anh'." },
+    // Suggest + pronoun + to-infinitive -> suggest that [subj] [baseVerb] (Subjunctive mood)
+    { 
+      regex: /\b(suggest|recommend|suggested|recommended)\s+(him|her|them|us|me)\s+to\s+([a-zA-Z]+)\b/gi, 
+      replacement: (match, verb, pron, baseVerb) => {
+        const pronMap = { him: 'he', her: 'she', them: 'they', us: 'we', me: 'I' };
+        const subj = pronMap[pron.toLowerCase()] || pron;
+        return `${verb} that ${subj} ${baseVerb}`;
+      }, 
+      explanation: "Động từ 'suggest/recommend' không đi với cấu trúc tân ngữ + to-verb. Dùng 'suggest that [chủ ngữ] + verb nguyên thể' hoặc 'suggest + V-ing'." 
+    },
+    { 
+      regex: /\b(suggest|recommend|suggested|recommended)\s+(?:that\s+)?(he|she|it)\s+(goes|does|has|wants|likes|is|was|were)\b/gi, 
+      replacement: (match, verb, subj, sVerb) => {
+        const baseMap = { goes: 'go', does: 'do', has: 'have', wants: 'want', likes: 'like', is: 'be', was: 'be', were: 'be' };
+        const base = baseMap[sVerb.toLowerCase()] || sVerb;
+        return `${verb} that ${subj} ${base}`;
+      }, 
+      explanation: "Sau 'suggest/recommend', động từ trong mệnh đề 'that' dùng ở dạng giả định (động từ nguyên thể không chia cho tất cả các ngôi)." 
+    }
   ];
 
   for (const item of agreementReplacements) {
