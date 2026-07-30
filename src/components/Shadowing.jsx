@@ -140,14 +140,16 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
 
     // 2. Evaluate words caught
     const spokenWords = getCleanWords(transcript);
+    const spokenPool = [...spokenWords]; // bản sao để "tiêu thụ" từng từ đã khớp
     const matchedIndices = [];
     let matchCount = 0;
 
     targetWords.forEach((word, idx) => {
-      // Find matches sequentially or general inclusion
-      if (spokenWords.includes(word)) {
+      const poolIdx = spokenPool.indexOf(word);
+      if (poolIdx !== -1) {
         matchedIndices.push(idx);
         matchCount++;
+        spokenPool.splice(poolIdx, 1); // tránh 1 từ nói ra được tính khớp với nhiều từ lặp lại trong câu mẫu
       }
     });
 

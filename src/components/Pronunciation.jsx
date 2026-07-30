@@ -113,11 +113,14 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
 
   const evaluateSpeech = (transcript) => {
     const spokenWords = getCleanWords(transcript);
-    
+    const spokenPool = [...spokenWords]; // bản sao để "tiêu thụ" từng từ đã khớp
+
     let matchCount = 0;
     targetWords.forEach(word => {
-      if (spokenWords.includes(word)) {
+      const idx = spokenPool.indexOf(word);
+      if (idx !== -1) {
         matchCount++;
+        spokenPool.splice(idx, 1); // xoá để tránh 1 từ nói ra được tính khớp nhiều lần
       }
     });
 
@@ -201,7 +204,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
         </p>
 
         <button 
-          className="btn-primary w-full justify-center py-3 text.base" 
+          className="btn-primary w-full justify-center py-3 text-base" 
           onClick={onNavigateBack}
           style={{ borderRadius: '12px', background: 'var(--color-primary)', color: '#ffffff', fontWeight: '700' }}
         >
@@ -313,18 +316,20 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
           )}
         </div>
 
-        {/* Developer / Browser Fallback Testing Tools */}
-        <div className="simulation-tools mb-6 p-4 glass" style={{ background: 'var(--bg-input)', borderRadius: '12px', textAlign: 'center' }}>
-          <span className="text-xs color-text-muted font-semibold block mb-2">Thử nghiệm mô phỏng chấm điểm:</span>
-          <div className="sim-buttons flex gap-3 justify-center flex-wrap">
-            <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(true)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
-              ✓ Mô phỏng phát âm chuẩn (100%)
-            </button>
-            <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(false)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
-              ⚠ Mô phỏng phát âm chưa đạt (50%)
-            </button>
+        {/* Developer / Browser Fallback Testing Tools — CHỈ hiện khi chạy dev build, không lộ ra production */}
+        {import.meta.env.DEV && (
+          <div className="simulation-tools mb-6 p-4 glass" style={{ background: 'var(--bg-input)', borderRadius: '12px', textAlign: 'center' }}>
+            <span className="text-xs color-text-muted font-semibold block mb-2">[DEV ONLY] Thử nghiệm mô phỏng chấm điểm:</span>
+            <div className="sim-buttons flex gap-3 justify-center flex-wrap">
+              <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(true)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
+                ✓ Mô phỏng phát âm chuẩn (100%)
+              </button>
+              <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(false)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
+                ⚠ Mô phỏng phát âm chưa đạt (50%)
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Results assessment */}
         {checked && (

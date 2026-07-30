@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 import { speak } from '../utils/sounds';
 import nlp from 'compromise';
+import { IRREGULAR_VERBS_LIST } from '../utils/helpers/irregularVerbs';
+
+// Reverse lookup: dạng quá khứ (v2) -> dạng nguyên mẫu (v1), dùng để mutate đúng
+// các động từ bất quy tắc (ate, took, went...) thay vì cộng "ed" một cách mù quáng.
+const IRREGULAR_V2_TO_V1 = {};
+Object.entries(IRREGULAR_VERBS_LIST).forEach(([base, forms]) => {
+  (forms.v2 || '').split('/').forEach(v2 => {
+    const key = v2.trim().toLowerCase();
+    if (key) IRREGULAR_V2_TO_V1[key] = base;
+  });
+});
 
 function mutateSentence(sentence, tense) {
   // Check for "will have" to prevent mutating "have" -> "has" with subject-verb agreement explanation
@@ -120,6 +131,13 @@ function mutateSentence(sentence, tense) {
       return {
         mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), baseVerb),
         reason: "Sai: Câu ở quá khứ đơn cần chia động từ ở dạng quá khứ (V2/ed) thay vì nguyên mẫu."
+      };
+    } else if (IRREGULAR_V2_TO_V1[verbNormalized]) {
+      // Động từ đã ở đúng dạng quá khứ bất quy tắc (ate, took, went...) -> mutate về dạng nguyên mẫu để tạo lỗi sai thì
+      const baseVerb = IRREGULAR_V2_TO_V1[verbNormalized];
+      return {
+        mutated: sentence.replace(new RegExp(`\\b${verbText}\\b`), baseVerb),
+        reason: `Sai: '${verbText}' là dạng quá khứ bất quy tắc của động từ '${baseVerb}'. Câu ở quá khứ đơn cần giữ nguyên dạng quá khứ này, không dùng dạng nguyên mẫu.`
       };
     } else {
       return {

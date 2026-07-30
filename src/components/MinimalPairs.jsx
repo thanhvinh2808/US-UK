@@ -216,9 +216,12 @@ export default function MinimalPairs({ onNavigateBack }) {
       playSound('correct');
       vibrate(50);
       setSpeakScore('perfect');
-    } else if (cleanTarget.includes(cleanSpoken) || cleanSpoken.includes(cleanTarget)) {
-      setSpeakScore('good');
     } else {
+      // LƯU Ý: đã bỏ nhánh so khớp "includes()" 2 chiều trước đây, vì nó cho điểm "Khá tốt"
+      // ngay cả khi người dùng đọc NHẦM sang từ còn lại trong cặp minimal pair — ví dụ cặp
+      // 'path'/'pathway': nói "path" khi target là "pathway" vẫn được coi là includes() = true.
+      // Với bài tập minimal pairs, mục tiêu chính là phân biệt chính xác 2 âm gần giống nhau,
+      // nên không nên cho điểm "gần đúng" dựa trên so khớp chuỗi con.
       playSound('incorrect');
       vibrate([50, 50]);
       setSpeakScore('try_again');

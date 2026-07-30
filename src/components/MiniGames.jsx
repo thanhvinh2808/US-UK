@@ -210,6 +210,10 @@ export default function MiniGames({ onNavigateBack, showToast }) {
 
   // --- TIME ATTACK QUIZ STATE ---
   const [quizScore, setQuizScore] = useState(0);
+  const quizScoreRef = useRef(0); // tránh stale closure trong setInterval của startTImeAttack
+  useEffect(() => {
+    quizScoreRef.current = quizScore;
+  }, [quizScore]);
   const [timeLeft, setTimeLeft] = useState(60);
   const [taStatus, setTaStatus] = useState('lobby'); // lobby, playing, finished
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -218,6 +222,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
 
   const startTImeAttack = () => {
     setQuizScore(0);
+    quizScoreRef.current = 0;
     setTimeLeft(60);
     setTaStatus('playing');
     generateTAQuestion();
@@ -230,8 +235,9 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           setTaStatus('finished');
           playSound('complete');
           confetti({ particleCount: 60, spread: 70 });
-          // Award XP based on score
-          const pointsEarned = quizScore * 2;
+          // Award XP based on score - dùng ref để lấy điểm thật lúc hết giờ,
+          // tránh bug đóng băng giá trị "quizScore" tại thời điểm bắt đầu game (stale closure)
+          const pointsEarned = quizScoreRef.current * 2;
           storage.updateUserStats({ points: storage.getUserStats().points + pointsEarned });
           storage.incrementActivity(3);
           return 0;

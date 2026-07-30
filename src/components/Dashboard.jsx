@@ -125,16 +125,31 @@ export default function Dashboard({ stats, progress, savedVocabCount, onSelectTo
             <h3 style={{ fontSize: '1.6rem', fontWeight: '800', marginTop: '4px', margin: 0 }}>
               Level {stats.level} ({stats.points} XP)
             </h3>
-            {/* XP Progress Bar */}
-            <div style={{ width: '100%', height: '6px', background: 'var(--bg-input)', borderRadius: '10px', marginTop: '8px', overflow: 'hidden' }}>
-              <div style={{ 
-                width: `${Math.min(100, (stats.points / 1000) * 100)}%`, 
-                height: '100%', 
-                background: 'var(--color-primary)',
-                borderRadius: '10px',
-                transition: 'width 0.5s ease'
-              }} />
-            </div>
+            {/* XP Progress Bar - tính % tiến trình TRONG cấp độ hiện tại (khớp ngưỡng lên cấp thật ở App.jsx: A1 0-149, A2 150-499, B1 500-999, B2 1000+),
+                thay vì lấy điểm/1000 một cách cứng nhắc bất kể đang ở cấp nào (gây hiển thị sai lệch, ví dụ B1 600 điểm trước đây hiện 60% dù thực tế mới đi được 20% chặng đường tới B2) */}
+            {(() => {
+              const LEVEL_THRESHOLDS = [
+                { level: 'A1', min: 0, next: 150 },
+                { level: 'A2', min: 150, next: 500 },
+                { level: 'B1', min: 500, next: 1000 },
+                { level: 'B2', min: 1000, next: null } // cấp cao nhất, không còn ngưỡng tiếp theo
+              ];
+              const current = LEVEL_THRESHOLDS.find(l => l.level === stats.level) || LEVEL_THRESHOLDS[0];
+              const progressPct = current.next
+                ? Math.min(100, Math.max(0, ((stats.points - current.min) / (current.next - current.min)) * 100))
+                : 100;
+              return (
+                <div style={{ width: '100%', height: '6px', background: 'var(--bg-input)', borderRadius: '10px', marginTop: '8px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    width: `${progressPct}%`, 
+                    height: '100%', 
+                    background: 'var(--color-primary)',
+                    borderRadius: '10px',
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
+              );
+            })()}
           </div>
         </div>
 
