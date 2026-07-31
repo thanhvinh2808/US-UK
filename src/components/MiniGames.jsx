@@ -307,6 +307,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
   // Refs for stable, glitch-free game loops (stops intervals resetting constantly on state changes)
   const stScoreRef = useRef(stScore);
   const vocabListRef = useRef(vocabList);
+  const hitBottomRef = useRef(false); // cờ tạm để đưa side-effect (âm thanh/rung/trừ mạng) ra khỏi setState updater
 
   // States & Refs for AI dynamic vocabulary replenishment
   const [dynamicPool, setDynamicPool] = useState([]);
@@ -402,6 +403,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
     // High performance game tick updating movement, projectiles and sparks (running at 24ms for ~40fps smooth motion)
     const gameTick = setInterval(() => {
       // 1. Move falling words down (Float slowly like meteorites)
+      hitBottomRef.current = false;
       setStWords((prevWords) => {
         let hitBottom = false;
         const updated = prevWords.map(w => {
@@ -416,20 +418,24 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           return { ...w, y: nextY };
         });
 
-        if (hitBottom) {
-          playSound('incorrect');
-          vibrate(100);
-          setStLives(lives => {
-            const nextLives = lives - 1;
-            if (nextLives <= 0) {
-              // Defer state update to next microtask to prevent React render-cycle warnings/crashes
-              setTimeout(() => setStStatus('finished'), 0);
-            }
-            return nextLives;
-          });
-        }
+        if (hitBottom) hitBottomRef.current = true; // chỉ đánh dấu, KHÔNG gọi side-effect ở đây
         return updated.filter(w => w.y < 88);
       });
+
+      // Side-effect (âm thanh/rung/trừ mạng) đặt NGOÀI setState updater để tránh bị nhân đôi
+      // khi React StrictMode bật (đang bật trong main.jsx), React sẽ tự gọi lại hàm updater 2 lần ở môi trường dev.
+      if (hitBottomRef.current) {
+        playSound('incorrect');
+        vibrate(100);
+        setStLives(lives => {
+          const nextLives = lives - 1;
+          if (nextLives <= 0) {
+            // Defer state update to next microtask to prevent React render-cycle warnings/crashes
+            setTimeout(() => setStStatus('finished'), 0);
+          }
+          return nextLives;
+        });
+      }
 
       // 2. Move projectiles and trigger impact explosions
       setProjectiles((prevProj) => {
@@ -591,47 +597,49 @@ export default function MiniGames({ onNavigateBack, showToast }) {
     setStInput(value);
 
     const typedWord = value.trim().toLowerCase();
-    
-    setStWords((prevWords) => {
-      // Find matching word that is active (not dying yet)
-      const matchedIndex = prevWords.findIndex(w => !w.dying && w.word && w.word.toLowerCase() === typedWord);
-      
-      if (matchedIndex !== -1) {
-        const matchedWord = prevWords[matchedIndex];
-        
-        // Mark word as dying so it locks input and fades out
-        matchedWord.dying = true;
+    if (!typedWord) return;
 
-        // Calculate laser barrel rotation angle (centered on the turret base at 50%, 92%)
-        const dx = matchedWord.x - 50; // delta x from center
-        const dy = 92 - matchedWord.y; // delta y (pivots from 92% vertical)
-        const angle = (Math.atan2(dx, dy) * 180) / Math.PI;
-        setCannonAngle(angle);
+    // Tìm từ khớp từ state hiện tại (đọc trực tiếp từ closure của render này, không cần
+    // functional update ở đây vì đây là sự kiện rời rạc theo từng phím gõ, không phải vòng
+    // lặp interval nên không gặp vấn đề stale closure).
+    const matchedWord = stWords.find(w => !w.dying && w.word && w.word.toLowerCase() === typedWord);
+    if (!matchedWord) return;
 
-        // Spawn a laser bullet projectile heading towards target starting from the barrel tip (approx y: 88%)
-        setProjectiles(prevProj => [
-          ...prevProj,
-          {
-            id: Math.random().toString(),
-            x: 50,
-            y: 88, 
-            tx: matchedWord.x,
-            ty: matchedWord.y,
-            progress: 0,
-            wordId: matchedWord.id
-          }
-        ]);
-        
-        playSound('correct');
-        speak(matchedWord.word);
-        
-        setStScore(prev => prev + 10);
-        setStInput(''); // Reset typing field
-        
-        return [...prevWords];
+    // QUAN TRỌNG: không mutate trực tiếp object trong state và không đặt side-effect
+    // (âm thanh, điểm số, đạn bắn...) bên trong hàm updater của setState — vì setState updater
+    // phải là pure function. Khi React StrictMode bật (đang bật trong main.jsx), React sẽ tự
+    // gọi lại hàm updater 2 lần ở môi trường dev để phát hiện side-effect không tinh khiết,
+    // khiến điểm số/âm thanh/đạn bắn bị nhân đôi mỗi lần gõ đúng 1 từ. Sửa bằng cách tách toàn
+    // bộ side-effect ra ngoài, chỉ dùng setState thuần tuý để tạo mảng mới (immutable update).
+    setStWords(prevWords => prevWords.map(w =>
+      w.id === matchedWord.id ? { ...w, dying: true } : w
+    ));
+
+    // Calculate laser barrel rotation angle (centered on the turret base at 50%, 92%)
+    const dx = matchedWord.x - 50; // delta x from center
+    const dy = 92 - matchedWord.y; // delta y (pivots from 92% vertical)
+    const angle = (Math.atan2(dx, dy) * 180) / Math.PI;
+    setCannonAngle(angle);
+
+    // Spawn a laser bullet projectile heading towards target starting from the barrel tip (approx y: 88%)
+    setProjectiles(prevProj => [
+      ...prevProj,
+      {
+        id: Math.random().toString(),
+        x: 50,
+        y: 88,
+        tx: matchedWord.x,
+        ty: matchedWord.y,
+        progress: 0,
+        wordId: matchedWord.id
       }
-      return prevWords;
-    });
+    ]);
+
+    playSound('correct');
+    speak(matchedWord.word);
+
+    setStScore(prev => prev + 10);
+    setStInput(''); // Reset typing field
   };
 
   // Highlight prefix typed correctly
