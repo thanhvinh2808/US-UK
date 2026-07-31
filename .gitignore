@@ -26,3 +26,5 @@ dist-ssr
 # Scratch directories
 /scratch
 
+# Gemini AI Memory & Rules
+.gemini/
