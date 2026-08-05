@@ -220,8 +220,13 @@ export const storage = {
       const current = storage.getUserStats();
       const updated = {
         ...current,
-        ...updates,
-        lastActive: Date.now()
+        ...updates
+        // FIX: KHÔNG tự ý ghi đè `lastActive` ở đây nữa. Trước đây dòng này luôn set
+        // lastActive = hôm nay mỗi khi cộng điểm (points), khiến hàm incrementActivity()
+        // gọi ngay sau đó (thường trong cùng 1 hành động, vd thắng Hangman) không còn thấy
+        // được giá trị lastActive THẬT của ngày hôm trước nữa -> không bao giờ phát hiện được
+        // "đây là lượt hoạt động đầu tiên của 1 ngày mới" -> streak không bao giờ tăng.
+        // Việc cập nhật lastActive giờ chỉ do incrementActivity() đảm nhiệm (đúng như tên gọi).
       };
       localStorage.setItem(KEY_STATS, JSON.stringify(updated));
       return updated;
@@ -280,11 +285,36 @@ export const storage = {
       const stats = storage.getUserStats();
       const now = new Date();
       const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-      
+      const todayString = now.toDateString();
+
       let updatedStats = { ...stats };
       if (!updatedStats.activityHistory) {
         updatedStats.activityHistory = {};
       }
+
+      // FIX: Cập nhật streak (chuỗi ngày học liên tục) ngay tại đây. Trước đây hàm này
+      // (hàm THỰC SỰ được gọi ở mọi module: Hangman, Time Attack, Space Typer...) không hề
+      // đụng tới `streak`, trong khi logic tăng streak đúng lại nằm trong hàm `recordActivity()`
+      // — một hàm chưa từng được gọi ở bất kỳ đâu trong toàn bộ codebase. Hệ quả: streak của
+      // người dùng không bao giờ tăng dù học/chơi đều đặn mỗi ngày.
+      if (!stats.lastActive) {
+        updatedStats.streak = 1;
+      } else {
+        const lastActiveDate = new Date(stats.lastActive);
+        const lastActiveString = lastActiveDate.toDateString();
+
+        if (lastActiveString !== todayString) {
+          const diffTime = Math.abs(new Date().setHours(0, 0, 0, 0) - new Date(stats.lastActive).setHours(0, 0, 0, 0));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            updatedStats.streak = (stats.streak || 0) + 1;
+          } else if (diffDays > 1) {
+            updatedStats.streak = 1;
+          }
+        }
+      }
+
       updatedStats.activityHistory[dateKey] = (updatedStats.activityHistory[dateKey] || 0) + amount;
       updatedStats.lastActive = Date.now();
       
