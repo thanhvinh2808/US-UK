@@ -26,5 +26,10 @@ dist-ssr
 # Scratch directories
 /scratch
 
+# Environment & Server
+server/node_modules
+server/.env
+.env
+
 # Gemini AI Memory & Rules
 .gemini/

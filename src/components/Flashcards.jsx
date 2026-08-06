@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, vibrate } from '../utils/sounds';
+import { playSound, vibrate, speak } from '../utils/sounds';
+import { api } from '../services/api';
 import confetti from 'canvas-confetti';
 
 export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToast }) {
   const [savedVocab, setSavedVocab] = useState(() => storage.getSavedVocab());
+  const [cloudSets, setCloudSets] = useState([]);
   const [gameState, setGameState] = useState('settings'); // settings, playing, finished
   
   // Settings state
@@ -31,11 +33,40 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
   const currentWord = quizWords[currentIndex];
 
+  // Fetch MongoDB Cloud Study Sets on mount
+  useEffect(() => {
+    async function loadCloudSets() {
+      const data = await api.getStudySets();
+      if (data && Array.isArray(data) && data.length > 0) {
+        setCloudSets(data);
+      }
+    }
+    loadCloudSets();
+  }, []);
+
   // Initialize and shuffle quiz words based on settings
   const handleStartQuiz = () => {
-    const vocabToUse = selectedDeckId === 'all' 
-      ? savedVocab 
-      : savedVocab.filter(item => item.deckId === selectedDeckId);
+    let vocabToUse = [];
+
+    if (selectedDeckId.startsWith('cloud_')) {
+      const cloudId = selectedDeckId.replace('cloud_', '');
+      const foundSet = cloudSets.find(s => s._id === cloudId);
+      if (foundSet && foundSet.cards) {
+        vocabToUse = foundSet.cards.map(c => ({
+          _id: c._id,
+          setId: foundSet._id,
+          word: c.termEn,
+          vietnamese: c.definitionVi,
+          ipa: c.ipaUs || c.ipaUk,
+          example: c.exampleEn,
+          topic: foundSet.title
+        }));
+      }
+    } else {
+      vocabToUse = selectedDeckId === 'all' 
+        ? savedVocab 
+        : savedVocab.filter(item => item.deckId === selectedDeckId);
+    }
 
     if (vocabToUse.length < 4) {
       alert("Bộ thẻ này cần có ít nhất 4 từ để chơi flashcards.");
@@ -239,15 +270,30 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                   className="btn-secondary w-full"
                   style={{ padding: '8px 12px', background: 'var(--bg-dark)', color: 'var(--color-text-main)', border: '1px solid var(--border-light)' }}
                 >
-                  <option value="all">Tất cả thẻ từ vựng ({savedVocab.length})</option>
-                  {customDecks.map(deck => {
-                    const count = savedVocab.filter(item => item.deckId === deck.id).length;
-                    return (
-                      <option key={deck.id} value={deck.id}>
-                        📦 {deck.name} ({count} từ)
-                      </option>
-                    );
-                  })}
+                  <option value="all">Sổ tay cá nhân ({savedVocab.length} từ)</option>
+                  
+                  {cloudSets.length > 0 && (
+                    <optgroup label="🍃 MongoDB Cloud Study Sets (Quizlet)">
+                      {cloudSets.map(set => (
+                        <option key={set._id} value={`cloud_${set._id}`}>
+                          ☁️ {set.title} ({set.cards?.length || 0} từ) [{set.levelTag || 'C1'}]
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {customDecks.length > 0 && (
+                    <optgroup label="📦 Custom Local Decks">
+                      {customDecks.map(deck => {
+                        const count = savedVocab.filter(item => item.deckId === deck.id).length;
+                        return (
+                          <option key={deck.id} value={deck.id}>
+                            📦 {deck.name} ({count} từ)
+                          </option>
+                        );
+                      })}
+                    </optgroup>
+                  )}
                 </select>
                 {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
                   <small className="block mt-1" style={{ color: 'var(--color-error)' }}>
