@@ -75,7 +75,6 @@ function App() {
   const [progress, setProgress] = useState(() => storage.getTopicProgress());
   const [savedVocabCount, setSavedVocabCount] = useState(() => storage.getSavedVocab().length);
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
-  const [theme, setTheme] = useState(() => localStorage.getItem('eng_app_theme') || 'light');
   const [voiceAccent, setVoiceAccent] = useState(() => localStorage.getItem('eng_app_voice_accent') || 'US');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
@@ -129,15 +128,12 @@ function App() {
     fetchRealTopics();
   }, []);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const theme = 'light';
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('eng_app_theme', newTheme);
-  };
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('eng_app_theme', 'light');
+  }, []);
 
   const toggleVoiceAccent = () => {
     const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
@@ -258,19 +254,11 @@ function App() {
 
           <div className="sidebar-actions-row">
             <button 
-              className="sidebar-action-btn" 
-              onClick={toggleTheme}
-              title="Đổi giao diện Sáng / Tối"
-            >
-              {theme === 'light' ? '🌙 Chế độ tối' : '☀️ Chế độ sáng'}
-            </button>
-
-            <button 
-              className="sidebar-action-btn" 
+              className="sidebar-action-btn w-full" 
               onClick={toggleVoiceAccent}
               title="Đổi giọng phát âm US / UK"
             >
-              {voiceAccent === 'US' ? '🇺🇸 Giọng US' : '🇬🇧 Giọng UK'}
+              {voiceAccent === 'US' ? '🇺🇸 Giọng US (Mỹ)' : '🇬🇧 Giọng UK (Anh)'}
             </button>
           </div>
         </div>
