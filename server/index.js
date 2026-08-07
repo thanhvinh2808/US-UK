@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import studySetRoutes from './routes/studySets.js';
 import progressRoutes from './routes/progress.js';
+import topicRoutes from './routes/topics.js';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/study-sets', studySetRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/topics', topicRoutes);
 
 // Connect to MongoDB & Start Server
 const PORT = process.env.PORT || 5000;

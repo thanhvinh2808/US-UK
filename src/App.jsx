@@ -8,6 +8,7 @@ import Pronunciation from './components/Pronunciation';
 import Flashcards from './components/Flashcards';
 import VocabNotebook from './components/VocabNotebook';
 import { contentBank } from './data/contentBank';
+import { api } from './services/api';
 import GrammarLab from './components/GrammarLab';
 import Writing from './components/Writing';
 import AdminPanel from './components/AdminPanel';
@@ -111,6 +112,21 @@ function App() {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+  }, []);
+
+  // Fetch real topics from MongoDB API if backend is running
+  useEffect(() => {
+    async function fetchRealTopics() {
+      const serverTopics = await api.getTopics();
+      if (serverTopics && Array.isArray(serverTopics) && serverTopics.length > 0) {
+        const formattedApiTopics = serverTopics.map(t => ({
+          ...t,
+          id: t.slugId || t._id
+        }));
+        setTopicsList(sortTopicsByLevel([...formattedApiTopics, ...storage.getCustomTopics()]));
+      }
+    }
+    fetchRealTopics();
   }, []);
 
   useEffect(() => {

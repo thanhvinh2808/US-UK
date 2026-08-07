@@ -12,7 +12,7 @@ export const api = {
     }
   },
 
-  // Fetch all study sets
+  // Fetch all study sets from API
   async getStudySets() {
     try {
       const res = await fetch(`${API_BASE}/study-sets`);
@@ -24,7 +24,7 @@ export const api = {
     }
   },
 
-  // Fetch single study set
+  // Fetch single study set by ID
   async getStudySetById(id) {
     try {
       const res = await fetch(`${API_BASE}/study-sets/${id}`);
@@ -32,6 +32,46 @@ export const api = {
       return await res.json();
     } catch (e) {
       console.error("API error getStudySetById:", e);
+      return null;
+    }
+  },
+
+  // Create new study set via API
+  async createStudySet(setData) {
+    try {
+      const res = await fetch(`${API_BASE}/study-sets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(setData)
+      });
+      if (!res.ok) throw new Error('Failed to create study set');
+      return await res.json();
+    } catch (e) {
+      console.error("API error createStudySet:", e);
+      return null;
+    }
+  },
+
+  // Fetch all reading topics from API
+  async getTopics() {
+    try {
+      const res = await fetch(`${API_BASE}/topics`);
+      if (!res.ok) throw new Error('Failed to fetch topics');
+      return await res.json();
+    } catch (e) {
+      console.error("API error getTopics:", e);
+      return null;
+    }
+  },
+
+  // Fetch single topic by slugId or ID
+  async getTopicById(id) {
+    try {
+      const res = await fetch(`${API_BASE}/topics/${id}`);
+      if (!res.ok) throw new Error('Failed to fetch topic');
+      return await res.json();
+    } catch (e) {
+      console.error("API error getTopicById:", e);
       return null;
     }
   },
