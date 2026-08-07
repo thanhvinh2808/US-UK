@@ -286,55 +286,51 @@ export default function IdiomsHandbook({ onNavigateBack }) {
             <span className="text-xs color-text-muted font-semibold">Tìm thấy {filteredItems.length} kết quả</span>
           </div>
 
-          {/* Cards List Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Clean Notion-style List */}
+          <div className="bg-white rounded-xl border border-light overflow-hidden shadow-sm divide-y divide-slate-100">
             {filteredItems.map((item) => {
               const isExpanded = expandedId === item.id;
               return (
                 <div 
                   key={item.id} 
-                  className={`glass p-5 rounded-md transition cursor-pointer flex flex-col gap-3 ${isExpanded ? 'border-primary' : 'hover:bg-white/5'}`}
-                  style={{
-                    borderColor: isExpanded ? 'var(--color-primary)' : 'var(--border-light)',
-                    borderLeft: `4px solid ${item.type === 'idiom' ? 'var(--color-secondary)' : 'var(--color-primary)'}`
-                  }}
+                  className={`p-5 transition cursor-pointer ${isExpanded ? 'bg-[#EEF3FA]' : 'hover:bg-slate-50'}`}
                   onClick={() => setExpandedId(isExpanded ? null : item.id)}
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div>
-                      <span className={`badge-level text-[10px] font-bold uppercase tracking-wider mb-1 ${item.type === 'idiom' ? 'level-b2' : 'level-a2'}`}>
-                        {item.type === 'idiom' ? 'Idiom' : 'Phrasal Verb'}
-                      </span>
-                      <h3 className="font-extrabold text-lg color-text-dark">{item.phrase}</h3>
-                      <p className="font-semibold text-sm color-text-muted mt-1">🇻🇳 {item.definition_vi}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`badge-level text-[10px] font-bold uppercase ${item.type === 'idiom' ? 'level-b2' : 'level-a2'}`}>
+                          {item.type === 'idiom' ? 'Idiom' : 'Phrasal Verb'}
+                        </span>
+                        <span className="text-xs font-mono text-slate-400 uppercase">{item.category}</span>
+                      </div>
+                      <h3 className="font-bold text-base color-text-dark">{item.phrase}</h3>
+                      <p className="font-medium text-sm color-text-muted mt-1">{item.definition_vi}</p>
                     </div>
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button className="row-speak-btn" onClick={() => handleSpeak(item.phrase, 'US')} title="Nghe giọng Mỹ">🇺🇸</button>
-                      <button className="row-speak-btn" onClick={() => handleSpeak(item.phrase, 'UK')} title="Nghe giọng Anh">🇬🇧</button>
-                      <button className="row-speak-btn" onClick={() => handleSpeakCompare(item.phrase)} title="So sánh giọng US-UK">🆚</button>
+
+                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeak(item.phrase, 'US')} title="Nghe giọng Mỹ">🇺🇸 US</button>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeak(item.phrase, 'UK')} title="Nghe giọng Anh">🇬🇧 UK</button>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeakCompare(item.phrase)} title="So sánh giọng US-UK">🆚</button>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="expanded-details border-t border-light pt-3 mt-2 flex flex-col gap-3 animate-slideup" onClick={(e) => e.stopPropagation()}>
+                    <div className="border-t border-light pt-3 mt-3 flex flex-col gap-3 animate-slideup" onClick={(e) => e.stopPropagation()}>
                       <div>
-                        <strong className="text-xs color-text-muted block">Giải nghĩa bằng tiếng Anh:</strong>
+                        <span className="text-xs font-mono text-slate-400 font-bold uppercase block">Giải nghĩa bằng tiếng Anh:</span>
                         <p className="text-sm color-text-dark font-medium italic mt-0.5">"{item.definition_en}"</p>
                       </div>
 
-                      <div className="glass p-3 rounded" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                        <strong className="text-xs color-text-muted block">Ví dụ song ngữ:</strong>
-                        <p className="text-sm color-text-dark font-bold mt-1">"{item.example_en}"</p>
+                      <div className="bg-[#FAFBFD] p-3 rounded-lg border border-light">
+                        <span className="text-xs font-mono text-slate-400 font-bold uppercase block">Ví dụ song ngữ:</span>
+                        <p className="text-sm color-text-dark font-semibold mt-1">"{item.example_en}"</p>
                         <p className="text-xs color-text-muted mt-0.5">↳ {item.example_vi}</p>
-                        <div className="flex gap-2 justify-end mt-2">
-                          <button className="btn-secondary" style={{ padding: '2px 8px', fontSize: '10px' }} onClick={() => handleSpeak(item.example_en, 'US')}>🔊 Nghe ví dụ (US)</button>
-                          <button className="btn-secondary" style={{ padding: '2px 8px', fontSize: '10px' }} onClick={() => handleSpeak(item.example_en, 'UK')}>🔊 Nghe ví dụ (UK)</button>
-                        </div>
                       </div>
 
                       {item.origin && (
-                        <div className="text-[11px] color-text-muted leading-relaxed">
-                          💡 <strong>Nguồn gốc lịch sử:</strong> {item.origin}
+                        <div className="text-xs color-text-muted leading-relaxed">
+                          <strong>Nguồn gốc lịch sử:</strong> {item.origin}
                         </div>
                       )}
                     </div>

@@ -39,4 +39,30 @@ router.post('/', async (req, res) => {
   }
 });
 
+// PUT update topic (theo slugId hoặc Mongo _id)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };
+    const updated = await Topic.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
+    if (!updated) return res.status(404).json({ message: 'Topic not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE topic (theo slugId hoặc Mongo _id)
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };
+    const deleted = await Topic.findOneAndDelete(query);
+    if (!deleted) return res.status(404).json({ message: 'Topic not found' });
+    res.json({ message: 'Topic deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

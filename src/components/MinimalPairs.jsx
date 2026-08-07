@@ -245,15 +245,13 @@ export default function MinimalPairs({ onNavigateBack }) {
   return (
     <div className="minimal-pairs-studio-container animate-slideup" style={{ maxWidth: '1080px', margin: '0 auto' }}>
       {/* Top Header Card */}
-      <div className="page-header glass p-6 mb-6 rounded-2xl flex justify-between items-center flex-wrap gap-4" style={{ background: 'var(--bg-card)', border: '2px solid var(--color-primary)' }}>
+      <div className="page-header bg-white p-6 mb-6 rounded-xl border border-light flex justify-between items-center flex-wrap gap-4 shadow-sm">
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#ffffff', marginBottom: '8px' }}>
-            🎙️ PRONUNCIATION SOUND STAGE
-          </div>
-          <h1 style={{ fontSize: '1.9rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+          <span className="badge-level level-b2 mb-1">Minimal Pairs</span>
+          <h1 className="text-2xl font-bold color-text-dark">
             Luyện Âm Phân Biệt (Minimal Pairs Studio)
           </h1>
-          <p className="color-text-muted text-xs mt-1" style={{ margin: 0 }}>
+          <p className="color-text-muted text-xs mt-1">
             Luyện tập phân biệt các cặp từ đồng âm hoặc có khẩu hình gần giống nhau với công nghệ phản hồi âm bản xứ
           </p>
         </div>
@@ -261,7 +259,6 @@ export default function MinimalPairs({ onNavigateBack }) {
           <button 
             className="btn-secondary text-xs" 
             onClick={onNavigateBack}
-            style={{ padding: '10px 18px', borderRadius: '10px', fontWeight: '700' }}
           >
             ← Quay lại Dashboard
           </button>
@@ -274,19 +271,8 @@ export default function MinimalPairs({ onNavigateBack }) {
           <button
             key={group.id}
             onClick={() => handleGroupSelect(group)}
-            className="btn-secondary text-xs"
-            style={{
-              whiteSpace: 'nowrap',
-              padding: '12px 20px',
-              borderRadius: '12px',
-              fontWeight: '800',
-              fontSize: '13.5px',
-              background: selectedGroup.id === group.id ? 'var(--color-primary)' : 'var(--bg-card)',
-              color: selectedGroup.id === group.id ? '#ffffff' : 'var(--color-text-main)',
-              borderColor: selectedGroup.id === group.id ? 'var(--color-primary)' : 'var(--border-light)',
-              boxShadow: selectedGroup.id === group.id ? '0 4px 16px var(--color-primary-glow)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
+            className={`gallery-filter-pill ${selectedGroup.id === group.id ? 'active' : ''}`}
+            style={{ whiteSpace: 'nowrap' }}
           >
             {group.title} ({group.phonetics.join(' - ')})
           </button>
@@ -294,18 +280,18 @@ export default function MinimalPairs({ onNavigateBack }) {
       </div>
 
       {/* Hero Stage Container */}
-      <div className="sound-stage-hero glass p-6 mb-6" style={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1.5px solid var(--border-light)' }}>
+      <div className="sound-stage-hero bg-white p-6 mb-6 rounded-xl border border-light shadow-sm">
         {/* Phonetics & Mouth Placement Guide Banner */}
-        <div className="p-4 mb-6" style={{ background: 'var(--bg-input)', borderRadius: '14px', borderLeft: '4px solid var(--color-primary)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', color: 'var(--color-primary)' }}>{selectedGroup.title}</h3>
+        <div className="p-4 mb-6 bg-[#FAFBFD] rounded-lg border-l-4 border-[#1B3B6F] border border-light">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base font-bold color-text-dark">{selectedGroup.title}</h3>
             {selectedGroup.phonetics.map((p, i) => (
-              <span key={i} style={{ background: 'var(--color-primary)', color: '#ffffff', padding: '2px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '800' }}>
+              <span key={i} className="badge-level level-a2 font-mono">
                 {p}
               </span>
             ))}
           </div>
-          <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.6 }} className="color-text-main font-medium">
+          <p className="text-xs color-text-main leading-relaxed">
             {selectedGroup.description}
           </p>
         </div>
@@ -314,58 +300,31 @@ export default function MinimalPairs({ onNavigateBack }) {
         <div className="mode-switcher-grid flex gap-3 mb-6 flex-wrap justify-center">
           <button
             onClick={() => handleTabChange('learn')}
-            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
-            style={{
-              borderRadius: '12px',
-              background: activeTab === 'learn' ? 'var(--color-primary)' : 'var(--bg-card)',
-              color: activeTab === 'learn' ? '#ffffff' : 'var(--color-text-main)',
-              border: activeTab === 'learn' ? 'none' : '1px solid var(--border-light)',
-              maxWidth: '260px'
-            }}
+            className={`gallery-filter-pill text-xs flex-1 justify-center py-2.5 max-w-[240px] ${activeTab === 'learn' ? 'active' : ''}`}
           >
-            📖 1. So sánh âm bản xứ
+            1. So sánh âm bản xứ
           </button>
           <button
             onClick={() => handleTabChange('listen_quiz')}
-            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
-            style={{
-              borderRadius: '12px',
-              background: activeTab === 'listen_quiz' ? 'var(--color-primary)' : 'var(--bg-card)',
-              color: activeTab === 'listen_quiz' ? '#ffffff' : 'var(--color-text-main)',
-              border: activeTab === 'listen_quiz' ? 'none' : '1px solid var(--border-light)',
-              maxWidth: '260px'
-            }}
+            className={`gallery-filter-pill text-xs flex-1 justify-center py-2.5 max-w-[240px] ${activeTab === 'listen_quiz' ? 'active' : ''}`}
           >
-            🎧 2. Trắc nghiệm phản xạ
+            2. Trắc nghiệm phản xạ
           </button>
           <button
             onClick={() => handleTabChange('speak_quiz')}
-            className="btn-secondary text-sm flex-1 justify-center py-3 font-extrabold"
-            style={{
-              borderRadius: '12px',
-              background: activeTab === 'speak_quiz' ? 'var(--color-primary)' : 'var(--bg-card)',
-              color: activeTab === 'speak_quiz' ? '#ffffff' : 'var(--color-text-main)',
-              border: activeTab === 'speak_quiz' ? 'none' : '1px solid var(--border-light)',
-              maxWidth: '260px'
-            }}
+            className={`gallery-filter-pill text-xs flex-1 justify-center py-2.5 max-w-[240px] ${activeTab === 'speak_quiz' ? 'active' : ''}`}
           >
-            🎙️ 3. Phòng thu phát âm
+            3. Phòng thu phát âm
           </button>
         </div>
 
         {/* MODE 1: DUAL-CARD VS SOUND STAGE */}
         {activeTab === 'learn' && (
-          <div className="flex flex-col gap-6 animate-slideup">
+          <div className="flex flex-col gap-4 animate-slideup">
             {selectedGroup.pairs.map((pair, idx) => (
               <div 
                 key={idx} 
-                className="vs-sound-battle-card glass p-6" 
-                style={{ 
-                  background: 'var(--bg-card)', 
-                  borderRadius: '18px', 
-                  border: '1.5px solid var(--border-light)',
-                  boxShadow: 'var(--shadow-lg)'
-                }}
+                className="vs-sound-battle-card p-5 bg-white rounded-xl border border-light shadow-sm"
               >
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'center' }}>
                   {/* Left Word Card A */}

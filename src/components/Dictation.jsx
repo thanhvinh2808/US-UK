@@ -151,20 +151,19 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="dictation-finished glass-glow p-8 text-center max-w-xl mx-auto mt-10 animate-slideup">
-        <span className="icon-huge">🎉</span>
-        <h2 className="text-gradient mt-4 mb-2">Dictation Completed!</h2>
-        <p className="color-text-muted mb-6">Topic: {topic.topic}</p>
+      <div className="dictation-finished bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl border border-light shadow-sm">
+        <h2 className="text-2xl font-bold color-text-dark mb-2">Hoàn thành bài chính tả!</h2>
+        <p className="color-text-muted text-sm mb-6">Chủ đề: {topic.topic}</p>
         
-        <div className="score-radial-progress mb-6">
-          <div className="score-percentage">{Math.round(finalScore * 100)}%</div>
-          <div className="score-label">Accuracy</div>
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl border border-light mb-6">
+          <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{Math.round(finalScore * 100)}%</div>
+          <div className="text-xs font-mono font-bold color-text-muted uppercase mt-1">Độ chính xác</div>
         </div>
 
-        <p className="xp-gain-text mb-8">You earned <strong>+{xpEarned} XP</strong></p>
+        <p className="xp-gain-text mb-8">Bạn được cộng <strong>+{xpEarned} XP</strong> kinh nghiệm</p>
 
-        <button className="btn-primary" onClick={onNavigateBack}>
-          Back to Dashboard
+        <button className="btn-primary w-full justify-center" onClick={onNavigateBack}>
+          Quay lại Trang chủ
         </button>
       </div>
     );
@@ -178,57 +177,57 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
       {/* Header */}
       <div className="screen-header mb-6">
         <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+          ← Quay lại Trang chủ
         </button>
         <div className="topic-meta">
-          <span className="badge-level">{topic.level}</span>
+          <span className="badge-level level-b2">{topic.level}</span>
           <span className="topic-name">{topic.topic}</span>
         </div>
       </div>
 
-      <div className="dictation-layout glass p-6 max-w-3xl mx-auto">
+      <div className="dictation-layout bg-white p-6 max-w-3xl mx-auto rounded-xl border border-light shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
             style={{ width: `${(currentIdx / topic.dialogues.length) * 100}%` }}
           />
-          <span className="progress-text">Sentence {currentIdx + 1} of {topic.dialogues.length}</span>
+          <span className="progress-text font-mono text-xs">Câu {currentIdx + 1} / {topic.dialogues.length}</span>
         </div>
 
         {/* Audio Player Card */}
-        <div className="audio-card p-6 mb-6 text-center">
-          <button className="audio-play-large" onClick={handleSpeak}>
-            🔊 Play Audio
+        <div className="audio-card bg-[#FAFBFD] p-6 mb-6 text-center rounded-lg border border-light">
+          <button className="btn-primary py-3 px-6 justify-center mx-auto" onClick={handleSpeak}>
+            🔊 Nghe giọng đọc
           </button>
-          <p className="color-text-muted mt-2">Listen to the speaker and write down exactly what you hear.</p>
+          <p className="color-text-muted text-xs mt-3">Lắng nghe cẩn thận và gõ lại chính xác những gì bạn nghe được.</p>
         </div>
 
         {/* Hints */}
         <div className="hints-box mb-6">
-          <div className="hints-buttons mb-3">
+          <div className="hints-buttons mb-3 flex gap-2">
             <button 
-              className={`btn-hint ${showTranslation ? 'active' : ''}`}
+              className={`btn-secondary text-xs ${showTranslation ? 'active' : ''}`}
               onClick={() => setShowTranslation(!showTranslation)}
             >
-              💡 Show Translation
+              Hiển thị dịch nghĩa
             </button>
             <button 
-              className={`btn-hint ${showLetterHint ? 'active' : ''}`}
+              className={`btn-secondary text-xs ${showLetterHint ? 'active' : ''}`}
               onClick={() => setShowLetterHint(!showLetterHint)}
             >
-              🔤 Show Spelling Hint
+              Gợi ý ký tự
             </button>
           </div>
 
           {showTranslation && (
-            <div className="hint-content translation-hint p-3 mb-2">
-              🇻🇳 <strong>Nghĩa tiếng Việt:</strong> {dialogue.vietnamese}
+            <div className="hint-content translation-hint p-3 mb-2 bg-slate-50 rounded border border-light text-xs">
+              <strong>Nghĩa tiếng Việt:</strong> {dialogue.vietnamese}
             </div>
           )}
 
           {showLetterHint && (
-            <div className="hint-content spelling-hint p-3">
-              🧩 <strong>Gợi ý ký tự:</strong> <code>{getMaskedHint()}</code>
+            <div className="hint-content spelling-hint p-3 bg-slate-50 rounded border border-light text-xs font-mono">
+              <strong>Gợi ý:</strong> <code>{getMaskedHint()}</code>
             </div>
           )}
         </div>
@@ -238,35 +237,36 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
           <textarea
             ref={textareaRef}
             onFocus={handleFocus}
-            className="dictation-textarea"
-            placeholder="Type what you hear..."
+            className="dictation-textarea search-input w-full p-4 text-base"
+            placeholder="Gõ từ bạn nghe được tại đây..."
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             disabled={checked}
+            rows={3}
           />
         </div>
 
         {/* Inline word-by-word checking feedback */}
         {checked && (
-          <div className="dictation-feedback glass p-4 mb-6">
-            <h4 className="mb-2 text-sm color-text-muted">Assessment Feedback:</h4>
-            <div className="feedback-words">
+          <div className="dictation-feedback bg-[#FAFBFD] p-4 mb-6 rounded-lg border border-light">
+            <h4 className="mb-2 text-xs font-mono font-bold color-text-muted uppercase">Đánh giá phát âm:</h4>
+            <div className="feedback-words flex flex-wrap gap-1.5">
               {targetWords.map((word, index) => {
                 const isCorrect = matchedIndices.has(index);
                 return (
                   <span 
                     key={index} 
-                    className={`feedback-word ${isCorrect ? 'correct' : 'incorrect'}`}
-                    title={!isCorrect ? 'Missed or misspelled' : ''}
+                    className={`px-2 py-1 rounded text-xs font-bold ${isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}
+                    title={!isCorrect ? 'Từ bị gõ sai hoặc thiếu' : ''}
                   >
                     {word}
                   </span>
                 );
               })}
             </div>
-            <div className="target-reveal mt-4 p-3 glass">
-              <strong>Correct answer:</strong>
-              <p className="mt-1 color-text-main font-semibold">{targetText}</p>
+            <div className="target-reveal mt-4 p-3 bg-white rounded border border-light text-xs">
+              <strong>Đáp án chính xác:</strong>
+              <p className="mt-1 color-text-main font-bold">{targetText}</p>
             </div>
           </div>
         )}

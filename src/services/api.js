@@ -76,6 +76,53 @@ export const api = {
     }
   },
 
+  // Create new topic (bài học) via API
+  async createTopic(topicData) {
+    try {
+      const res = await fetch(`${API_BASE}/topics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(topicData)
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to create topic');
+      }
+      return await res.json();
+    } catch (e) {
+      console.error("API error createTopic:", e);
+      return null;
+    }
+  },
+
+  // Update existing topic (bài học) via API
+  async updateTopic(id, topicData) {
+    try {
+      const res = await fetch(`${API_BASE}/topics/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(topicData)
+      });
+      if (!res.ok) throw new Error('Failed to update topic');
+      return await res.json();
+    } catch (e) {
+      console.error("API error updateTopic:", e);
+      return null;
+    }
+  },
+
+  // Delete topic (bài học) via API
+  async deleteTopic(id) {
+    try {
+      const res = await fetch(`${API_BASE}/topics/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete topic');
+      return await res.json();
+    } catch (e) {
+      console.error("API error deleteTopic:", e);
+      return null;
+    }
+  },
+
   // Submit card review result for Spaced Repetition (Leitner 5-box calculation)
   async submitCardReview(userId, setId, cardId, isCorrect) {
     try {

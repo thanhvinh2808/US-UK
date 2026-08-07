@@ -276,19 +276,19 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
         
         {/* Step 1: Grammar Theory */}
         {currentStep === 'theory' && (
-          <div className="grammar-card glass p-6">
-            <div className="card-hint mb-2">Grammar Focus</div>
-            <h2 className="text-gradient mb-4">{grammar.tense_vi} ({grammar.tense})</h2>
+          <div className="grammar-card bg-white p-6 rounded-xl border border-light shadow-sm">
+            <span className="badge-level level-b2 mb-2">Grammar Focus</span>
+            <h2 className="text-2xl font-bold color-text-dark mb-4">{grammar.tense_vi} ({grammar.tense})</h2>
             
             {/* Formula Block */}
-            <div className="formula-box p-4 glass-glow mb-6 text-center">
-              <span className="label block text-xs color-text-muted mb-2 font-bold uppercase">Cấu trúc công thức</span>
-              <code className="text-lg font-bold" style={{ color: 'var(--color-secondary)' }}>{grammar.formula}</code>
+            <div className="formula-box p-5 bg-[#FAFBFD] rounded-xl border-l-4 border-[#1B3B6F] border border-light mb-6 text-center">
+              <span className="label block text-xs font-mono font-bold text-slate-400 mb-2 uppercase">Cấu trúc công thức</span>
+              <code className="text-lg font-mono font-bold color-text-dark">{grammar.formula}</code>
             </div>
 
             <div className="explanation-box mb-8">
-              <h4 className="mb-2 font-bold">Giải thích cách dùng:</h4>
-              <p className="color-text-muted leading-relaxed">{grammar.explanation}</p>
+              <h4 className="mb-2 font-bold color-text-dark">Giải thích cách dùng:</h4>
+              <p className="color-text-muted text-sm leading-relaxed">{grammar.explanation}</p>
             </div>
 
             <button className="btn-primary w-full justify-center" onClick={() => setCurrentStep('examples')}>
@@ -299,24 +299,24 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
 
         {/* Step 2: Examples list */}
         {currentStep === 'examples' && (
-          <div className="grammar-card glass p-6">
-            <div className="card-hint mb-2">Practical Examples</div>
-            <h2 className="text-gradient mb-6">Ví dụ trong bài học</h2>
+          <div className="grammar-card bg-white p-6 rounded-xl border border-light shadow-sm">
+            <span className="badge-level level-b2 mb-2">Practical Examples</span>
+            <h2 className="text-2xl font-bold color-text-dark mb-6">Ví dụ trong bài học</h2>
 
-            <div className="examples-list flex flex-col gap-5 mb-8">
+            <div className="examples-list flex flex-col gap-3 mb-8 divide-y divide-slate-100">
               {grammar.examples.map((ex, idx) => (
-                <div key={idx} className="example-item p-4 glass flex justify-between items-start gap-4">
+                <div key={idx} className="example-item pt-4 pb-2 flex justify-between items-start gap-4">
                   <div className="example-details">
-                    <p className="text-lg font-semibold color-text-dark">"{ex.en}"</p>
-                    <p className="color-text-muted text-sm mt-1">🇻🇳 {ex.vi}</p>
+                    <p className="text-base font-bold color-text-dark">"{ex.en}"</p>
+                    <p className="color-text-muted text-sm mt-1">{ex.vi}</p>
                     {ex.note && (
-                      <p className="text-xs italic mt-2" style={{ color: 'var(--color-secondary)' }}>
-                        💡 Chú ý: {ex.note}
+                      <p className="text-xs italic mt-2 text-amber-700">
+                        Chú ý: {ex.note}
                       </p>
                     )}
                   </div>
-                  <button className="speak-btn-sm" onClick={() => handleSpeak(ex.en)} title="Phát âm mẫu">
-                    🔊
+                  <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-3 py-1.5 rounded border border-light" onClick={() => handleSpeak(ex.en)} title="Phát âm mẫu">
+                    🔊 US
                   </button>
                 </div>
               ))}

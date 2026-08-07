@@ -87,7 +87,7 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
             onClick={() => onSelectModule('grammar')}
             disabled={!hasGrammar}
             style={{
-              background: !hasGrammar ? 'rgba(255,255,255,0.05)' : '',
+              background: !hasGrammar ? 'var(--bg-input)' : '',
               color: !hasGrammar ? 'var(--color-text-muted)' : '',
               cursor: !hasGrammar ? 'not-allowed' : 'pointer'
             }}
@@ -149,7 +149,7 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
             onClick={() => onSelectModule('writing')}
             disabled={!hasGrammar}
             style={{
-              background: !hasGrammar ? 'rgba(255,255,255,0.05)' : '',
+              background: !hasGrammar ? 'var(--bg-input)' : '',
               color: !hasGrammar ? 'var(--color-text-muted)' : '',
               cursor: !hasGrammar ? 'not-allowed' : 'pointer'
             }}

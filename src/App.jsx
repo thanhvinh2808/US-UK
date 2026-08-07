@@ -132,14 +132,15 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-accent', voiceAccent);
     localStorage.setItem('eng_app_theme', 'light');
-  }, []);
+  }, [voiceAccent]);
 
   const toggleVoiceAccent = () => {
     const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
     setVoiceAccent(newAccent);
     localStorage.setItem('eng_app_voice_accent', newAccent);
-    showToast(`Đã đổi giọng đọc mặc định sang ${newAccent === 'US' ? 'Mỹ (en-US) 🇺🇸' : 'Anh (en-GB) 🇬🇧'}`, 'success');
+    showToast(`Đã xoay núm đổi kênh giọng đọc sang ${newAccent === 'US' ? 'Giọng Mỹ (en-US) 🇺🇸' : 'Giọng Anh BBC (en-GB) 🇬🇧'}`, 'success');
   };
 
   const refreshState = () => {
@@ -196,85 +197,140 @@ function App() {
     }
   }, [stats.points]);
 
-  const navMenuItems = [
-    { id: 'dashboard', iconType: 'home', label: 'Trang chủ Dashboard' },
-    { id: 'alphabet', iconType: 'alphabet', label: 'Bảng chữ cái' },
-    { id: 'translator', iconType: 'search', label: 'Tra từ & Dịch AI', badge: 'Ctrl+K' },
-    { id: 'notebook', iconType: 'notebook', label: `Sổ tay từ (${savedVocabCount})` },
-    { id: 'flashcards', iconType: 'flashcards', label: 'Ôn tập Flashcards' },
-    { id: 'minimal_pairs', iconType: 'pairs', label: 'Luyện phát âm Pairs' },
-    { id: 'tenses_handbook', iconType: 'tenses', label: '12 Thì Tiếng Anh' },
-    { id: 'idioms_handbook', iconType: 'idioms', label: 'Idioms & Cụm từ' },
-    { id: 'mini_games', iconType: 'games', label: 'Playzone Mini Games' },
-    { id: 'admin', iconType: 'settings', label: 'Quản trị hệ thống' },
-  ];
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+
+  const handleNavigateWithClose = (screenKey) => {
+    setActiveScreen(screenKey);
+    setIsMobileMenuOpen(false);
+    setIsExploreOpen(false);
+  };
 
   return (
-    <div className="app-layout-dock">
-      {/* 🟢 Desktop Left Sidebar Control Dock */}
-      <aside className="app-sidebar-dock glass">
-        <div className="sidebar-header" onClick={handleBackToDashboard}>
-          <div className="brand-logo-pill">
-            <span className="brand-icon">V</span>
-            <span className="brand-name">V-English</span>
-          </div>
-          <span className="brand-subtitle">EdTech Learning Studio</span>
-        </div>
-
-        {/* Navigation Items (Single Line, Clean Vector SVG Icons) */}
-        <nav className="sidebar-nav">
-          {navMenuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavigate(item.id)}
-              className={`sidebar-nav-item ${activeScreen === item.id ? 'active' : ''}`}
-            >
-              <span className="nav-item-icon">
-                <NavSvgIcon iconType={item.iconType} />
-              </span>
-              <span className="nav-item-label">{item.label}</span>
-              {item.badge && <span className="nav-shortcut-badge">{item.badge}</span>}
-            </button>
-          ))}
-        </nav>
-
-        {/* Bottom Utility Controls */}
-        <div className="sidebar-footer">
-          <div className="sidebar-stats-row">
-            <div className="stat-badge-mini" title="Daily Streak">
-              Streak: <strong>{stats.streak}d</strong>
+    <div className={`quizlet-app-layout accent-${voiceAccent.toLowerCase()}`}>
+      {/* 📻 US-UK Dual Tone Header */}
+      <header className="qz-header">
+        <div className="qz-header-container">
+          {/* Logo */}
+          <div className="qz-brand" onClick={() => handleNavigateWithClose('dashboard')}>
+            <div className="qz-logo-badge-dual">
+              <span className="brand-uk">UK</span>
+              <span className="brand-divider">/</span>
+              <span className="brand-us">US</span>
             </div>
-            <div className="stat-badge-mini" title="Experience Points">
-              XP: <strong>{stats.points}</strong>
-            </div>
-            <div className="stat-badge-mini" title="Level">
-              Level: <strong>{stats.level}</strong>
+            <div className="qz-brand-text">
+              <span className="qz-brand-title">Antigravity English</span>
             </div>
           </div>
 
-          <div className="sidebar-actions-row">
+          {/* 📻 COMPACT ANALOG RADIO DIAL SWITCHER (US ⇄ UK) */}
+          <div 
+            className="radio-dial-widget" 
+            onClick={toggleVoiceAccent}
+            title={`Kênh phát âm: ${voiceAccent === 'UK' ? '🇬🇧 Oxford BBC (98.5 MHz)' : '🇺🇸 Voice US (104.2 MHz)'} - Nhấp để xoay núm vặn`}
+          >
+            <div className={`radio-dial-knob-wrapper ${voiceAccent.toLowerCase()}`}>
+              <div className="radio-knob-outer">
+                <div className="radio-knob-line"></div>
+              </div>
+            </div>
+            <span className={`channel-pill ${voiceAccent.toLowerCase()} active`}>
+              {voiceAccent === 'UK' ? '🇬🇧 UK' : '🇺🇸 US'}
+            </span>
+          </div>
+
+          {/* Clean Navigation Links */}
+          <nav className="qz-nav-links">
             <button 
-              className="sidebar-action-btn w-full" 
-              onClick={toggleVoiceAccent}
-              title="Đổi giọng phát âm US / UK"
+              className={`qz-nav-link ${activeScreen === 'dashboard' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('dashboard')}
             >
-              {voiceAccent === 'US' ? '🇺🇸 Giọng US (Mỹ)' : '🇬🇧 Giọng UK (Anh)'}
+              Trang chủ
             </button>
+            <button 
+              className={`qz-nav-link ${activeScreen === 'flashcards' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('flashcards')}
+            >
+              Flashcards
+            </button>
+
+            {/* 🎯 Dropdown Option Select Menu */}
+            <div className="qz-dropdown-wrapper">
+              <button 
+                className="qz-nav-link dropdown-trigger"
+                onClick={() => setIsExploreOpen(!isExploreOpen)}
+              >
+                Chủ đề & Chức năng ▾
+              </button>
+
+              {isExploreOpen && (
+                <div className="qz-dropdown-menu">
+                  <div className="qz-dropdown-label">🎓 TÀI LIỆU HỌC TẬP</div>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('dashboard')}>
+                    🏠 Trang chủ Dashboard
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('flashcards')}>
+                    ⚡ Ôn tập Flashcards (Leitner)
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('notebook')}>
+                    📙 Sổ tay từ vựng ({savedVocabCount})
+                  </button>
+
+                  <div className="qz-dropdown-label mt-2">🤖 CÔNG CỤ AI</div>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('translator')}>
+                    🔍 Tra từ & Dịch AI Gemini [Ctrl+K]
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('minimal_pairs')}>
+                    🎙️ Luyện phát âm Minimal Pairs
+                  </button>
+
+                  <div className="qz-dropdown-label mt-2">📘 NGỮ PHÁP & CỤM TỪ</div>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('tenses_handbook')}>
+                    📖 12 Thì Tiếng Anh
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('idioms_handbook')}>
+                    💡 Idioms & Cụm từ thông dụng
+                  </button>
+
+                  <div className="qz-dropdown-label mt-2">🎮 KHÁC</div>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mini_games')}>
+                    🕹️ Playzone Mini Games
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('alphabet')}>
+                    🔤 Bảng chữ cái US-UK
+                  </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('admin')}>
+                    ⚙️ Quản trị hệ thống
+                  </button>
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* User Actions & Stats */}
+          <div className="qz-user-actions">
+            <button className="qz-create-btn" onClick={() => handleNavigateWithClose('admin')}>
+              + Tạo bài
+            </button>
+            <div className="qz-stat-pill streak" title="Streak ngày">
+              🔥 {stats.streak}d
+            </div>
+            <div className="qz-stat-pill xp" title="Điểm XP">
+              ⭐ {stats.points} XP
+            </div>
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* 🔵 Right Workspace Main Content Area */}
-      <div className="app-workspace">
-        {/* Active Screen Router */}
-        <main className="workspace-main">
+      {/* ⚪ Main Content Area */}
+      <main className="quizlet-workspace">
+        <div className="quizlet-spacious-container">
           {activeScreen === 'dashboard' && (
             <Dashboard 
               stats={stats}
               progress={progress}
               savedVocabCount={savedVocabCount}
               onSelectTopic={handleSelectTopic}
-              onNavigate={handleNavigate}
+              onNavigate={handleNavigateWithClose}
               topics={topicsList}
             />
           )}
@@ -295,56 +351,83 @@ function App() {
             />
           )}
 
-          {activeScreen === 'topic_detail' && selectedTopic && (
-            <TopicDetail 
-              topic={selectedTopic}
-              progress={progress}
-              onSelectModule={handleSelectModule}
-              onNavigateBack={handleBackToDashboard}
-            />
+          {activeScreen === 'topic_detail' && (
+            selectedTopic ? (
+              <TopicDetail 
+                topic={selectedTopic}
+                progress={progress}
+                onSelectModule={handleSelectModule}
+                onNavigateBack={handleBackToDashboard}
+              />
+            ) : (
+              <Dashboard 
+                topicsList={topicsList}
+                progress={progress}
+                savedVocabCount={savedVocabCount}
+                onSelectTopic={handleSelectTopic}
+                onOpenGlobalTranslator={() => setActiveScreen('translator')}
+                onOpenNotebook={() => setActiveScreen('notebook')}
+                onOpenFlashcards={() => setActiveScreen('flashcards')}
+                onOpenMinimalPairs={() => setActiveScreen('minimal_pairs')}
+                onOpenTensesHandbook={() => setActiveScreen('tenses_handbook')}
+                onOpenIdiomsHandbook={() => setActiveScreen('idioms_handbook')}
+                onOpenMiniGames={() => setActiveScreen('mini_games')}
+                onOpenAlphabet={() => setActiveScreen('alphabet')}
+              />
+            )
           )}
 
-          {activeScreen === 'reader' && selectedTopic && (
-            <VocabReader 
-              topic={selectedTopic}
-              onSavedVocabChange={refreshState}
-              onComplete={refreshState}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
+          {activeScreen === 'reader' && (
+            (selectedTopic || topicsList[0]) ? (
+              <VocabReader 
+                topic={selectedTopic || topicsList[0]}
+                onSavedVocabChange={refreshState}
+                onComplete={refreshState}
+                onNavigateBack={handleBackToTopicDetail}
+                showToast={showToast}
+              />
+            ) : null
           )}
 
-          {activeScreen === 'dictation' && selectedTopic && (
-            <Dictation 
-              topic={selectedTopic}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
+          {activeScreen === 'dictation' && (
+            (selectedTopic || topicsList[0]) ? (
+              <Dictation 
+                topic={selectedTopic || topicsList[0]}
+                onNavigateBack={handleBackToTopicDetail}
+                showToast={showToast}
+              />
+            ) : null
           )}
 
-          {activeScreen === 'pronunciation' && selectedTopic && (
-            <Pronunciation 
-              topic={selectedTopic}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
+          {activeScreen === 'pronunciation' && (
+            (selectedTopic || topicsList[0]) ? (
+              <Pronunciation 
+                topic={selectedTopic || topicsList[0]}
+                onNavigateBack={handleBackToTopicDetail}
+                showToast={showToast}
+              />
+            ) : null
           )}
 
-          {activeScreen === 'grammar' && selectedTopic && (
-            <GrammarLab
-              topic={selectedTopic}
-              onComplete={refreshState}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
+          {activeScreen === 'grammar' && (
+            (selectedTopic || topicsList[0]) ? (
+              <GrammarLab
+                topic={selectedTopic || topicsList[0]}
+                onComplete={refreshState}
+                onNavigateBack={handleBackToTopicDetail}
+                showToast={showToast}
+              />
+            ) : null
           )}
 
-          {activeScreen === 'writing' && selectedTopic && (
-            <Writing
-              topic={selectedTopic}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
+          {activeScreen === 'writing' && (
+            (selectedTopic || topicsList[0]) ? (
+              <Writing
+                topic={selectedTopic || topicsList[0]}
+                onNavigateBack={handleBackToTopicDetail}
+                showToast={showToast}
+              />
+            ) : null
           )}
 
           {activeScreen === 'flashcards' && (
@@ -401,8 +484,8 @@ function App() {
               showToast={showToast}
             />
           )}
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* 📱 Mobile Bottom Sheet Modal Menu */}
       {isMobileMenuOpen && (

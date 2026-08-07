@@ -646,21 +646,21 @@ export default function MiniGames({ onNavigateBack, showToast }) {
   // Highlight prefix typed correctly (Using hex inline styles to prevent missing Tailwind blank text color)
   const highlightWord = (word, input) => {
     if (!word) return null;
-    if (!input) return <span style={{ color: '#f59e0b', fontFamily: 'monospace', fontWeight: 'bold' }}>{word}</span>;
+    if (!input) return <span style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{word}</span>;
     
     const trimmedInput = input.trim().toLowerCase();
     if (word.toLowerCase().startsWith(trimmedInput)) {
       const matchLen = trimmedInput.length;
       return (
-        <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
-          <span style={{ color: '#22d3ee', fontWeight: '800', textShadow: '0 0 8px rgba(34, 211, 238, 0.8)' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>
+          <span style={{ color: 'var(--color-primary)', fontWeight: '800' }}>
             {word.slice(0, matchLen)}
           </span>
-          <span style={{ color: '#f59e0b' }}>{word.slice(matchLen)}</span>
+          <span style={{ color: 'var(--color-text-muted)' }}>{word.slice(matchLen)}</span>
         </span>
       );
     }
-    return <span style={{ color: '#f59e0b', fontFamily: 'monospace', fontWeight: 'bold' }}>{word}</span>;
+    return <span style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{word}</span>;
   };
 
   useEffect(() => {
@@ -720,7 +720,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto py-4">
           {/* Card Game 1: Hangman */}
           <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
-            <div className="text-4xl text-center">🪓</div>
+            <div className="text-4xl text-center">🎯</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 1: Hangman</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
               Đoán các từ vựng thuộc cấp độ đã chọn bằng cách ghép từng chữ cái. Đoán sai quá 6 lần sẽ thua cuộc!
@@ -732,12 +732,12 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                 startHangman();
               }}
             >
-              Chơi Hangman 🎮
+              Chơi Hangman 🎯
             </button>
           </div>
 
           {/* Card Game 2: Time Attack */}
-          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-secondary transition duration-300">
+          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
             <div className="text-4xl text-center">⏱️</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 2: Time Attack 60s</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
@@ -745,18 +745,17 @@ export default function MiniGames({ onNavigateBack, showToast }) {
             </p>
             <button 
               className="btn-primary py-2.5 justify-center w-full"
-              style={{ background: 'linear-gradient(135deg, var(--color-secondary) 0%, #f97316 100%)', boxShadow: '0 0 15px rgba(245, 158, 11, 0.2)' }}
               onClick={() => {
                 setActiveGame('time_attack');
                 setTaStatus('lobby');
               }}
             >
-              Chơi Time Attack ⚡
+              Chơi Time Attack ⏱️
             </button>
           </div>
 
           {/* Card Game 3: Space Typer */}
-          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-cyan-500 transition duration-300">
+          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
             <div className="text-4xl text-center">🚀</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 3: Space Typer</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
@@ -764,7 +763,6 @@ export default function MiniGames({ onNavigateBack, showToast }) {
             </p>
             <button 
               className="btn-primary py-2.5 justify-center w-full"
-              style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)', boxShadow: '0 0 15px rgba(6, 182, 212, 0.2)' }}
               onClick={() => {
                 setActiveGame('space_typer');
                 setStStatus('lobby');

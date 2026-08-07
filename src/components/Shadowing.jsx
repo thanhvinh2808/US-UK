@@ -194,10 +194,10 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
   };
 
   return (
-    <div className="shadowing-screen animate-slideup p-6 glass">
+    <div className="shadowing-screen animate-slideup p-6 bg-white rounded-xl border border-light shadow-sm max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Topic Detail
+          ← Quay lại
         </button>
         <h2 className="glow-text text-gradient">Shadowing Reflex - Luyện Nói Đuổi</h2>
       </div>

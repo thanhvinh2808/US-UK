@@ -308,13 +308,13 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
         </div>
       </div>
 
-      <div className="reader-layout">
+      <div className="reader-layout grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Side: Reading Passage */}
-        <div className="passage-section glass p-6">
-          <h2 className="passage-title mb-4">{topic.title}</h2>
+        <div className="passage-section col-span-2 bg-white p-6 rounded-xl border border-light shadow-sm">
+          <h2 className="passage-title text-2xl font-bold color-text-dark mb-4">{topic.title}</h2>
 
           {/* Typography Customization Toolbar */}
-          <div className="font-controls mb-4 flex flex-wrap gap-4 items-center justify-between p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-light)' }}>
+          <div className="font-controls mb-4 flex flex-wrap gap-4 items-center justify-between p-3 rounded-lg bg-[#FAFBFD] border border-light">
             <div className="flex gap-2 items-center">
               <span className="text-xs color-text-muted">Cỡ chữ:</span>
               <button 

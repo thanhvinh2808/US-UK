@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
+import { api } from '../services/api';
 
-
+// Chuyển đổi bài học từ định dạng local (localStorage) sang đúng schema MongoDB Topic
+// bên server (id -> slugId, topic -> topicCategory, các trường còn lại giữ nguyên tên).
+function toCloudTopicPayload(localTopic) {
+  const { id, topic, ...rest } = localTopic;
+  return {
+    ...rest,
+    slugId: id,
+    topicCategory: topic,
+  };
+}
 
 function validateTopicData(data) {
   const errors = [];
@@ -291,12 +301,32 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
   // Pending and published custom topics state
   const [pendingTopics, setPendingTopics] = useState(() => storage.getPendingTopics());
   const [customTopics, setCustomTopics] = useState(() => storage.getCustomTopics());
+  const [isBulkSyncing, setIsBulkSyncing] = useState(false);
+  const [bulkSyncResult, setBulkSyncResult] = useState(null); // { success, failed }
+
+  const handleBulkSyncToCloud = async () => {
+    if (customTopics.length === 0) return;
+    if (!window.confirm(`Đồng bộ toàn bộ ${customTopics.length} bài học local lên MongoDB Cloud?`)) return;
+
+    setIsBulkSyncing(true);
+    setBulkSyncResult(null);
+    let success = 0;
+    let failed = 0;
+
+    // Đẩy tuần tự (không dùng Promise.all) để tránh làm quá tải server nếu danh sách dài
+    for (const topic of customTopics) {
+      const result = await api.createTopic(toCloudTopicPayload(topic));
+      if (result) success++;
+      else failed++;
+    }
+
+    setIsBulkSyncing(false);
+    setBulkSyncResult({ success, failed });
+  };
 
   const addLog = (msg) => {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
-
-
 
   const handleGenerate = async () => {
     if (!form.topicName.trim()) {
@@ -382,7 +412,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     }
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (!generatedData) return;
     
     const updated = storage.saveCustomTopic(generatedData);
@@ -393,7 +423,14 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
 
     setGeneratedData(null);
     onTopicsListChange();
-    alert("🎉 Đã DUYỆT và công khai bài học cho học viên!");
+
+    // Đồng bộ lên MongoDB Cloud
+    const cloudResult = await api.createTopic(toCloudTopicPayload(generatedData));
+    if (cloudResult) {
+      alert("🎉 Đã DUYỆT, công khai cho học viên, và đồng bộ lên MongoDB Cloud thành công!");
+    } else {
+      alert("🎉 Đã DUYỆT và công khai bài học cho học viên (lưu local)!\n⚠️ Đồng bộ lên Cloud thất bại — kiểm tra backend server có đang chạy không. Bạn có thể đồng bộ lại sau ở mục 'Đồng bộ Cloud'.");
+    }
   };
 
   const handleImportSample = (sampleId) => {
@@ -425,14 +462,20 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     }
   };
 
-  const handleApprovePending = (topicObj) => {
+  const handleApprovePending = async (topicObj) => {
     storage.saveCustomTopic(topicObj);
     storage.deletePendingTopic(topicObj.id);
     
     setPendingTopics(storage.getPendingTopics());
     setCustomTopics(storage.getCustomTopics());
     onTopicsListChange();
-    alert(`Đã duyệt bài học "${topicObj.title}" thành công!`);
+
+    const cloudResult = await api.createTopic(toCloudTopicPayload(topicObj));
+    if (cloudResult) {
+      alert(`Đã duyệt và đồng bộ Cloud thành công cho bài học "${topicObj.title}"!`);
+    } else {
+      alert(`Đã duyệt bài học "${topicObj.title}" (lưu local)!\n⚠️ Đồng bộ Cloud thất bại, có thể đồng bộ lại sau.`);
+    }
   };
 
   const handleDeletePending = (topicId) => {
@@ -442,11 +485,12 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     }
   };
 
-  const handleDeleteCustom = (topicId) => {
+  const handleDeleteCustom = async (topicId) => {
     if (window.confirm("Bạn muốn xóa bài học đã công khai này khỏi lộ trình học?")) {
       const updated = storage.deleteCustomTopic(topicId);
       setCustomTopics(updated);
       onTopicsListChange();
+      await api.deleteTopic(topicId);
       alert("Đã xóa bài học!");
     }
   };
@@ -634,12 +678,9 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
               </ul>
             </div>
           )}
-
-
-
         </div>
 
-        {/* Right Column: Manage existing custom topics (Show only when not previewing generated topic) */}
+        {/* Right Column: Manage existing custom topics */}
         {!generatedData && (
           <div className="admin-sidebar flex flex-col gap-6">
             
@@ -669,7 +710,24 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
 
             {/* Published Custom Lessons */}
             <div className="published-list-card glass p-6">
-              <h3 className="mb-4">Bài học tự sinh đã công khai ({customTopics.length})</h3>
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h3>Bài học tự sinh đã công khai ({customTopics.length})</h3>
+                {customTopics.length > 0 && (
+                  <button
+                    className="btn-secondary text-xs"
+                    onClick={handleBulkSyncToCloud}
+                    disabled={isBulkSyncing}
+                  >
+                    {isBulkSyncing ? '⏳ Đang đồng bộ...' : '🍃 Đồng bộ tất cả lên Cloud'}
+                  </button>
+                )}
+              </div>
+              {bulkSyncResult && (
+                <p className="text-xs mb-3" style={{ color: bulkSyncResult.failed > 0 ? 'var(--color-warning, #f59e0b)' : 'var(--color-success, #22c55e)' }}>
+                  ✅ Thành công: {bulkSyncResult.success} bài
+                  {bulkSyncResult.failed > 0 && ` | ⚠️ Thất bại: ${bulkSyncResult.failed} bài (kiểm tra backend server có đang chạy không)`}
+                </p>
+              )}
               {customTopics.length === 0 ? (
                 <p className="color-text-muted text-xs">Chưa có bài học tự sinh nào được công khai.</p>
               ) : (
@@ -690,7 +748,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
           </div>
         )}
 
-        {/* Live Preview Container (Active only when lesson is previewed) */}
+        {/* Live Preview Container */}
         {generatedData && (
           <div className="preview-container glass p-6">
             <div className="preview-header mb-4 flex justify-between items-center flex-wrap gap-3">

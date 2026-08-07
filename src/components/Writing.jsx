@@ -143,20 +143,19 @@ export default function Writing({ topic, onNavigateBack }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="writing-finished glass-glow p-8 text-center max-w-xl mx-auto mt-10 animate-slideup">
-        <span className="icon-huge">✍️</span>
-        <h2 className="text-gradient mt-4 mb-2">Writing Lab Completed!</h2>
-        <p className="color-text-muted mb-6">Topic: {topic.topic}</p>
+      <div className="writing-finished bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl border border-light shadow-sm">
+        <h2 className="text-2xl font-bold color-text-dark mb-2">Hoàn thành bài tập Viết!</h2>
+        <p className="color-text-muted text-sm mb-6">Chủ đề: {topic.topic}</p>
 
-        <div className="score-radial-progress mb-6">
-          <div className="score-percentage">{Math.round(finalScore * 100)}%</div>
-          <div className="score-label">Writing Score</div>
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl border border-light mb-6">
+          <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{Math.round(finalScore * 100)}%</div>
+          <div className="text-xs font-mono font-bold color-text-muted uppercase mt-1">Điểm Viết</div>
         </div>
 
-        <p className="xp-gain-text mb-8">You earned <strong>+{xpEarned} XP</strong></p>
+        <p className="xp-gain-text mb-8">Bạn được cộng <strong>+{xpEarned} XP</strong> kinh nghiệm</p>
 
-        <button className="btn-primary" onClick={onNavigateBack}>
-          Quay lại Bảng bài học 🚀
+        <button className="btn-primary w-full justify-center" onClick={onNavigateBack}>
+          Quay lại Trang chủ
         </button>
       </div>
     );
@@ -167,47 +166,43 @@ export default function Writing({ topic, onNavigateBack }) {
       {/* Header */}
       <div className="screen-header mb-6">
         <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+          ← Quay lại Trang chủ
         </button>
         <div className="topic-meta">
-          <span className="badge-level">{topic.level}</span>
+          <span className="badge-level level-b2">{topic.level}</span>
           <span className="topic-name">{topic.topic}</span>
         </div>
       </div>
 
-      <div className="writing-layout glass p-6 max-w-2xl mx-auto">
+      <div className="writing-layout bg-white p-6 max-w-2xl mx-auto rounded-xl border border-light shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
             style={{ width: `${(currentIdx / exercises.length) * 100}%` }}
           />
-          <span className="progress-text">Bài tập {currentIdx + 1} của {exercises.length}</span>
+          <span className="progress-text font-mono text-xs">Bài tập {currentIdx + 1} / {exercises.length}</span>
         </div>
 
-        <h3 className="section-title mb-6">Writing & Grammar Lab</h3>
+        <h3 className="section-title text-xl font-bold color-text-dark mb-6">Writing & Grammar Lab</h3>
 
         {/* 1. FILL BLANK EXERCISE */}
         {exercise.type === 'fill_blank' && (
           <div className="exercise-card mb-6 animate-slideup">
-            <p className="color-text-muted mb-4">Điền từ chia động từ đúng ngữ pháp vào chỗ trống:</p>
+            <p className="color-text-muted text-sm mb-4">Điền từ chia động từ đúng ngữ pháp vào chỗ trống:</p>
             
-            <div className="sentence-fill-box p-5 glass mb-6 text-lg">
+            <div className="sentence-fill-box p-5 bg-[#FAFBFD] rounded-lg border border-light mb-6 text-lg">
               <span>{exercise.sentence_parts[0]}</span>
               <input 
                 type="text" 
-                className="fill-blank-input inline-input glass" 
+                className="fill-blank-input search-input mx-2" 
                 placeholder="chia động từ..."
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 disabled={checked}
                 style={{
-                  borderBottom: checked ? '2px solid var(--color-text-muted)' : '2px solid var(--color-primary)',
                   display: 'inline-block',
-                  width: '150px',
+                  width: '160px',
                   textAlign: 'center',
-                  background: 'none',
-                  border: 'none',
-                  color: 'white',
                   fontWeight: '600'
                 }}
               />
@@ -215,7 +210,7 @@ export default function Writing({ topic, onNavigateBack }) {
             </div>
 
             {exercise.hint && !checked && (
-              <p className="text-xs italic color-text-muted mb-4">💡 Gợi ý: {exercise.hint}</p>
+              <p className="text-xs italic color-text-muted mb-4">Gợi ý: {exercise.hint}</p>
             )}
           </div>
         )}
@@ -223,10 +218,10 @@ export default function Writing({ topic, onNavigateBack }) {
         {/* 2. SENTENCE ORDERING EXERCISE */}
         {exercise.type === 'sentence_ordering' && (
           <div className="exercise-card mb-6 animate-slideup">
-            <p className="color-text-muted mb-4">Sắp xếp các từ dưới đây để tạo thành một câu hoàn chỉnh:</p>
+            <p className="color-text-muted text-sm mb-4">Sắp xếp các từ dưới đây để tạo thành một câu hoàn chỉnh:</p>
 
             {/* Composed Sentence Display Box */}
-            <div className="composed-sentence-box p-5 glass mb-6 min-h-20 text-lg font-semibold color-text-dark">
+            <div className="composed-sentence-box p-5 bg-[#FAFBFD] rounded-lg border border-light mb-6 min-h-20 text-lg font-semibold color-text-dark">
               {orderedWords.length > 0 ? (
                 orderedWords.map(w => w.word).join(' ') + '.'
               ) : (

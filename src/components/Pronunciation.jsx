@@ -185,28 +185,26 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="pronunciation-finished glass p-8 text-center max-w-xl mx-auto mt-6 animate-slideup" style={{ background: 'var(--bg-card)', border: '2px solid var(--color-primary)', borderRadius: '20px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏆</div>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+      <div className="pronunciation-finished bg-white p-8 text-center max-w-xl mx-auto mt-6 animate-slideup rounded-xl border border-light shadow-sm">
+        <h2 className="text-2xl font-bold color-text-dark">
           Hoàn Thành Bài Luyện Phát Âm!
         </h2>
         <p className="color-text-muted text-sm mt-1 mb-6">Chủ đề: {topic.topic}</p>
 
-        <div className="score-radial-progress p-6 glass mb-6" style={{ background: 'var(--bg-input)', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--color-primary)' }}>
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] mb-6 rounded-xl border border-light">
+          <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>
             {Math.round(finalScore * 100)}%
           </div>
-          <div className="color-text-muted text-xs uppercase font-bold mt-1">Độ chính xác phát âm</div>
+          <div className="color-text-muted text-xs font-mono uppercase font-bold mt-1">Độ chính xác phát âm</div>
         </div>
 
-        <p className="text-base font-semibold mb-8" style={{ color: 'var(--color-text-main)' }}>
+        <p className="text-base font-semibold mb-8 color-text-main">
           Bạn nhận được <strong style={{ color: 'var(--color-primary)' }}>+{xpEarned} XP</strong> kinh nghiệm
         </p>
 
         <button 
           className="btn-primary w-full justify-center py-3 text-base" 
           onClick={onNavigateBack}
-          style={{ borderRadius: '12px', background: 'var(--color-primary)', color: '#ffffff', fontWeight: '700' }}
         >
           Quay lại Trang chủ
         </button>
@@ -220,24 +218,24 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
   return (
     <div className="pronunciation-screen animate-slideup" style={{ maxWidth: '840px', margin: '0 auto' }}>
       {/* Clean Navigation Header */}
-      <div className="screen-header mb-6 flex justify-between items-center flex-wrap gap-4" style={{ background: 'var(--bg-card)', padding: '16px 20px', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
-        <button className="btn-secondary text-xs" onClick={onNavigateBack} style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '700' }}>
+      <div className="screen-header mb-6 flex justify-between items-center flex-wrap gap-4 bg-white p-5 rounded-xl border border-light shadow-sm">
+        <button className="btn-secondary text-xs" onClick={onNavigateBack}>
           ← Quay lại
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: 'var(--color-primary)', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '800' }}>
+        <div className="flex items-center gap-2">
+          <span className="badge-level level-b2">
             {topic.level}
           </span>
-          <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--color-text-main)' }}>
+          <span className="text-base font-bold color-text-dark">
             {topic.topic}
           </span>
         </div>
       </div>
 
-      <div className="pronunciation-layout glass p-6" style={{ background: 'var(--bg-card)', borderRadius: '20px', border: '1.5px solid var(--border-light)' }}>
+      <div className="pronunciation-layout bg-white p-6 rounded-xl border border-light shadow-sm">
         {/* Progress Bar Header */}
         <div className="progress-bar-container mb-6">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: '700' }}>
+          <div className="flex justify-between mb-2 text-xs font-bold">
             <span className="color-text-muted">Tiến độ bài học</span>
             <span style={{ color: 'var(--color-primary)' }}>Câu {currentIdx + 1} / {totalDialogues}</span>
           </div>

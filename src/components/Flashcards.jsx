@@ -221,74 +221,83 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           <button className="btn-secondary" onClick={onNavigateBack}>
             ← Quay về trang chủ
           </button>
-          <span className="badge-level">Đấu trường</span>
+          <span className="badge-level">Flashcards</span>
         </div>
 
-        <div className="quiz-card glass p-8 text-center">
-          <span className="icon-huge">🎯</span>
-          <h2 className="text-gradient mt-4 mb-2">Đấu trường Trắc nghiệm từ vựng</h2>
-          <p className="color-text-muted mb-6">Ôn tập các từ vựng bạn đã lưu bằng chế độ trắc nghiệm đa năng và điền từ thông minh.</p>
+        <div className="quiz-card p-8 text-center bg-white rounded-xl border border-light">
+          <h2 className="text-2xl font-bold mt-2 mb-2 color-text-dark">Trắc nghiệm & Ôn tập từ vựng</h2>
+          <p className="color-text-muted text-sm mb-6">
+            Ôn tập từ vựng đã lưu bằng chế độ trắc nghiệm đa năng và điền từ thông minh.
+          </p>
+
+          {!canPlay && (
+            <div className="quiz-alert-info p-4 mb-6 text-left rounded-lg bg-amber-50 border-l-4 border-amber-500">
+              <strong className="block text-amber-900 text-sm mb-1">Chưa đủ từ vựng:</strong>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Bạn cần lưu ít nhất <strong>4 từ vựng</strong> vào sổ tay để kích hoạt tính năng Trắc nghiệm. Hiện tại bạn đã lưu <strong>{savedVocab.length}</strong> từ.
+              </p>
+              <p className="mt-2 text-xs text-amber-700">
+                Mẹo: Hãy mở bài đọc (Reading) và chạm vào từ mới để lưu vào sổ tay nhé!
+              </p>
+            </div>
+          )}
 
           {canPlay ? (
-            <div className="quiz-settings-form text-left glass p-5 mb-6">
-              <h3 className="text-sm font-semibold mb-4 color-text-main">CẤU HÌNH PHÒNG ĐẤU:</h3>
+            <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg border border-light">
+              <h3 className="text-xs font-mono font-bold mb-4 color-text-muted uppercase tracking-wider">CẤU HÌNH PHÒNG ĐẤU:</h3>
               
               {/* Mode Select */}
               <div className="mb-4">
-                <label className="text-xs color-text-muted block mb-1">Chế độ thử thách:</label>
+                <label className="text-xs color-text-muted block mb-1 font-medium">Chế độ thử thách:</label>
                 <div className="quiz-modes-container flex gap-2">
                   <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active pulse-border' : ''}`}
-                    style={{ borderColor: quizMode === 'mixed' ? 'var(--color-primary)' : '' }}
+                    className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active' : ''}`}
                     onClick={() => setQuizMode('mixed')}
                   >
-                    🎲 Hỗn hợp
+                    Hỗn hợp
                   </button>
                   <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'choice' ? 'active pulse-border' : ''}`}
-                    style={{ borderColor: quizMode === 'choice' ? 'var(--color-primary)' : '' }}
+                    className={`btn-secondary text-xs flex-1 ${quizMode === 'choice' ? 'active' : ''}`}
                     onClick={() => setQuizMode('choice')}
                   >
-                    🔘 Trắc nghiệm 4 đáp án
+                    4 Đáp án
                   </button>
                   <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'spelling' ? 'active pulse-border' : ''}`}
-                    style={{ borderColor: quizMode === 'spelling' ? 'var(--color-primary)' : '' }}
+                    className={`btn-secondary text-xs flex-1 ${quizMode === 'spelling' ? 'active' : ''}`}
                     onClick={() => setQuizMode('spelling')}
                   >
-                    ✍️ Tự gõ từ (Viết)
+                    Viết từ
                   </button>
                 </div>
               </div>
 
               {/* Deck Select */}
               <div className="mb-4">
-                <label className="text-xs color-text-muted block mb-1">Chọn bộ từ vựng (Custom Deck):</label>
+                <label className="text-xs color-text-muted block mb-1 font-medium">Chọn bộ từ vựng (Custom Deck):</label>
                 <select
                   value={selectedDeckId}
                   onChange={(e) => setSelectedDeckId(e.target.value)}
-                  className="btn-secondary w-full"
-                  style={{ padding: '8px 12px', background: 'var(--bg-dark)', color: 'var(--color-text-main)', border: '1px solid var(--border-light)' }}
+                  className="search-input w-full"
                 >
                   <option value="all">Sổ tay cá nhân ({savedVocab.length} từ)</option>
                   
                   {cloudSets.length > 0 && (
-                    <optgroup label="🍃 MongoDB Cloud Study Sets (Quizlet)">
+                    <optgroup label="MongoDB Cloud Study Sets">
                       {cloudSets.map(set => (
                         <option key={set._id} value={`cloud_${set._id}`}>
-                          ☁️ {set.title} ({set.cards?.length || 0} từ) [{set.levelTag || 'C1'}]
+                          {set.title} ({set.cards?.length || 0} từ) [{set.levelTag || 'C1'}]
                         </option>
                       ))}
                     </optgroup>
                   )}
 
                   {customDecks.length > 0 && (
-                    <optgroup label="📦 Custom Local Decks">
+                    <optgroup label="Custom Decks">
                       {customDecks.map(deck => {
                         const count = savedVocab.filter(item => item.deckId === deck.id).length;
                         return (
                           <option key={deck.id} value={deck.id}>
-                            📦 {deck.name} ({count} từ)
+                            {deck.name} ({count} từ)
                           </option>
                         );
                       })}
@@ -296,59 +305,47 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                   )}
                 </select>
                 {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
-                  <small className="block mt-1" style={{ color: 'var(--color-error)' }}>
-                    ⚠️ Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
+                  <small className="block mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
+                    Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
                   </small>
                 )}
               </div>
 
               {/* Length Select */}
               <div>
-                <label className="text-xs color-text-muted block mb-1">Số lượng câu hỏi:</label>
+                <label className="text-xs color-text-muted block mb-1 font-medium">Số lượng câu hỏi:</label>
                 <div className="flex gap-2">
                   {[5, 10, 15, 20].map((num) => {
                     const currentPoolSize = selectedDeckId === 'all' 
                       ? savedVocab.length 
-                      : savedVocab.filter(item => item.deckId === selectedDeckId).length;
+                      : (selectedDeckId.startsWith('cloud_') 
+                        ? (cloudSets.find(s => s._id === selectedDeckId.replace('cloud_', ''))?.cards?.length || 0)
+                        : savedVocab.filter(item => item.deckId === selectedDeckId).length);
                     const disabled = currentPoolSize < num;
                     return (
                       <button
                         key={num}
                         disabled={disabled}
-                        className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active pulse-border' : ''}`}
-                        style={{ 
-                          borderColor: quizLength === num ? 'var(--color-primary)' : '',
-                          opacity: disabled ? 0.3 : 1
-                        }}
+                        className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active' : ''}`}
                         onClick={() => setQuizLength(num)}
+                        style={{ opacity: disabled ? 0.4 : 1 }}
                       >
                         {num} câu
                       </button>
                     );
                   })}
                 </div>
-                <small className="color-text-muted mt-2 block text-xs">
-                  (Từ có thể ôn tập trong bộ đã chọn: <strong>{
-                    selectedDeckId === 'all' 
-                      ? savedVocab.length 
-                      : savedVocab.filter(item => item.deckId === selectedDeckId).length
-                  }</strong> từ)
-                </small>
               </div>
             </div>
-          ) : (
-            <div className="alert-unsupported p-5 glass mb-6 text-center">
-              ⚠️ <strong>Không đủ từ vựng:</strong> Bạn cần lưu ít nhất <strong>4 từ vựng</strong> vào sổ tay để kích hoạt tính năng Trắc nghiệm. Hiện tại bạn mới lưu <strong>{savedVocab.length}</strong> từ.
-              <p className="mt-2 text-xs color-text-muted">Mẹo: Hãy đọc các bài viết (Reading) và chạm vào từ mới để lưu từ vào sổ tay nhé!</p>
-            </div>
-          )}
+          ) : null}
 
           <button 
-            className="btn-primary w-full justify-center py-3" 
+            className="btn-primary w-full justify-center py-3"
             disabled={!canPlay}
             onClick={handleStartQuiz}
+            style={{ opacity: canPlay ? 1 : 0.5, cursor: canPlay ? 'pointer' : 'not-allowed' }}
           >
-            🚀 Bắt đầu đấu trường
+            Bắt đầu trắc nghiệm
           </button>
         </div>
       </div>

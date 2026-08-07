@@ -105,8 +105,8 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(item => 
-        item.word.toLowerCase().includes(q) || 
-        item.vietnamese.toLowerCase().includes(q)
+        (item.word || '').toLowerCase().includes(q) || 
+        (item.vietnamese || '').toLowerCase().includes(q)
       );
     }
 
@@ -116,191 +116,232 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
   const filteredVocab = getFilteredVocab();
   const masteredCount = vocabList.filter(item => item.status === 'mastered').length;
   const learningCount = vocabList.filter(item => item.status === 'learning').length;
-  const worstCount = vocabList.filter(item => item.lowGradeCount > 0).length;
 
   return (
     <div className="notebook-screen animate-slideup">
-      {/* Header */}
+      
+      {/* 📌 Header Banner */}
       <div className="screen-header mb-6">
         <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+          ← Trang chủ
         </button>
-        <div className="topic-meta">
-          <span className="badge-level">Vocab</span>
-          <span className="topic-name">Vocabulary Notebook</span>
+        <div className="text-right">
+          <span className="badge-level level-b2 mb-1">Notebook</span>
+          <h2 className="text-xl font-bold color-text-dark">Sổ Tay Từ Vựng Cá Nhân</h2>
         </div>
       </div>
 
-      <div className="notebook-layout glass p-6">
-        {/* Notebook Stats */}
-        <div className="notebook-stats-grid mb-6">
-          <div className="notebook-stat-box text-center p-4 glass">
-            <h3>{vocabList.length}</h3>
-            <p className="color-text-muted text-sm">Tổng số từ đã lưu</p>
-          </div>
-          <div className="notebook-stat-box text-center p-4 glass">
-            <h3 style={{ color: 'var(--color-success)' }}>{masteredCount}</h3>
-            <p className="color-text-muted text-sm">Đã thuộc (Mastered)</p>
-          </div>
-          <div className="notebook-stat-box text-center p-4 glass">
-            <h3 style={{ color: 'var(--color-warning)' }}>{learningCount}</h3>
-            <p className="color-text-muted text-sm">Đang học (Learning)</p>
-          </div>
+      {/* 📊 Top Metric Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#1B3B6F] shadow-sm">
+          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            Tổng số từ đã lưu
+          </span>
+          <span className="text-3xl font-mono font-bold color-text-dark">
+            {vocabList.length}
+          </span>
         </div>
 
-        {/* Custom Decks Section */}
-        <div className="custom-decks-manager glass p-4 mb-6 border border-light rounded-md">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold color-text-main">🗂️ Bộ thẻ tự tạo (Custom Decks)</h3>
-            <button 
-              className="btn-secondary" 
-              style={{ padding: '4px 10px', fontSize: '11px', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', background: 'transparent' }}
-              onClick={() => setShowCreateDeck(!showCreateDeck)}
-            >
-              {showCreateDeck ? 'Đóng' : '+ Tạo bộ từ mới'}
+        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#1E8A5F] shadow-sm">
+          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            Đã thuộc (Mastered)
+          </span>
+          <span className="text-3xl font-mono font-bold" style={{ color: 'var(--color-success)' }}>
+            {masteredCount}
+          </span>
+        </div>
+
+        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#C17817] shadow-sm">
+          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            Đang học (Learning)
+          </span>
+          <span className="text-3xl font-mono font-bold" style={{ color: 'var(--color-warning)' }}>
+            {learningCount}
+          </span>
+        </div>
+      </div>
+
+      {/* 🗂️ Custom Decks Bar */}
+      <div className="bg-white p-5 rounded-xl border border-light mb-6 shadow-sm">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider color-text-muted">
+            Bộ thẻ tự tạo (Custom Decks)
+          </h3>
+          <button 
+            className="btn-secondary text-xs py-1 px-3"
+            onClick={() => setShowCreateDeck(!showCreateDeck)}
+          >
+            {showCreateDeck ? 'Đóng' : '+ Tạo bộ thẻ mới'}
+          </button>
+        </div>
+
+        {showCreateDeck && (
+          <div className="flex gap-2 max-w-md mb-4 animate-slideup">
+            <input
+              type="text"
+              placeholder="Tên bộ mới (vd: Phỏng vấn, IELTS Reading...)"
+              value={newDeckName}
+              onChange={(e) => setNewDeckName(e.target.value)}
+              className="search-input flex-1 text-xs"
+            />
+            <button className="btn-primary text-xs py-2 px-4" onClick={handleCreateDeck}>
+              Tạo bộ
             </button>
           </div>
+        )}
 
-          {showCreateDeck && (
-            <div className="flex gap-2 max-w-md mb-4 animate-slideup">
-              <input
-                type="text"
-                placeholder="Nhập tên bộ từ vựng (vd: Phỏng vấn, Đi du lịch...)"
-                value={newDeckName}
-                onChange={(e) => setNewDeckName(e.target.value)}
-                className="translation-text-input"
-                style={{ padding: '6px 12px', fontSize: '13px' }}
-              />
-              <button className="btn-primary" style={{ padding: '6px 16px', fontSize: '13px' }} onClick={handleCreateDeck}>
-                Tạo
-              </button>
-            </div>
-          )}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedDeckFilter('all')}
+            className={`gallery-filter-pill ${selectedDeckFilter === 'all' ? 'active' : ''}`}
+          >
+            Tất cả bộ ({vocabList.length})
+          </button>
 
-          {customDecks.length === 0 ? (
-            <p className="text-xs color-text-muted">Bạn chưa tạo bộ từ vựng riêng nào. Tạo bộ thẻ để lọc và luyện flashcards hiệu quả hơn!</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedDeckFilter('all')}
-                className={`filter-btn text-xs py-1 px-3 ${selectedDeckFilter === 'all' ? 'active' : ''}`}
+          {customDecks.map(deck => {
+            const count = vocabList.filter(item => item.deckId === deck.id).length;
+            return (
+              <div 
+                key={deck.id} 
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition text-xs font-medium cursor-pointer ${
+                  selectedDeckFilter === deck.id 
+                    ? 'bg-[#1B3B6F] text-white border-[#1B3B6F]' 
+                    : 'bg-[#F2F5FA] text-slate-700 border-light hover:bg-slate-100'
+                }`}
               >
-                Tất cả bộ ({vocabList.length})
-              </button>
-              {customDecks.map(deck => {
-                const count = vocabList.filter(item => item.deckId === deck.id).length;
-                return (
-                  <div key={deck.id} className="flex items-center gap-1 glass p-1 rounded" style={{ background: selectedDeckFilter === deck.id ? 'var(--color-primary-glow)' : 'rgba(255,255,255,0.02)', border: selectedDeckFilter === deck.id ? '1px solid var(--color-primary)' : '1px solid var(--border-light)' }}>
-                    <button
-                      onClick={() => setSelectedDeckFilter(deck.id)}
-                      className="text-xs font-semibold px-2 cursor-pointer color-text-dark"
-                      style={{ border: 'none', background: 'transparent' }}
-                    >
-                      📦 {deck.name} ({count})
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteDeck(deck.id, deck.name)}
-                      className="text-[10px] text-red-500 hover:text-red-700 font-bold px-1"
-                      title="Xóa bộ thẻ này"
-                      style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                <span onClick={() => setSelectedDeckFilter(deck.id)}>
+                  {deck.name} ({count})
+                </span>
+                <span 
+                  onClick={() => handleDeleteDeck(deck.id, deck.name)}
+                  className="text-red-500 hover:text-red-700 font-bold ml-1"
+                  title="Xóa bộ này"
+                >
+                  ✕
+                </span>
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        {/* Search & Filter Toolbar */}
-        <div className="toolbar mb-6 flex flex-wrap gap-4 justify-between items-center">
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm từ hoặc nghĩa..."
-            className="search-input glass"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="filter-buttons flex gap-2">
-            <button 
-              className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('all')}
-            >
-              Tất cả ({vocabList.length})
-            </button>
-            <button 
-              className={`filter-btn ${filterStatus === 'learning' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('learning')}
-            >
-              Đang học ({learningCount})
-            </button>
-            <button 
-              className={`filter-btn ${filterStatus === 'mastered' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('mastered')}
-            >
-              Đã thuộc ({masteredCount})
-            </button>
-            <button 
-              className={`filter-btn ${filterStatus === 'worst' ? 'active' : ''}`}
-              onClick={() => setFilterStatus('worst')}
-              style={{ 
-                color: filterStatus === 'worst' ? '' : 'var(--color-error)',
-                border: filterStatus === 'worst' ? '' : '1px dashed var(--color-error)',
-                background: filterStatus === 'worst' ? 'rgba(239, 68, 68, 0.1)' : ''
-              }}
-            >
-              🔴 Top 10 hay quên nhất
-            </button>
-          </div>
+      {/* 🔍 Search & Filter Toolbar */}
+      <div className="bg-white p-5 rounded-xl border border-light mb-6 shadow-sm flex flex-wrap gap-4 justify-between items-center">
+        <input 
+          type="text" 
+          placeholder="Tìm kiếm từ vựng hoặc nghĩa tiếng Việt..."
+          className="search-input max-w-md w-full"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <div className="flex gap-2 flex-wrap">
+          <button 
+            className={`gallery-filter-pill ${filterStatus === 'all' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('all')}
+          >
+            Tất cả ({vocabList.length})
+          </button>
+          <button 
+            className={`gallery-filter-pill ${filterStatus === 'learning' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('learning')}
+          >
+            Đang học ({learningCount})
+          </button>
+          <button 
+            className={`gallery-filter-pill ${filterStatus === 'mastered' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('mastered')}
+          >
+            Đã thuộc ({masteredCount})
+          </button>
+          <button 
+            className={`gallery-filter-pill ${filterStatus === 'worst' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('worst')}
+          >
+            Top 10 hay quên
+          </button>
         </div>
+      </div>
 
-        {/* Vocabulary List Table */}
+      {/* 📋 Notion / Sheets Clean Table */}
+      <div className="bg-white rounded-xl border border-light overflow-hidden shadow-sm">
         {filteredVocab.length === 0 ? (
-          <div className="text-center p-10 color-text-muted">
-            <span className="icon-huge block mb-2">🔍</span>
-            Không tìm thấy từ vựng nào khớp với bộ lọc. Hãy đọc thêm bài đọc hoặc chọn bộ thẻ khác!
+          <div className="text-center py-16 color-text-muted">
+            <p className="text-sm font-medium">Không tìm thấy từ vựng nào khớp với bộ lọc.</p>
+            <p className="text-xs text-slate-400 mt-1">Hãy đọc thêm bài viết hoặc tạo bộ thẻ mới!</p>
           </div>
         ) : (
-          <div className="vocab-table-container">
-            <table className="vocab-table">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Từ vựng</th>
-                  <th>Phiên âm (IPA)</th>
-                  <th>Ý nghĩa</th>
-                  <th>Phân bộ (Deck)</th>
-                  <th>Thống kê</th>
-                  <th>Hành động</th>
+                <tr className="bg-[#F2F5FA] border-b border-light text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3 px-5">Từ vựng</th>
+                  <th className="py-3 px-5">Phiên âm (IPA)</th>
+                  <th className="py-3 px-5">Ý nghĩa & Ví dụ</th>
+                  <th className="py-3 px-5">Bộ thẻ (Deck)</th>
+                  <th className="py-3 px-5">Tiến độ SM-2</th>
+                  <th className="py-3 px-5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {filteredVocab.map((item, index) => {
-                  const isDue = new Date(item.nextReviewDate) <= Date.now();
-                  
                   return (
-                    <tr key={index} className="vocab-row-tr">
-                      <td data-label="Từ vựng" className="word-td">
-                        <strong className="word-text-large">{item.word}</strong>
-                        <div className="flex gap-1 mt-1">
-                          <button className="speak-btn-sm" onClick={() => handleSpeak(item.word, 'US')} title="Mỹ (US)">🇺🇸</button>
-                          <button className="speak-btn-sm" onClick={() => handleSpeak(item.word, 'UK')} title="Anh (UK)">🇬🇧</button>
-                          <button className="speak-btn-sm" onClick={() => handleSpeakCompare(item.word)} title="So sánh">🆚</button>
+                    <tr key={item.id || index} className="hover:bg-[#EEF3FA] transition duration-150">
+                      
+                      {/* Từ vựng + Nút phát âm */}
+                      <td className="py-4 px-5">
+                        <strong className="text-base font-bold color-text-dark block">
+                          {item.word || '(Trống)'}
+                        </strong>
+                        <div className="flex gap-1.5 mt-2">
+                          <button 
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            onClick={() => handleSpeak(item.word, 'US')} 
+                            title="Nghe giọng Mỹ"
+                          >
+                            🇺🇸 US
+                          </button>
+                          <button 
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            onClick={() => handleSpeak(item.word, 'UK')} 
+                            title="Nghe giọng Anh"
+                          >
+                            🇬🇧 UK
+                          </button>
+                          <button 
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            onClick={() => handleSpeakCompare(item.word)} 
+                            title="So sánh US-UK"
+                          >
+                            🆚
+                          </button>
                         </div>
                       </td>
-                      <td data-label="IPA"><code className="ipa-code">{item.ipa}</code></td>
-                      <td data-label="Ý nghĩa">
-                        <span className="translation-text">{item.vietnamese}</span>
-                        {item.example && <p className="example-text color-text-muted italic text-xs mt-1">"{item.example}"</p>}
+
+                      {/* IPA Code */}
+                      <td className="py-4 px-5 font-mono text-xs text-slate-500 italic">
+                        {item.ipa ? item.ipa : '—'}
                       </td>
-                      <td data-label="Phân bộ">
+
+                      {/* Meaning & Example */}
+                      <td className="py-4 px-5 max-w-xs">
+                        <span className="text-sm font-semibold color-text-main block">
+                          {item.vietnamese || '—'}
+                        </span>
+                        {item.example && (
+                          <p className="text-xs color-text-muted italic mt-1 leading-snug">
+                            "{item.example}"
+                          </p>
+                        )}
+                      </td>
+
+                      {/* Custom Deck Assign */}
+                      <td className="py-4 px-5">
                         <select
                           value={item.deckId || ''}
                           onChange={(e) => handleAssignWordDeck(item.word, e.target.value)}
-                          className="btn-secondary text-xs"
-                          style={{ padding: '4px 8px', background: 'var(--bg-dark)' }}
+                          className="search-input text-xs py-1 px-2"
                         >
-                          <option value="">(Không có bộ)</option>
+                          <option value="">(Mặc định)</option>
                           {customDecks.map(deck => (
                             <option key={deck.id} value={deck.id}>
                               {deck.name}
@@ -308,19 +349,31 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
                           ))}
                         </select>
                       </td>
-                      <td data-label="Thống kê" className="text-xs color-text-muted">
-                        <div>Lượt học: {item.repetitions || 0}</div>
-                        <div style={{ color: (item.lowGradeCount || 0) > 0 ? 'var(--color-error)' : '' }}>
-                          Số lần quên: <strong>{item.lowGradeCount || 0}</strong>
+
+                      {/* SM-2 Progress */}
+                      <td className="py-4 px-5 font-mono text-xs">
+                        <div className="text-slate-600">Lượt học: <strong>{item.repetitions || 0}</strong></div>
+                        <div className={(item.lowGradeCount || 0) > 0 ? 'text-red-600 font-bold mt-0.5' : 'text-slate-400 mt-0.5'}>
+                          Số lần quên: {item.lowGradeCount || 0}
                         </div>
                       </td>
-                      <td data-label="Hành động">
-                        <div className="row-actions flex gap-2">
-                          <button className="btn-row-action reset" onClick={() => handleResetWord(item)} title="Reset Spaced Repetition">
-                            🔄 Reset
+
+                      {/* Actions */}
+                      <td className="py-4 px-5 text-right">
+                        <div className="inline-flex gap-2">
+                          <button 
+                            className="btn-secondary text-xs py-1 px-2.5"
+                            onClick={() => handleResetWord(item)} 
+                            title="Reset Spaced Repetition"
+                          >
+                            Reset
                           </button>
-                          <button className="btn-row-action delete" onClick={() => handleDelete(item.word)} title="Xóa từ vựng">
-                            🗑️ Xóa
+                          <button 
+                            className="text-xs py-1 px-2.5 rounded bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-semibold transition"
+                            onClick={() => handleDelete(item.word)} 
+                            title="Xóa từ vựng"
+                          >
+                            Xóa
                           </button>
                         </div>
                       </td>
