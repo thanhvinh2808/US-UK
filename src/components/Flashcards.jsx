@@ -216,17 +216,25 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
   if (gameState === 'settings') {
     const canPlay = savedVocab.length >= 4;
     return (
-      <div className="quiz-screen animate-slideup max-w-xl mx-auto mt-6">
-        <div className="screen-header mb-6 flex justify-between items-center">
-          <button className="btn-secondary" onClick={onNavigateBack}>
-            ← Quay về trang chủ
+      <div className="quiz-screen animate-slideup max-w-xl mx-auto mt-2">
+        {/* Back button top-left */}
+        {onNavigateBack && (
+          <button 
+            className="btn-secondary text-xs mb-4" 
+            onClick={onNavigateBack}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            ← Quay lại Dashboard
           </button>
+        )}
+
+        <div className="screen-header mb-8 flex justify-between items-center">
           <span className="badge-level">Flashcards</span>
         </div>
 
-        <div className="quiz-card p-8 text-center bg-white rounded-xl border border-light">
-          <h2 className="text-2xl font-bold mt-2 mb-2 color-text-dark">Trắc nghiệm & Ôn tập từ vựng</h2>
-          <p className="color-text-muted text-sm mb-6">
+        <div className="quiz-card glass p-8 text-center bg-white rounded-xl">
+          <h1 className="text-2xl font-bold mt-2 mb-2 color-text-dark" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Trắc nghiệm & Ôn tập từ vựng</h1>
+          <p className="color-text-muted text-xs mb-6" style={{ fontSize: '13px', fontWeight: '400' }}>
             Ôn tập từ vựng đã lưu bằng chế độ trắc nghiệm đa năng và điền từ thông minh.
           </p>
 
@@ -243,7 +251,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           )}
 
           {canPlay ? (
-            <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg border border-light">
+            <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg">
               <h3 className="text-xs font-mono font-bold mb-4 color-text-muted uppercase tracking-wider">CẤU HÌNH PHÒNG ĐẤU:</h3>
               
               {/* Mode Select */}

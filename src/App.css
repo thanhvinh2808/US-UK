@@ -317,7 +317,7 @@
   justify-content: space-between;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: none;
 }
 
 .screen-title {
@@ -327,12 +327,14 @@
   color: var(--color-text-dark);
 }
 
-/* Notion-style row items for lists (Clean horizontal line, no box border clutter) */
+/* Notion-style row items for lists (Border-free elevation with subtle hover) */
 .notion-row-item {
   padding: 14px 18px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: none;
   background: var(--bg-card);
   transition: var(--transition);
+  border-radius: 8px;
+  margin-bottom: 4px;
 }
 
 .notion-row-item:hover {
@@ -345,7 +347,8 @@
 
 .asymmetric-hero-banner {
   background: #FFFFFF;
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   border-radius: var(--radius-card);
   padding: 32px 40px;
   margin-bottom: 28px;
@@ -391,7 +394,8 @@
 
 .stats-sidebar-card {
   background: #FFFFFF;
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   border-radius: var(--radius-card);
   padding: 20px;
   display: flex;
@@ -406,7 +410,7 @@
   color: var(--color-text-muted);
   letter-spacing: 0.06em;
   margin-bottom: 2px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(16, 32, 61, 0.06);
   padding-bottom: 8px;
 }
 
@@ -414,16 +418,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   background: var(--bg-base);
-  border: 1px solid var(--border-light);
+  border: none;
   border-radius: var(--radius-button);
   transition: var(--transition);
 }
 
 .vertical-stat-item:hover {
-  background: #FFFFFF;
-  border-color: var(--color-primary);
+  background: #E2E9F5;
 }
 
 .stat-icon {
@@ -481,38 +484,40 @@
 
 .gallery-filter-pill {
   background: #FFFFFF;
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: 0 2px 6px rgba(16, 32, 61, 0.04);
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text-muted);
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-badge);
   cursor: pointer;
   transition: var(--transition);
 }
 
 .gallery-filter-pill:hover {
-  border-color: var(--color-primary);
   color: var(--color-primary);
+  background: #EEF3FA;
 }
 
 .gallery-filter-pill.active {
   background: var(--color-primary);
   color: #FFFFFF;
-  border-color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   font-weight: 700;
 }
 
 /* 🌟 FEATURED / IN-PROGRESS LARGE CARD */
 .featured-large-card {
   background: #FFFFFF;
-  border: 2px solid var(--color-primary);
+  border: none;
   border-radius: var(--radius-card);
   padding: 28px;
   cursor: pointer;
   transition: var(--transition);
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-subtle);
 }
 
 .featured-large-card:hover {
@@ -573,7 +578,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid rgba(16, 32, 61, 0.06);
   padding-top: 16px;
 }
 
@@ -591,7 +596,8 @@
 
 .compact-lesson-card {
   background: #FFFFFF;
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   border-radius: var(--radius-card);
   padding: 20px;
   cursor: pointer;
@@ -602,7 +608,6 @@
 
 .compact-lesson-card:hover {
   background: var(--bg-card-hover);
-  border-color: var(--color-primary);
 }
 
 .compact-lesson-card.uk-accent-card {
@@ -643,7 +648,7 @@
 }
 
 .compact-card-bottom {
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid rgba(16, 32, 61, 0.06);
   margin-top: auto;
 }
 
@@ -657,6 +662,11 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--color-success);
+}
+
+/* 📱 NATIVE MOBILE BOTTOM NAV BAR */
+.mobile-bottom-bar {
+  display: none !important; /* Hidden completely on desktop / laptop / wide tablet (>768px) */
 }
 
 /* Responsive Adjustments */
@@ -684,6 +694,49 @@
     font-size: 24px;
   }
   .quizlet-spacious-container {
-    padding: 0 16px;
+    padding: 0 16px 80px 16px;
+  }
+
+  .mobile-bottom-bar {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(16, 32, 61, 0.08);
+    padding: 8px 12px;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 16px rgba(16, 32, 61, 0.06);
+  }
+
+  .mobile-bottom-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .mobile-bottom-item.active {
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .bottom-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

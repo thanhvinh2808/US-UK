@@ -683,19 +683,26 @@ export default function MiniGames({ onNavigateBack, showToast }) {
   };
 
   return (
-    <div className="mini-games-screen animate-slideup glass">
-
-
-      <div className="mg-header flex justify-between items-center mb-6">
-        <button className="btn-secondary" onClick={activeGame ? handleBackToMenu : onNavigateBack}>
-          {activeGame ? '← Thoát game' : '← Quay về Dashboard'}
+    <div className="mini-games-screen animate-slideup glass p-6" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={activeGame ? handleBackToMenu : onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          {activeGame ? '← Thoát game' : '← Quay lại Dashboard'}
         </button>
-        <h2 className="glow-text text-gradient">V-English Playzone - Trò chơi học từ</h2>
+      )}
+
+      <div className="mg-header mb-8">
+        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>V-English Playzone - Trò chơi học từ</h1>
+        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Ôn tập từ vựng qua các trò chơi tương tác hấp dẫn</p>
       </div>
 
       {/* VOCAB SOURCE SELECTOR (ONLY SHOW ON LOBBY / OUT OF GAME) */}
       {!activeGame && (
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6 bg-slate-900/40 p-3 rounded-xl border border-light max-w-4xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6 bg-slate-900/40 p-3 rounded-xl max-w-4xl mx-auto">
           <span className="text-[11px] uppercase font-bold tracking-wider color-text-muted mr-2">Nguồn từ vựng:</span>
           {[
             { id: 'notebook', label: `Sổ tay cá nhân (${savedCount})` },
@@ -707,7 +714,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
             <button
               key={tab.id}
               onClick={() => handleSourceChange(tab.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${selectedSource === tab.id ? 'bg-primary text-white shadow-md' : 'bg-slate-800 hover:bg-slate-700 color-text-muted border border-light'}`}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${selectedSource === tab.id ? 'bg-primary text-white shadow-md' : 'bg-slate-800 hover:bg-slate-700 color-text-muted'}`}
             >
               {tab.label}
             </button>
@@ -719,7 +726,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
       {!activeGame && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto py-4">
           {/* Card Game 1: Hangman */}
-          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
+          <div className="glass p-6 rounded-lg flex flex-col gap-4 transition duration-300">
             <div className="text-4xl text-center">🎯</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 1: Hangman</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
@@ -737,7 +744,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           </div>
 
           {/* Card Game 2: Time Attack */}
-          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
+          <div className="glass p-6 rounded-lg flex flex-col gap-4 transition duration-300">
             <div className="text-4xl text-center">⏱️</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 2: Time Attack 60s</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
@@ -755,7 +762,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           </div>
 
           {/* Card Game 3: Space Typer */}
-          <div className="glass p-6 rounded-lg flex flex-col gap-4 border border-light hover:border-primary transition duration-300">
+          <div className="glass p-6 rounded-lg flex flex-col gap-4 transition duration-300">
             <div className="text-4xl text-center">🚀</div>
             <h3 className="text-lg font-bold text-center color-text-dark">Game 3: Space Typer</h3>
             <p className="text-xs color-text-muted text-center leading-relaxed flex-grow">
@@ -821,7 +828,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                     key={char}
                     disabled={used}
                     onClick={() => handleGuess(char)}
-                    className={`w-10 h-10 flex items-center justify-center font-bold rounded cursor-pointer transition ${used ? correct ? 'bg-emerald-600 text-white' : 'bg-rose-950 text-slate-500 opacity-40' : 'bg-slate-800 hover:bg-slate-700 color-text-dark border border-light'}`}
+                    className={`w-10 h-10 flex items-center justify-center font-bold rounded cursor-pointer transition ${used ? correct ? 'bg-emerald-600 text-white' : 'bg-rose-950 text-slate-500 opacity-40' : 'bg-slate-800 hover:bg-slate-700 color-text-dark'}`}
                     style={{ fontSize: '16px' }}
                   >
                     {char.toUpperCase()}
@@ -830,7 +837,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
               })}
             </div>
           ) : (
-            <div className="game-over-box glass p-6 text-center w-full max-w-sm rounded animate-slideup border border-light mt-4">
+            <div className="game-over-box glass p-6 text-center w-full max-w-sm rounded animate-slideup mt-4">
               <h3 className="text-2xl font-bold mb-2">
                 {hangmanStatus === 'won' ? '🎉 Bạn đã thắng!' : '😢 Game Over!'}
               </h3>
@@ -886,7 +893,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                 ></div>
               </div>
 
-              <div className="glass p-6 text-center rounded border border-light flex flex-col gap-2">
+              <div className="glass p-6 text-center rounded flex flex-col gap-2">
                 <span className="text-xs uppercase tracking-wider color-text-muted">Chọn từ có nghĩa sau:</span>
                 <span className="text-2xl font-extrabold color-text-dark">"{currentQuestion.vietnamese}"</span>
               </div>
@@ -896,7 +903,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                   <button
                     key={index}
                     onClick={() => handleTAAnswer(opt)}
-                    className="btn-secondary w-full py-4 text-base font-bold justify-center rounded-md border border-light hover:border-primary transition"
+                    className="btn-secondary w-full py-4 text-base font-bold justify-center rounded-md transition"
                   >
                     {opt.word}
                   </button>
@@ -906,7 +913,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           )}
 
           {taStatus === 'finished' && (
-            <div className="glass p-8 text-center rounded border border-light w-full flex flex-col gap-5 animate-slideup">
+            <div className="glass p-8 text-center rounded w-full flex flex-col gap-5 animate-slideup">
               <span className="text-5xl">🏆</span>
               <h3 className="text-2xl font-extrabold text-gradient">Hết giờ! Kết quả</h3>
               
@@ -946,7 +953,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                 Đang sử dụng bộ từ thuộc cấp độ: <strong>{selectedSource === 'notebook' ? 'Sổ tay cá nhân' : `Cấp độ ${selectedSource}`}</strong>.
               </p>
 
-              <div className="mg-lobby-tips flex flex-col gap-2.5 text-left bg-slate-950/40 p-4 rounded-lg border border-light w-full text-[13px] color-text-muted leading-snug">
+              <div className="mg-lobby-tips flex flex-col gap-2.5 text-left bg-slate-950/40 p-4 rounded-lg w-full text-[13px] color-text-muted leading-snug">
                 <div className="mg-tip-row flex gap-2"><span>🎯</span> <span>Mỗi từ bị bắn hạ sẽ ghi được <strong>+10 Điểm</strong>.</span></div>
                 <div className="mg-tip-row flex gap-2"><span>❤️</span> <span>Bạn có <strong>3 Mạng</strong>. Bỏ lỡ từ để chạm vạch đỏ sẽ mất 1 Mạng.</span></div>
                 <div className="mg-tip-row flex gap-2"><span>⚡</span> <span>Tốc độ rơi của các từ sẽ tăng dần theo số điểm bạn đạt được!</span></div>
@@ -1098,7 +1105,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
           )}
 
           {stStatus === 'finished' && (
-            <div className="glass p-8 text-center rounded border border-light w-full max-w-md mx-auto flex flex-col gap-5 animate-slideup">
+            <div className="glass p-8 text-center rounded w-full max-w-md mx-auto flex flex-col gap-5 animate-slideup">
               <span className="text-5xl">🏆</span>
               <h3 className="text-2xl font-extrabold text-gradient">Kết thúc trận chiến!</h3>
               <p className="text-xs color-text-muted">

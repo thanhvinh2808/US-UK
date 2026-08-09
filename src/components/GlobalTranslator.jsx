@@ -680,7 +680,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           className={`btn-secondary text-xs px-6 py-3 ${direction === 'en-vi' ? 'active-pill' : ''}`}
           style={{ 
             borderRadius: '12px', 
-            border: direction === 'en-vi' ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+            border: direction === 'en-vi' ? '2px solid var(--color-primary)' : 'none',
+            boxShadow: direction === 'en-vi' ? 'none' : '0 2px 8px rgba(16, 32, 61, 0.04)',
             background: direction === 'en-vi' ? 'var(--color-primary)' : 'var(--bg-card)',
             color: direction === 'en-vi' ? '#ffffff' : 'var(--color-text-main)',
             fontWeight: '700',
@@ -704,7 +705,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           className={`btn-secondary text-xs px-6 py-3 ${direction === 'vi-en' ? 'active-pill' : ''}`}
           style={{ 
             borderRadius: '12px', 
-            border: direction === 'vi-en' ? '2px solid var(--color-primary)' : '1px solid var(--border-light)',
+            border: direction === 'vi-en' ? '2px solid var(--color-primary)' : 'none',
+            boxShadow: direction === 'vi-en' ? 'none' : '0 2px 8px rgba(16, 32, 61, 0.04)',
             background: direction === 'vi-en' ? 'var(--color-primary)' : 'var(--bg-card)',
             color: direction === 'vi-en' ? '#ffffff' : 'var(--color-text-main)',
             fontWeight: '700',
@@ -724,15 +726,13 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           🇻🇳 Việt ➔ 🇬🇧 Anh
         </button>
 
-        {/* Nút hoán đổi chiều dịch (⇄) - đồng thời hoán đổi nội dung ô nhập, giống Google Dịch */}
+        {/* Nút hoán đổi chiều dịch (⇄) */}
         <button
           type="button"
           title="Hoán đổi ngôn ngữ"
           aria-label="Hoán đổi ngôn ngữ"
           onClick={() => {
             const newDirection = direction === 'en-vi' ? 'vi-en' : 'en-vi';
-            // Nếu đang có kết quả dịch, đưa bản dịch vào ô nhập để dịch ngược lại luôn -
-            // đúng hành vi quen thuộc của Google Dịch khi bấm nút hoán đổi.
             const swappedQuery = result
               ? (direction === 'en-vi' ? result.vietnamese : result.word)
               : query;
@@ -749,7 +749,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             width: '44px',
             height: '44px',
             borderRadius: '50%',
-            border: '1px solid var(--border-light)',
+            border: 'none',
+            boxShadow: '0 2px 8px rgba(16, 32, 61, 0.04)',
             background: 'var(--bg-card)',
             color: 'var(--color-primary)',
             cursor: 'pointer',
@@ -757,7 +758,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             flex: '0 0 auto',
             alignSelf: 'center'
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'rotate(180deg)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'rotate(180deg)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = 'rotate(0deg)'; }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -776,7 +777,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           background: 'var(--bg-card)',
           padding: '8px',
           borderRadius: '16px',
-          border: '2px solid var(--color-primary)',
+          border: 'none',
+          boxShadow: 'var(--shadow-subtle)',
           flexWrap: 'wrap'
         }}>
           <div style={{ flex: '1 1 260px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -928,7 +930,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
       {/* Results & History Section */}
       <div className="translator-results-container">
         {isLoading && (
-          <div className="text-center p-8 glass rounded-2xl" style={{ border: '1.5px solid var(--color-primary)' }}>
+          <div className="text-center p-8 glass rounded-2xl">
             <span className="spinner-large" />
             <p className="color-text-muted mt-3 font-semibold text-sm">
               Đang tra cứu từ điển...
@@ -937,9 +939,9 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         )}
 
         {!isLoading && !result && searchHistory && searchHistory.length > 0 && (
-          <div className="recent-searches-box glass p-4 animate-slideup" style={{
+          <div className="recent-searches-box glass p-5 animate-slideup mb-7" style={{
             borderRadius: '16px',
-            border: '1px solid var(--border-light)'
+            background: 'var(--bg-card)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <h4 className="text-xs uppercase tracking-wider color-text-muted font-bold flex items-center gap-2" style={{ margin: 0 }}>
@@ -976,16 +978,19 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                   }}
                   className="btn-secondary text-xs"
                   style={{
-                    padding: '6px 14px',
+                    padding: '7px 14px',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-light)',
-                    background: 'var(--bg-card)',
+                    border: 'none',
+                    background: 'var(--bg-input)',
                     color: 'var(--color-text-main)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#E2E9F5'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-input)'; }}
                 >
                   <span style={{ fontWeight: '700', color: 'var(--color-primary)' }}>{item?.word || ''}</span>
                   {item?.translation && <span className="color-text-muted" style={{ fontSize: '11px' }}>➔ {item.translation}</span>}
@@ -996,7 +1001,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         )}
 
         {result && (
-          <div className="translator-result-box glass p-6 animate-slideup" style={{ borderRadius: '16px', border: '2px solid var(--color-primary)', background: 'var(--bg-card)' }}>
+          <div className="translator-result-box glass p-6 animate-slideup mb-7" style={{ borderRadius: '16px', background: 'var(--bg-card)' }}>
             {/* Spell Correction / Did You Mean Banner */}
             {result.isAutoCorrected && result.originalQuery && (
               <div className="spell-suggestion-banner p-3.5 mb-5 flex items-center justify-between flex-wrap gap-2 animate-fadeIn" style={{ 
@@ -1491,7 +1496,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               ) : (
                 <div className="ai-analysis-card p-5 rounded-xl glass animate-slideup" style={{
                   background: 'var(--bg-card)',
-                  border: '2px solid var(--color-primary)'
+                  border: '1px solid var(--border-light)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid var(--border-light)' }}>
                     <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--color-primary)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1609,10 +1614,10 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         )}
 
         {!isLoading && !result && (
-          <div className="translator-empty p-8 text-center glass rounded-2xl" style={{ border: '1px solid var(--border-light)' }}>
-            <span className="icon-huge" style={{ fontSize: '48px', display: 'block', marginBottom: '12px' }}>💡</span>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '6px' }}>Next-Gen AI Lexicon Console</h3>
-            <p className="color-text-muted text-sm">
+          <div className="translator-empty p-8 text-center glass rounded-2xl mt-8 pt-8" style={{ background: 'var(--bg-card)' }}>
+            <span className="icon-huge" style={{ fontSize: '44px', display: 'block', marginBottom: '12px' }}>💡</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '6px', color: 'var(--color-text-dark)' }}>Next-Gen AI Lexicon Console</h3>
+            <p className="color-text-muted text-sm" style={{ fontSize: '13px', fontWeight: '400', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
               {direction === 'en-vi' 
                 ? 'Nhập từ/câu tiếng Anh bất kỳ (vd: "amazing", "hit the books") để trải nghiệm tra cứu từ điển US-UK kết hợp Gia sư AI 1:1!'
                 : 'Nhập từ/câu tiếng Việt bất kỳ (vd: "tuyệt vời", "tôi đang chuẩn bị đi làm") để dịch sang tiếng Anh chuẩn bản xứ.'
@@ -1627,34 +1632,35 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
   if (isPageMode) {
     return (
       <div className="translator-page animate-slideup" style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
-        {/* Dynamic Royal Blue Page Header */}
-        <div className="page-header glass p-6 mb-6 rounded-xl flex justify-between items-center flex-wrap gap-4" style={{
-          background: 'var(--bg-card)',
-          border: '2px solid var(--color-primary)'
+        {/* Back Button FIRST on Top-Left */}
+        {onNavigateBack && (
+          <button 
+            className="btn-secondary text-xs mb-4" 
+            onClick={onNavigateBack}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            ← Quay lại Dashboard
+          </button>
+        )}
+
+        {/* Dynamic Page Header Card */}
+        <div className="page-header glass p-6 mb-8 rounded-xl" style={{
+          background: 'var(--bg-card)'
         }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#ffffff', marginBottom: '8px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-input)', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '8px' }}>
               ⚡ POWERED BY GEMINI AI & DICTIONARY API
             </div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: '800', margin: '4px 0 0 0', color: 'var(--color-text-dark)' }}>
               🔍 AI Lexicon Studio (US-UK)
             </h1>
-            <p className="color-text-muted text-xs mt-1" style={{ margin: 0 }}>
+            <p className="color-text-muted text-xs mt-2" style={{ margin: '6px 0 0 0', fontSize: '13px', fontWeight: '400', lineHeight: 1.5 }}>
               Hệ thống tra cứu từ điển chuyên sâu, phân tích ngữ pháp, 12 thì & sắc thái hội thoại
             </p>
           </div>
-          {onNavigateBack && (
-            <button 
-              className="btn-secondary text-xs" 
-              onClick={onNavigateBack}
-              style={{ padding: '10px 18px', borderRadius: '8px', fontWeight: '700' }}
-            >
-              ← Quay lại Dashboard
-            </button>
-          )}
         </div>
 
-        <div className="translator-page-card glass p-6 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
+        <div className="translator-page-card glass p-6 rounded-xl mb-8" style={{ background: 'var(--bg-card)' }}>
           {renderTranslatorContent()}
         </div>
       </div>

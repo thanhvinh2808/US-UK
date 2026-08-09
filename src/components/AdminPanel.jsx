@@ -497,15 +497,22 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
 
   return (
     <div className="admin-panel-screen animate-slideup">
-      {/* Header */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="topic-meta">
-          <span className="badge-level font-bold">Admin</span>
-          <span className="topic-name">Antigravity AI Portal</span>
-        </div>
+      )}
+
+      {/* Header */}
+      <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+        <span className="badge-level font-bold mb-2 inline-block">Admin</span>
+        <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Antigravity AI Portal</h1>
+        <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400' }}>Quản trị và sinh chủ đề bài học tự động với Gia sư AI</p>
       </div>
 
       <div className={`admin-grid ${generatedData ? 'preview-active' : ''}`}>
@@ -634,7 +641,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
                     desc: "Học cách đối đáp phỏng vấn IT tiếng Anh chuẩn xác sử dụng các thì quá khứ đơn."
                   }
                 ].map((item) => (
-                  <div key={item.id} className="p-3 rounded flex justify-between items-center" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-light)', gap: '10px' }}>
+                  <div key={item.id} className="p-3 rounded flex justify-between items-center" style={{ background: 'rgba(255, 255, 255, 0.02)', gap: '10px' }}>
                     <div style={{ maxWidth: '75%' }}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="badge-level" style={{ fontSize: '9px', padding: '1px 4px' }}>{item.level}</span>

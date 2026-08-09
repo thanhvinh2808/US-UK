@@ -185,13 +185,13 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="pronunciation-finished bg-white p-8 text-center max-w-xl mx-auto mt-6 animate-slideup rounded-xl border border-light shadow-sm">
+      <div className="pronunciation-finished glass bg-white p-8 text-center max-w-xl mx-auto mt-6 animate-slideup rounded-xl shadow-sm">
         <h2 className="text-2xl font-bold color-text-dark">
           Hoàn Thành Bài Luyện Phát Âm!
         </h2>
         <p className="color-text-muted text-sm mt-1 mb-6">Chủ đề: {topic.topic}</p>
 
-        <div className="score-radial-progress p-6 bg-[#FAFBFD] mb-6 rounded-xl border border-light">
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] mb-6 rounded-xl">
           <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>
             {Math.round(finalScore * 100)}%
           </div>
@@ -217,11 +217,19 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
 
   return (
     <div className="pronunciation-screen animate-slideup" style={{ maxWidth: '840px', margin: '0 auto' }}>
-      {/* Clean Navigation Header */}
-      <div className="screen-header mb-6 flex justify-between items-center flex-wrap gap-4 bg-white p-5 rounded-xl border border-light shadow-sm">
-        <button className="btn-secondary text-xs" onClick={onNavigateBack}>
-          ← Quay lại
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
+      )}
+
+      {/* Clean Navigation Header */}
+      <div className="screen-header glass mb-8 flex justify-between items-center flex-wrap gap-4 bg-white p-5 rounded-xl shadow-sm">
         <div className="flex items-center gap-2">
           <span className="badge-level level-b2">
             {topic.level}
@@ -232,7 +240,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
         </div>
       </div>
 
-      <div className="pronunciation-layout bg-white p-6 rounded-xl border border-light shadow-sm">
+      <div className="pronunciation-layout glass bg-white p-6 rounded-xl shadow-sm">
         {/* Progress Bar Header */}
         <div className="progress-bar-container mb-6">
           <div className="flex justify-between mb-2 text-xs font-bold">
@@ -253,7 +261,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
         </div>
 
         {/* Target Sentence Display Card */}
-        <div className="sentence-display-card p-6 mb-6 text-center glass" style={{ background: 'var(--bg-input)', borderRadius: '16px', border: '1.5px solid var(--border-light)' }}>
+        <div className="sentence-display-card p-6 mb-6 text-center glass" style={{ background: 'var(--bg-input)', borderRadius: '16px' }}>
           {dialogue && (
             <div className="speaker-role mb-2 text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-primary)' }}>
               👤 Nhân vật: {dialogue.speaker}
@@ -308,7 +316,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
               </p>
             </div>
           ) : (
-            <div className="alert-unsupported p-4 glass mb-4" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)', borderRadius: '12px', fontSize: '13px' }}>
+            <div className="alert-unsupported p-4 glass mb-4" style={{ background: 'var(--bg-input)', borderRadius: '12px', fontSize: '13px' }}>
               ⚠️ Web Speech API chưa được hỗ trợ trực tiếp. Dùng các nút thử nghiệm bên dưới để kiểm tra quy trình chấm điểm.
             </div>
           )}
@@ -331,7 +339,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
 
         {/* Results assessment */}
         {checked && (
-          <div className="assessment-results-card glass p-5 mb-6" style={{ background: 'var(--bg-card)', border: '2px solid var(--color-primary)', borderRadius: '16px' }}>
+          <div className="assessment-results-card glass p-5 mb-6" style={{ background: 'var(--bg-card)', borderRadius: '16px' }}>
             <div className="score-summary mb-3 flex justify-between items-center">
               <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--color-text-main)' }}>Đánh giá kết quả đọc:</h4>
               <span className="text-xl font-bold" style={{ color: sentenceScore >= 0.7 ? 'var(--color-success)' : 'var(--color-error)' }}>

@@ -244,25 +244,28 @@ export default function MinimalPairs({ onNavigateBack }) {
 
   return (
     <div className="minimal-pairs-studio-container animate-slideup" style={{ maxWidth: '1080px', margin: '0 auto' }}>
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
+        </button>
+      )}
+
       {/* Top Header Card */}
-      <div className="page-header bg-white p-6 mb-6 rounded-xl border border-light flex justify-between items-center flex-wrap gap-4 shadow-sm">
+      <div className="page-header bg-white p-6 mb-8 rounded-xl" style={{ border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
         <div>
-          <span className="badge-level level-b2 mb-1">Minimal Pairs</span>
-          <h1 className="text-2xl font-bold color-text-dark">
+          <span className="badge-level level-b2 mb-2 inline-block">Minimal Pairs</span>
+          <h1 className="text-2xl font-bold color-text-dark" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>
             Luyện Âm Phân Biệt (Minimal Pairs Studio)
           </h1>
-          <p className="color-text-muted text-xs mt-1">
+          <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>
             Luyện tập phân biệt các cặp từ đồng âm hoặc có khẩu hình gần giống nhau với công nghệ phản hồi âm bản xứ
           </p>
         </div>
-        {onNavigateBack && (
-          <button 
-            className="btn-secondary text-xs" 
-            onClick={onNavigateBack}
-          >
-            ← Quay lại Dashboard
-          </button>
-        )}
       </div>
 
       {/* Top Sound Selector Carousel Bar */}
@@ -280,9 +283,9 @@ export default function MinimalPairs({ onNavigateBack }) {
       </div>
 
       {/* Hero Stage Container */}
-      <div className="sound-stage-hero bg-white p-6 mb-6 rounded-xl border border-light shadow-sm">
+      <div className="sound-stage-hero glass bg-white p-6 mb-6 rounded-xl shadow-sm">
         {/* Phonetics & Mouth Placement Guide Banner */}
-        <div className="p-4 mb-6 bg-[#FAFBFD] rounded-lg border-l-4 border-[#1B3B6F] border border-light">
+        <div className="p-4 mb-6 bg-[#FAFBFD] rounded-lg border-l-4 border-[#1B3B6F]">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-base font-bold color-text-dark">{selectedGroup.title}</h3>
             {selectedGroup.phonetics.map((p, i) => (
@@ -324,11 +327,11 @@ export default function MinimalPairs({ onNavigateBack }) {
             {selectedGroup.pairs.map((pair, idx) => (
               <div 
                 key={idx} 
-                className="vs-sound-battle-card p-5 bg-white rounded-xl border border-light shadow-sm"
+                className="vs-sound-battle-card glass p-5 bg-white rounded-xl shadow-sm"
               >
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'center' }}>
                   {/* Left Word Card A */}
-                  <div className="word-card-a p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                  <div className="word-card-a p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px' }}>
                     <h2 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
                       {pair.word1}
                     </h2>
@@ -380,7 +383,7 @@ export default function MinimalPairs({ onNavigateBack }) {
                   </div>
 
                   {/* Right Word Card B */}
-                  <div className="word-card-b p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                  <div className="word-card-b p-5 text-center" style={{ background: 'var(--bg-input)', borderRadius: '14px' }}>
                     <h2 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)' }}>
                       {pair.word2}
                     </h2>
@@ -468,7 +471,7 @@ export default function MinimalPairs({ onNavigateBack }) {
             </div>
 
             {feedback && (
-              <div className="quiz-feedback-box glass p-5 text-center mt-2 w-full animate-slideup" style={{ borderRadius: '16px', background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+              <div className="quiz-feedback-box glass p-5 text-center mt-2 w-full animate-slideup" style={{ borderRadius: '16px', background: 'var(--bg-input)' }}>
                 <p className="font-semibold text-sm mb-3" style={{ margin: 0, color: 'var(--color-text-main)' }}>{feedback}</p>
                 <button className="btn-primary py-3 px-8 justify-center mx-auto text-sm" onClick={() => generateQuiz()} style={{ borderRadius: '10px', background: 'var(--color-primary)', color: '#ffffff', fontWeight: '800' }}>
                   Câu tiếp theo ➔
@@ -519,7 +522,7 @@ export default function MinimalPairs({ onNavigateBack }) {
               </div>
             </div>
 
-            <div className="glass p-6 text-center flex flex-col items-center gap-3" style={{ background: 'var(--bg-input)', borderRadius: '18px', border: '1.5px solid var(--border-light)' }}>
+            <div className="glass p-6 text-center flex flex-col items-center gap-3" style={{ background: 'var(--bg-input)', borderRadius: '18px' }}>
               <span className="text-xs color-text-muted uppercase font-bold">Từ mục tiêu</span>
               <span className="text-5xl font-extrabold" style={{ color: 'var(--color-primary)' }}>{speakTarget}</span>
               <span className="text-xs color-text-muted italic">
@@ -556,22 +559,22 @@ export default function MinimalPairs({ onNavigateBack }) {
               </span>
 
               {spokenText && (
-                <div className="spoken-result-display animate-slideup mt-2 w-full p-4 rounded-xl text-center glass border border-light" style={{ borderRadius: '14px', background: 'var(--bg-card)' }}>
+                <div className="spoken-result-display animate-slideup mt-2 w-full p-4 rounded-xl text-center glass" style={{ borderRadius: '14px', background: 'var(--bg-card)' }}>
                   <div className="text-xs color-text-muted mb-1">Hệ thống nhận diện được:</div>
                   <div className="font-extrabold text-xl mb-2" style={{ color: 'var(--color-text-main)' }}>"{spokenText}"</div>
                   
                   {speakScore === 'perfect' && (
-                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-success-glow)', color: 'var(--color-success)', border: '1px solid var(--color-success)' }}>
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-success-glow)', color: 'var(--color-success)' }}>
                       Xuất Sắc! Phát âm chuẩn 100% 🎯
                     </span>
                   )}
                   {speakScore === 'good' && (
-                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-primary-glow)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-primary-glow)', color: 'var(--color-primary)' }}>
                       Khá tốt! Gần đúng 🌟
                     </span>
                   )}
                   {speakScore === 'try_again' && (
-                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-error-glow)', color: 'var(--color-error)', border: '1px solid var(--color-error)' }}>
+                    <span className="badge-level text-sm py-1.5 px-4 font-bold" style={{ backgroundColor: 'var(--color-error-glow)', color: 'var(--color-error)' }}>
                       Thử lại nhé! Hãy chú ý bật khẩu hình chuẩn 🔁
                     </span>
                   )}

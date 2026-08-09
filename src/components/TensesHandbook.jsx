@@ -385,15 +385,21 @@ export default function TensesHandbook({ onNavigateBack }) {
 
   return (
     <div className="tenses-handbook-container animate-slideup">
-      {/* Header and Back Button */}
-      <div className="handbook-header glass p-6 mb-8 flex justify-between items-center">
-        <div>
-          <button className="btn-secondary mb-3 flex items-center gap-1" onClick={onNavigateBack}>
-            ⬅ Quay lại Dashboard
-          </button>
-          <h1 className="glow-text text-gradient">Sổ Tay 12 Thì Tiếng Anh</h1>
-          <p className="color-text-muted mt-2">Tra cứu trực quan công thức cấu trúc, định nghĩa và ví dụ mẫu của toàn bộ 12 thì.</p>
-        </div>
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
+        </button>
+      )}
+
+      {/* Header Card */}
+      <div className="handbook-header glass p-6 mb-8 rounded-xl" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+        <h1 className="glow-text text-gradient" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Sổ Tay 12 Thì Tiếng Anh</h1>
+        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Tra cứu trực quan công thức cấu trúc, định nghĩa và ví dụ mẫu của toàn bộ 12 thì.</p>
       </div>
 
       {/* Search Input bar */}

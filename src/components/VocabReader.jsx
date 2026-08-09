@@ -297,24 +297,32 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
 
   return (
     <div className="vocab-reader-screen animate-slideup">
-      {/* Header and Back Button */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+      {/* Back Button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="topic-meta">
+      )}
+
+      {/* Header */}
+      <div className="screen-header mb-8 flex justify-between items-center">
+        <div className="topic-meta flex items-center gap-2">
           <span className="badge-level">{topic.level}</span>
-          <span className="topic-name">{topic.topic}</span>
+          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
         </div>
       </div>
 
       <div className="reader-layout grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Side: Reading Passage */}
-        <div className="passage-section col-span-2 bg-white p-6 rounded-xl border border-light shadow-sm">
+        <div className="passage-section col-span-2 glass bg-white p-6 rounded-xl shadow-sm">
           <h2 className="passage-title text-2xl font-bold color-text-dark mb-4">{topic.title}</h2>
 
           {/* Typography Customization Toolbar */}
-          <div className="font-controls mb-4 flex flex-wrap gap-4 items-center justify-between p-3 rounded-lg bg-[#FAFBFD] border border-light">
+          <div className="font-controls mb-4 flex flex-wrap gap-4 items-center justify-between p-3 rounded-lg bg-[#FAFBFD]">
             <div className="flex gap-2 items-center">
               <span className="text-xs color-text-muted">Cỡ chữ:</span>
               <button 
@@ -350,7 +358,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                   localStorage.setItem('eng_app_reader_font_family', e.target.value);
                 }}
                 className="btn-secondary text-xs"
-                style={{ padding: '4px 8px', background: 'var(--bg-dark)', color: 'var(--color-text-main)', border: '1px solid var(--border-light)' }}
+                style={{ padding: '4px 8px', background: 'var(--bg-dark)', color: 'var(--color-text-main)' }}
               >
                 <option value="var(--font-sans)">Không chân (Sans-Serif)</option>
                 <option value="Georgia, Cambria, 'Times New Roman', Times, serif">Có chân (Serif)</option>
@@ -485,7 +493,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
 
               {/* Meanings grouped by Part of Speech */}
               {selectedWord.meaningsByPos && selectedWord.meaningsByPos.length > 0 && (
-                <div className="meanings-by-pos-box mb-4 p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-light)' }}>
+                <div className="meanings-by-pos-box mb-4 p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
                   <span className="text-xs color-text-muted font-bold block mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     📚 Các nghĩa theo từ loại (Phù hợp ngữ cảnh):
                   </span>

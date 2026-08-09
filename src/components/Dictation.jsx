@@ -151,11 +151,11 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="dictation-finished bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl border border-light shadow-sm">
+      <div className="dictation-finished glass bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl shadow-sm">
         <h2 className="text-2xl font-bold color-text-dark mb-2">Hoàn thành bài chính tả!</h2>
         <p className="color-text-muted text-sm mb-6">Chủ đề: {topic.topic}</p>
         
-        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl border border-light mb-6">
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl mb-6">
           <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{Math.round(finalScore * 100)}%</div>
           <div className="text-xs font-mono font-bold color-text-muted uppercase mt-1">Độ chính xác</div>
         </div>
@@ -174,18 +174,26 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
 
   return (
     <div className="dictation-screen animate-slideup">
-      {/* Header */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Quay lại Trang chủ
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="topic-meta">
+      )}
+
+      {/* Header */}
+      <div className="screen-header mb-8 flex justify-between items-center">
+        <div className="topic-meta flex items-center gap-2">
           <span className="badge-level level-b2">{topic.level}</span>
-          <span className="topic-name">{topic.topic}</span>
+          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
         </div>
       </div>
 
-      <div className="dictation-layout bg-white p-6 max-w-3xl mx-auto rounded-xl border border-light shadow-sm">
+      <div className="dictation-layout glass bg-white p-6 max-w-3xl mx-auto rounded-xl shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
@@ -195,7 +203,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
         </div>
 
         {/* Audio Player Card */}
-        <div className="audio-card bg-[#FAFBFD] p-6 mb-6 text-center rounded-lg border border-light">
+        <div className="audio-card bg-[#FAFBFD] p-6 mb-6 text-center rounded-lg">
           <button className="btn-primary py-3 px-6 justify-center mx-auto" onClick={handleSpeak}>
             🔊 Nghe giọng đọc
           </button>
@@ -220,13 +228,13 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
           </div>
 
           {showTranslation && (
-            <div className="hint-content translation-hint p-3 mb-2 bg-slate-50 rounded border border-light text-xs">
+            <div className="hint-content translation-hint p-3 mb-2 bg-slate-50 rounded text-xs">
               <strong>Nghĩa tiếng Việt:</strong> {dialogue.vietnamese}
             </div>
           )}
 
           {showLetterHint && (
-            <div className="hint-content spelling-hint p-3 bg-slate-50 rounded border border-light text-xs font-mono">
+            <div className="hint-content spelling-hint p-3 bg-slate-50 rounded text-xs font-mono">
               <strong>Gợi ý:</strong> <code>{getMaskedHint()}</code>
             </div>
           )}
@@ -248,7 +256,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
 
         {/* Inline word-by-word checking feedback */}
         {checked && (
-          <div className="dictation-feedback bg-[#FAFBFD] p-4 mb-6 rounded-lg border border-light">
+          <div className="dictation-feedback bg-[#FAFBFD] p-4 mb-6 rounded-lg">
             <h4 className="mb-2 text-xs font-mono font-bold color-text-muted uppercase">Đánh giá phát âm:</h4>
             <div className="feedback-words flex flex-wrap gap-1.5">
               {targetWords.map((word, index) => {
@@ -264,7 +272,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
                 );
               })}
             </div>
-            <div className="target-reveal mt-4 p-3 bg-white rounded border border-light text-xs">
+            <div className="target-reveal mt-4 p-3 bg-white rounded text-xs">
               <strong>Đáp án chính xác:</strong>
               <p className="mt-1 color-text-main font-bold">{targetText}</p>
             </div>

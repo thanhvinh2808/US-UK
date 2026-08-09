@@ -5,15 +5,18 @@
 
 .handbook-header {
   border-radius: var(--radius-card);
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   background: var(--bg-card);
 }
 
 .handbook-controls .search-input {
-  border-radius: 8px 8px 0 0;
-  border-bottom: 2px solid var(--border-light);
+  border-radius: 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
   outline: none;
   transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(16, 32, 61, 0.03);
 }
 
 .handbook-controls .search-input:focus {
@@ -28,7 +31,8 @@
 }
 
 .time-row-group {
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   background: var(--bg-card);
   border-radius: var(--radius-card);
   padding: 20px;
@@ -36,19 +40,19 @@
 
 .time-row-group.present .group-header {
   color: var(--color-primary);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(16, 32, 61, 0.06);
   padding-bottom: 8px;
 }
 
 .time-row-group.past .group-header {
   color: var(--color-warning);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(16, 32, 61, 0.06);
   padding-bottom: 8px;
 }
 
 .time-row-group.future .group-header {
   color: var(--color-us);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(16, 32, 61, 0.06);
   padding-bottom: 8px;
 }
 
@@ -81,7 +85,8 @@
 /* Tense Grid Card */
 .tense-grid-card {
   border-radius: var(--radius-card);
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: 0 2px 10px rgba(16, 32, 61, 0.03);
   background: var(--bg-card);
   transition: var(--transition);
   overflow: hidden;
@@ -89,13 +94,12 @@
 
 .tense-grid-card:hover {
   background: var(--bg-card-hover);
-  border-color: var(--color-primary);
   transform: translateY(-2px);
 }
 
 .tense-grid-card.active {
   background: var(--bg-card-hover);
-  border-color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   box-shadow: var(--shadow-subtle);
 }
 
@@ -115,8 +119,8 @@
 }
 
 .short-formula-badge {
-  background: var(--bg-input);
-  border: 1px solid var(--border-light);
+  background: #F0F4F8;
+  border: none;
   color: var(--color-primary);
   font-family: var(--font-mono);
   font-weight: 600;
@@ -131,7 +135,8 @@
 /* Tense Details Viewer Panel */
 .tense-details-panel {
   border-radius: var(--radius-card);
-  border: 1px solid var(--border-light);
+  border: none;
+  box-shadow: var(--shadow-subtle);
   background: var(--bg-card);
   overflow: hidden;
   margin-bottom: 24px;

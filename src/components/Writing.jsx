@@ -143,11 +143,11 @@ export default function Writing({ topic, onNavigateBack }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="writing-finished bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl border border-light shadow-sm">
+      <div className="writing-finished glass bg-white p-8 text-center max-w-xl mx-auto mt-10 rounded-xl shadow-sm">
         <h2 className="text-2xl font-bold color-text-dark mb-2">Hoàn thành bài tập Viết!</h2>
         <p className="color-text-muted text-sm mb-6">Chủ đề: {topic.topic}</p>
 
-        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl border border-light mb-6">
+        <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl mb-6">
           <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{Math.round(finalScore * 100)}%</div>
           <div className="text-xs font-mono font-bold color-text-muted uppercase mt-1">Điểm Viết</div>
         </div>
@@ -163,18 +163,26 @@ export default function Writing({ topic, onNavigateBack }) {
 
   return (
     <div className="writing-screen animate-slideup">
-      {/* Header */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Quay lại Trang chủ
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="topic-meta">
+      )}
+
+      {/* Header */}
+      <div className="screen-header mb-8 flex justify-between items-center">
+        <div className="topic-meta flex items-center gap-2">
           <span className="badge-level level-b2">{topic.level}</span>
-          <span className="topic-name">{topic.topic}</span>
+          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
         </div>
       </div>
 
-      <div className="writing-layout bg-white p-6 max-w-2xl mx-auto rounded-xl border border-light shadow-sm">
+      <div className="writing-layout glass bg-white p-6 max-w-2xl mx-auto rounded-xl shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
@@ -190,7 +198,7 @@ export default function Writing({ topic, onNavigateBack }) {
           <div className="exercise-card mb-6 animate-slideup">
             <p className="color-text-muted text-sm mb-4">Điền từ chia động từ đúng ngữ pháp vào chỗ trống:</p>
             
-            <div className="sentence-fill-box p-5 bg-[#FAFBFD] rounded-lg border border-light mb-6 text-lg">
+            <div className="sentence-fill-box p-5 bg-[#FAFBFD] rounded-lg mb-6 text-lg">
               <span>{exercise.sentence_parts[0]}</span>
               <input 
                 type="text" 
@@ -221,7 +229,7 @@ export default function Writing({ topic, onNavigateBack }) {
             <p className="color-text-muted text-sm mb-4">Sắp xếp các từ dưới đây để tạo thành một câu hoàn chỉnh:</p>
 
             {/* Composed Sentence Display Box */}
-            <div className="composed-sentence-box p-5 bg-[#FAFBFD] rounded-lg border border-light mb-6 min-h-20 text-lg font-semibold color-text-dark">
+            <div className="composed-sentence-box p-5 bg-[#FAFBFD] rounded-lg mb-6 min-h-20 text-lg font-semibold color-text-dark">
               {orderedWords.length > 0 ? (
                 orderedWords.map(w => w.word).join(' ') + '.'
               ) : (

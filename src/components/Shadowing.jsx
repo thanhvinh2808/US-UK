@@ -194,12 +194,21 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
   };
 
   return (
-    <div className="shadowing-screen animate-slideup p-6 bg-white rounded-xl border border-light shadow-sm max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Quay lại
+    <div className="shadowing-screen animate-slideup p-6 glass bg-white rounded-xl shadow-sm max-w-3xl mx-auto">
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <h2 className="glow-text text-gradient">Shadowing Reflex - Luyện Nói Đuổi</h2>
+      )}
+
+      <div className="mb-8">
+        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Shadowing Reflex - Luyện Nói Đuổi</h1>
+        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Luyện phản xạ nghe nói đuổi theo giọng bản xứ với độ trễ thấp</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -294,7 +303,7 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
 
           {/* Metrics Score Card */}
           {checked && (
-            <div className="metrics-card glass-glow border border-light p-4 rounded-md animate-slideup grid grid-cols-3 gap-4 text-center">
+            <div className="metrics-card glass-glow p-4 rounded-md animate-slideup grid grid-cols-3 gap-4 text-center">
               {/* Reflex Speed */}
               <div className="metric-box">
                 <div className="text-xs color-text-muted uppercase font-bold mb-1">Tốc độ Phản xạ</div>

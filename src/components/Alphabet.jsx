@@ -61,17 +61,23 @@ export default function Alphabet({ onNavigateBack }) {
 
   return (
     <div className="alphabet-container animate-slideup">
-      {/* Header và nút quay lại - đồng bộ style với các module khác */}
-      <div className="handbook-header glass p-6 mb-8 flex justify-between items-center">
-        <div>
-          <button className="btn-secondary mb-3 flex items-center gap-1" onClick={onNavigateBack}>
-            ⬅ Quay lại Dashboard
-          </button>
-          <h1 className="glow-text text-gradient">Bảng Chữ Cái Tiếng Anh</h1>
-          <p className="color-text-muted mt-2">
-            Bấm vào 1 chữ cái (hoặc gõ phím A–Z trên bàn phím) để nghe phát âm chuẩn. Đổi giọng US/UK ở thanh bên trái.
-          </p>
-        </div>
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
+        </button>
+      )}
+
+      {/* Header Card */}
+      <div className="handbook-header glass p-6 mb-8 rounded-xl" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+        <h1 className="glow-text text-gradient" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Bảng Chữ Cái Tiếng Anh</h1>
+        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>
+          Bấm vào 1 chữ cái (hoặc gõ phím A–Z trên bàn phím) để nghe phát âm chuẩn. Đổi giọng US/UK ở thanh bên trái.
+        </p>
       </div>
 
       {/* Bộ lọc: tất cả / nguyên âm / phụ âm + chế độ phát âm */}
@@ -135,7 +141,7 @@ export default function Alphabet({ onNavigateBack }) {
               className="alphabet-card glass p-3 rounded-xl transition-all cursor-pointer"
               style={{
                 textAlign: 'center',
-                border: `2px solid ${isActive ? '#22d3ee' : isVowel ? 'rgba(34,211,238,0.35)' : 'rgba(245,158,11,0.25)'}`,
+                border: isActive ? '2px solid #22d3ee' : 'none',
                 transform: isActive ? 'scale(1.06)' : 'scale(1)',
                 boxShadow: isActive ? '0 0 16px rgba(34,211,238,0.55)' : 'none',
               }}

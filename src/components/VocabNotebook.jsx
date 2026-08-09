@@ -120,20 +120,27 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
   return (
     <div className="notebook-screen animate-slideup">
       
-      {/* 📌 Header Banner */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Trang chủ
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="text-right">
-          <span className="badge-level level-b2 mb-1">Notebook</span>
-          <h2 className="text-xl font-bold color-text-dark">Sổ Tay Từ Vựng Cá Nhân</h2>
-        </div>
+      )}
+
+      {/* 📌 Header Banner */}
+      <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+        <span className="badge-level level-b2 mb-2 inline-block">Notebook</span>
+        <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Sổ Tay Từ Vựng Cá Nhân</h1>
+        <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400' }}>Quản lý, phân loại và ôn luyện các từ vựng bạn đã lưu trong quá trình học</p>
       </div>
 
       {/* 📊 Top Metric Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#1B3B6F] shadow-sm">
+        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#1B3B6F] shadow-sm">
           <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
             Tổng số từ đã lưu
           </span>
@@ -142,7 +149,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#1E8A5F] shadow-sm">
+        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#1E8A5F] shadow-sm">
           <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
             Đã thuộc (Mastered)
           </span>
@@ -151,7 +158,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-light border-t-4 border-t-[#C17817] shadow-sm">
+        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#C17817] shadow-sm">
           <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
             Đang học (Learning)
           </span>
@@ -162,7 +169,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       </div>
 
       {/* 🗂️ Custom Decks Bar */}
-      <div className="bg-white p-5 rounded-xl border border-light mb-6 shadow-sm">
+      <div className="bg-white p-5 rounded-xl mb-6 shadow-sm">
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-xs font-mono font-bold uppercase tracking-wider color-text-muted">
             Bộ thẻ tự tạo (Custom Decks)
@@ -206,7 +213,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition text-xs font-medium cursor-pointer ${
                   selectedDeckFilter === deck.id 
                     ? 'bg-[#1B3B6F] text-white border-[#1B3B6F]' 
-                    : 'bg-[#F2F5FA] text-slate-700 border-light hover:bg-slate-100'
+                    : 'bg-[#F2F5FA] text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span onClick={() => setSelectedDeckFilter(deck.id)}>
@@ -226,7 +233,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       </div>
 
       {/* 🔍 Search & Filter Toolbar */}
-      <div className="bg-white p-5 rounded-xl border border-light mb-6 shadow-sm flex flex-wrap gap-4 justify-between items-center">
+      <div className="bg-white p-5 rounded-xl mb-6 shadow-sm flex flex-wrap gap-4 justify-between items-center">
         <input 
           type="text" 
           placeholder="Tìm kiếm từ vựng hoặc nghĩa tiếng Việt..."
@@ -263,7 +270,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       </div>
 
       {/* 📋 Notion / Sheets Clean Table */}
-      <div className="bg-white rounded-xl border border-light overflow-hidden shadow-sm">
+      <div className="bg-white rounded-xl overflow-hidden shadow-sm">
         {filteredVocab.length === 0 ? (
           <div className="text-center py-16 color-text-muted">
             <p className="text-sm font-medium">Không tìm thấy từ vựng nào khớp với bộ lọc.</p>
@@ -294,21 +301,21 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
                         </strong>
                         <div className="flex gap-1.5 mt-2">
                           <button 
-                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded color-text-main"
                             onClick={() => handleSpeak(item.word, 'US')} 
                             title="Nghe giọng Mỹ"
                           >
                             🇺🇸 US
                           </button>
                           <button 
-                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded color-text-main"
                             onClick={() => handleSpeak(item.word, 'UK')} 
                             title="Nghe giọng Anh"
                           >
                             🇬🇧 UK
                           </button>
                           <button 
-                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded border border-light color-text-main"
+                            className="text-[11px] font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-0.5 rounded color-text-main"
                             onClick={() => handleSpeakCompare(item.word)} 
                             title="So sánh US-UK"
                           >

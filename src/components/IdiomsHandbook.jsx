@@ -220,12 +220,21 @@ export default function IdiomsHandbook({ onNavigateBack }) {
   };
 
   return (
-    <div className="idioms-handbook-screen animate-slideup p-6 glass">
-      <div className="flex justify-between items-center mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Quay về Dashboard
+    <div className="idioms-handbook-screen animate-slideup p-6 glass" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <h2 className="glow-text text-gradient">Idioms & Phrasal Verbs Handbook</h2>
+      )}
+
+      <div className="mb-8">
+        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Idioms & Phrasal Verbs Handbook</h1>
+        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Tra cứu thành ngữ và phrasal verbs thông dụng kèm ngữ cảnh và ví dụ thực tế</p>
       </div>
 
       {/* Main Tab Switcher */}
@@ -287,7 +296,7 @@ export default function IdiomsHandbook({ onNavigateBack }) {
           </div>
 
           {/* Clean Notion-style List */}
-          <div className="bg-white rounded-xl border border-light overflow-hidden shadow-sm divide-y divide-slate-100">
+          <div className="bg-white rounded-xl glass overflow-hidden shadow-sm divide-y divide-slate-100">
             {filteredItems.map((item) => {
               const isExpanded = expandedId === item.id;
               return (
@@ -309,9 +318,9 @@ export default function IdiomsHandbook({ onNavigateBack }) {
                     </div>
 
                     <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeak(item.phrase, 'US')} title="Nghe giọng Mỹ">🇺🇸 US</button>
-                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeak(item.phrase, 'UK')} title="Nghe giọng Anh">🇬🇧 UK</button>
-                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded border border-light" onClick={() => handleSpeakCompare(item.phrase)} title="So sánh giọng US-UK">🆚</button>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded" onClick={() => handleSpeak(item.phrase, 'US')} title="Nghe giọng Mỹ">🇺🇸 US</button>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded" onClick={() => handleSpeak(item.phrase, 'UK')} title="Nghe giọng Anh">🇬🇧 UK</button>
+                      <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-2 py-1 rounded" onClick={() => handleSpeakCompare(item.phrase)} title="So sánh giọng US-UK">🆚</button>
                     </div>
                   </div>
 
@@ -322,7 +331,7 @@ export default function IdiomsHandbook({ onNavigateBack }) {
                         <p className="text-sm color-text-dark font-medium italic mt-0.5">"{item.definition_en}"</p>
                       </div>
 
-                      <div className="bg-[#FAFBFD] p-3 rounded-lg border border-light">
+                      <div className="bg-[#FAFBFD] p-3 rounded-lg">
                         <span className="text-xs font-mono text-slate-400 font-bold uppercase block">Ví dụ song ngữ:</span>
                         <p className="text-sm color-text-dark font-semibold mt-1">"{item.example_en}"</p>
                         <p className="text-xs color-text-muted mt-0.5">↳ {item.example_vi}</p>
@@ -349,7 +358,7 @@ export default function IdiomsHandbook({ onNavigateBack }) {
             Tỉ lệ chính xác: <strong className="color-primary">{quizScore.correct}</strong> / {quizScore.total} câu
           </div>
 
-          <div className="glass p-6 rounded-md text-center max-w-lg w-full flex flex-col gap-4 border border-light">
+          <div className="glass p-6 rounded-md text-center max-w-lg w-full flex flex-col gap-4">
             <span className="text-xs uppercase tracking-wider color-text-muted font-bold block">Hãy chọn thành ngữ phù hợp với nghĩa sau:</span>
             <span className="text-xl font-bold color-text-dark leading-relaxed">
               " {quizItem.definition_vi} "
@@ -377,7 +386,7 @@ export default function IdiomsHandbook({ onNavigateBack }) {
                   onClick={() => handleAnswerSubmit(option)}
                   className="btn-secondary w-full py-4 text-base font-bold justify-between px-6 rounded-md transition"
                   style={{
-                    border: '2px solid var(--border-light)',
+                    border: 'none',
                     ...btnStyle
                   }}
                 >

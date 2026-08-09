@@ -17,21 +17,25 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
 
   return (
     <div className="topic-hub-screen animate-slideup">
-      {/* Back Button */}
-      <div className="screen-header mb-4">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Learning Path
+      {/* Back Button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-      </div>
+      )}
 
       {/* Topic Hero Card */}
-      <div className="topic-hero-card glass p-8 mb-6">
+      <div className="topic-hero-card glass p-8 mb-8" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
         <div className="flex justify-between items-center mb-3">
           <span className={`badge-level level-${topic.level.toLowerCase()}`}>{topic.level}</span>
-          <span className="color-text-muted text-sm">{topic.topic} Topic</span>
+          <span className="color-text-muted text-xs font-mono">{topic.topic} Topic</span>
         </div>
-        <h1 className="text-gradient mb-4">{topic.title}</h1>
-        <p className="color-text-muted max-w-2xl leading-relaxed">
+        <h1 className="text-gradient mb-3" style={{ fontSize: '1.85rem', fontWeight: '800' }}>{topic.title}</h1>
+        <p className="color-text-muted max-w-2xl leading-relaxed text-xs" style={{ fontSize: '13px', fontWeight: '400' }}>
           {topic.description}
         </p>
       </div>
@@ -190,7 +194,7 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
             Luyện phản xạ nói đuổi theo giọng mẫu. Hệ thống tự động mở ghi âm sau khi âm thanh kết thúc và đo đạc độ trễ phản hồi của bạn.
           </p>
           <div className="module-status-indicator mb-6">
-            <span className="status-pill mastered" style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+            <span className="status-pill mastered" style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)' }}>
               Sẵn sàng
             </span>
           </div>

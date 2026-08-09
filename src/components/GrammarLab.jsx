@@ -261,14 +261,22 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
 
   return (
     <div className="grammar-lab-screen animate-slideup">
-      {/* Header */}
-      <div className="screen-header mb-6">
-        <button className="btn-secondary" onClick={onNavigateBack}>
-          ← Back to Dashboard
+      {/* Back button top-left */}
+      {onNavigateBack && (
+        <button 
+          className="btn-secondary text-xs mb-4" 
+          onClick={onNavigateBack}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          ← Quay lại Dashboard
         </button>
-        <div className="topic-meta">
+      )}
+
+      {/* Header */}
+      <div className="screen-header mb-8 flex justify-between items-center">
+        <div className="topic-meta flex items-center gap-2">
           <span className="badge-level">{topic.level}</span>
-          <span className="topic-name">{topic.topic}</span>
+          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
         </div>
       </div>
 
@@ -276,12 +284,12 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
         
         {/* Step 1: Grammar Theory */}
         {currentStep === 'theory' && (
-          <div className="grammar-card bg-white p-6 rounded-xl border border-light shadow-sm">
+          <div className="grammar-card glass bg-white p-6 rounded-xl shadow-sm">
             <span className="badge-level level-b2 mb-2">Grammar Focus</span>
             <h2 className="text-2xl font-bold color-text-dark mb-4">{grammar.tense_vi} ({grammar.tense})</h2>
             
             {/* Formula Block */}
-            <div className="formula-box p-5 bg-[#FAFBFD] rounded-xl border-l-4 border-[#1B3B6F] border border-light mb-6 text-center">
+            <div className="formula-box p-5 bg-[#FAFBFD] rounded-xl border-l-4 border-[#1B3B6F] mb-6 text-center">
               <span className="label block text-xs font-mono font-bold text-slate-400 mb-2 uppercase">Cấu trúc công thức</span>
               <code className="text-lg font-mono font-bold color-text-dark">{grammar.formula}</code>
             </div>
@@ -299,7 +307,7 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
 
         {/* Step 2: Examples list */}
         {currentStep === 'examples' && (
-          <div className="grammar-card bg-white p-6 rounded-xl border border-light shadow-sm">
+          <div className="grammar-card glass bg-white p-6 rounded-xl shadow-sm">
             <span className="badge-level level-b2 mb-2">Practical Examples</span>
             <h2 className="text-2xl font-bold color-text-dark mb-6">Ví dụ trong bài học</h2>
 
@@ -315,7 +323,7 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
                       </p>
                     )}
                   </div>
-                  <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-3 py-1.5 rounded border border-light" onClick={() => handleSpeak(ex.en)} title="Phát âm mẫu">
+                  <button className="text-xs font-semibold bg-[#F2F5FA] hover:bg-slate-200 px-3 py-1.5 rounded" onClick={() => handleSpeak(ex.en)} title="Phát âm mẫu">
                     🔊 US
                   </button>
                 </div>
