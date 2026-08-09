@@ -214,7 +214,7 @@ export default function MinimalPairs({ onNavigateBack }) {
     
     if (cleanSpoken === cleanTarget) {
       playSound('correct');
-      vibrate(50);
+vibrate(50);
       setSpeakScore('perfect');
     } else {
       // LƯU Ý: đã bỏ nhánh so khớp "includes()" 2 chiều trước đây, vì nó cho điểm "Khá tốt"
@@ -243,8 +243,7 @@ export default function MinimalPairs({ onNavigateBack }) {
   };
 
   return (
-    <div className="minimal-pairs-studio-container animate-slideup" style={{ maxWidth: '1080px', margin: '0 auto' }}>
-      {/* Back button top-left */}
+    <div className="minimal-pairs-page animate-slideup max-w-6xl mx-auto">
       {onNavigateBack && (
         <button 
           className="btn-secondary text-xs mb-4" 
@@ -255,35 +254,43 @@ export default function MinimalPairs({ onNavigateBack }) {
         </button>
       )}
 
-      {/* Top Header Card */}
-      <div className="page-header bg-white p-6 mb-8 rounded-xl" style={{ border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
-        <div>
-          <span className="badge-level level-b2 mb-2 inline-block">Minimal Pairs</span>
-          <h1 className="text-2xl font-bold color-text-dark" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>
-            Luyện Âm Phân Biệt (Minimal Pairs Studio)
-          </h1>
-          <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>
-            Luyện tập phân biệt các cặp từ đồng âm hoặc có khẩu hình gần giống nhau với công nghệ phản hồi âm bản xứ
-          </p>
-        </div>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">ANTIGRAVITY PHONICS STUDIO</div>
+        <h1 className="hero-main-title">Luyện Âm Phân Biệt (Minimal Pairs Studio)</h1>
+        <p className="hero-main-sub">
+          Luyện tập phân biệt các cặp từ đồng âm hoặc có khẩu hình gần giống nhau với công nghệ phản hồi âm bản xứ US-UK.
+        </p>
       </div>
 
-      {/* Top Sound Selector Carousel Bar */}
-      <div className="sound-selector-carousel flex gap-2 mb-6 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-        {MINIMAL_PAIRS_DATA.map((group) => (
-          <button
-            key={group.id}
-            onClick={() => handleGroupSelect(group)}
-            className={`gallery-filter-pill ${selectedGroup.id === group.id ? 'active' : ''}`}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            {group.title} ({group.phonetics.join(' - ')})
-          </button>
-        ))}
-      </div>
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Selector */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">CHỌN CẶP ÂM LUYỆN TẬP</h3>
+            <div className="flex flex-col gap-2">
+              {MINIMAL_PAIRS_DATA.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => handleGroupSelect(group)}
+                  className={`btn-secondary text-xs text-left justify-start py-2.5 px-3 w-full ${selectedGroup.id === group.id ? 'active-pill' : ''}`}
+                  style={{
+                    borderRadius: '8px',
+                    border: selectedGroup.id === group.id ? '2px solid var(--color-primary)' : 'none',
+                    fontWeight: selectedGroup.id === group.id ? '700' : '500'
+                  }}
+                >
+                  🎧 {group.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
 
-      {/* Hero Stage Container */}
-      <div className="sound-stage-hero glass bg-white p-6 mb-6 rounded-xl shadow-sm">
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="sound-stage-hero glass bg-white p-6 rounded-xl shadow-sm">
         {/* Phonetics & Mouth Placement Guide Banner */}
         <div className="p-4 mb-6 bg-[#FAFBFD] rounded-lg border-l-4 border-[#1B3B6F]">
           <div className="flex items-center gap-2 mb-1">
@@ -618,7 +625,9 @@ export default function MinimalPairs({ onNavigateBack }) {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </main>
     </div>
+  </div>
   );
 }

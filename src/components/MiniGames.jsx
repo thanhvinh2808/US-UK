@@ -683,7 +683,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
   };
 
   return (
-    <div className="mini-games-screen animate-slideup glass p-6" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+    <div className="mini-games-screen animate-slideup max-w-6xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -695,32 +695,49 @@ export default function MiniGames({ onNavigateBack, showToast }) {
         </button>
       )}
 
-      <div className="mg-header mb-8">
-        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>V-English Playzone - Trò chơi học từ</h1>
-        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Ôn tập từ vựng qua các trò chơi tương tác hấp dẫn</p>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">ANTIGRAVITY PLAYZONE</div>
+        <h1 className="hero-main-title">Khu Vui Chơi Học Từ Vựng (Mini Games)</h1>
+        <p className="hero-main-sub">
+          Ôn luyện phản xạ từ vựng qua các minigames thú vị như Hangman, Time Attack và Space Typer.
+        </p>
       </div>
 
-      {/* VOCAB SOURCE SELECTOR (ONLY SHOW ON LOBBY / OUT OF GAME) */}
-      {!activeGame && (
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6 bg-slate-900/40 p-3 rounded-xl max-w-4xl mx-auto">
-          <span className="text-[11px] uppercase font-bold tracking-wider color-text-muted mr-2">Nguồn từ vựng:</span>
-          {[
-            { id: 'notebook', label: `Sổ tay cá nhân (${savedCount})` },
-            { id: 'A1', label: 'Cấp độ A1 (Cơ bản)' },
-            { id: 'A2', label: 'Cấp độ A2 (Sơ cấp)' },
-            { id: 'B1', label: 'Cấp độ B1 (Trung cấp)' },
-            { id: 'B2', label: 'Cấp độ B2 (Khá/Giỏi)' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => handleSourceChange(tab.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${selectedSource === tab.id ? 'bg-primary text-white shadow-md' : 'bg-slate-800 hover:bg-slate-700 color-text-muted'}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Selector */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">NGUỒN TỪ VỰNG GAME</h3>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: 'notebook', label: `📖 Sổ tay cá nhân (${savedCount})` },
+                { id: 'A1', label: '🌱 Cấp độ A1 (Cơ bản)' },
+                { id: 'A2', label: '🌿 Cấp độ A2 (Sơ cấp)' },
+                { id: 'B1', label: '⚡ Cấp độ B1 (Trung cấp)' },
+                { id: 'B2', label: '🔥 Cấp độ B2 (Cao cấp)' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleSourceChange(tab.id)}
+                  className={`btn-secondary text-xs text-left justify-start py-2.5 px-3 w-full ${selectedSource === tab.id ? 'active-pill' : ''}`}
+                  style={{
+                    borderRadius: '8px',
+                    border: selectedSource === tab.id ? '2px solid var(--color-primary)' : 'none',
+                    fontWeight: selectedSource === tab.id ? '700' : '500'
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="flex flex-col gap-6">
 
       {/* GAME MENU SELECTION */}
       {!activeGame && (
@@ -1137,8 +1154,11 @@ export default function MiniGames({ onNavigateBack, showToast }) {
               </div>
             </div>
           )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </main>
+  </div>
+</div>
   );
 }

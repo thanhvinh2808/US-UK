@@ -260,7 +260,7 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
   };
 
   return (
-    <div className="grammar-lab-screen animate-slideup">
+    <div className="grammar-lab-screen animate-slideup max-w-5xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -272,15 +272,71 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
         </button>
       )}
 
-      {/* Header */}
-      <div className="screen-header mb-8 flex justify-between items-center">
-        <div className="topic-meta flex items-center gap-2">
-          <span className="badge-level">{topic.level}</span>
-          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
-        </div>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">GRAMMAR LAB — LEVEL {topic.level || 'B2'}</div>
+        <h1 className="hero-main-title">{grammar.tense_vi || 'Phòng Thử Nghiệm Ngữ Pháp'} ({grammar.tense || 'Grammar'})</h1>
+        <p className="hero-main-sub">
+          Học công thức ngữ pháp ứng dụng bài đọc, xem ví dụ phân tích và thực hành trắc nghiệm phản xạ.
+        </p>
       </div>
 
-      <div className="grammar-lab-layout max-w-2xl mx-auto">
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Navigation & Step Tracker */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">BƯỚC HỌC NGỮ PHÁP</h3>
+            
+            <button
+              onClick={() => setCurrentStep('theory')}
+              className={`vertical-stat-item w-full text-left cursor-pointer ${currentStep === 'theory' ? 'active-pill' : ''}`}
+              style={{
+                border: currentStep === 'theory' ? '2px solid var(--color-primary)' : 'none',
+                borderRadius: '8px'
+              }}
+            >
+              <span className="stat-icon">📘</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">1. Lý thuyết</span>
+                <span className="stat-sub">Công thức & Cách dùng</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setCurrentStep('examples')}
+              className={`vertical-stat-item w-full text-left cursor-pointer ${currentStep === 'examples' ? 'active-pill' : ''}`}
+              style={{
+                border: currentStep === 'examples' ? '2px solid var(--color-primary)' : 'none',
+                borderRadius: '8px'
+              }}
+            >
+              <span className="stat-icon">💬</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">2. Ví dụ thực tế</span>
+                <span className="stat-sub">Audio & Ngữ cảnh</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setCurrentStep('quiz')}
+              className={`vertical-stat-item w-full text-left cursor-pointer ${currentStep === 'quiz' ? 'active-pill' : ''}`}
+              style={{
+                border: currentStep === 'quiz' ? '2px solid var(--color-primary)' : 'none',
+                borderRadius: '8px'
+              }}
+            >
+              <span className="stat-icon">⚡</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">3. Trắc nghiệm</span>
+                <span className="stat-sub">Kiểm tra phản xạ</span>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
         
         {/* Step 1: Grammar Theory */}
         {currentStep === 'theory' && (
@@ -430,6 +486,7 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
           </div>
         )}
 
+        </main>
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+@import "../node_modules/tailwindcss/index.css";
+
 /* ==========================================================================
    🇬🇧 🇺🇸 OFFICIAL US-UK ANTIGRAVITY ENGLISH DESIGN SYSTEM
    ========================================================================== */
@@ -187,8 +189,8 @@ h4, h5, h6 {
 .badge-level.level-c1, .level-tag.level-c1 { background: #2E5A9E; color: #FFFFFF; }
 .badge-level.level-c2, .level-tag.level-c2 { background: #1B3B6F; color: #FFFFFF; }
 
-/* Input Rule: Border-free default, 2px bottom border ONLY on focus */
-input.search-input, input[type="text"], input[type="search"], select.search-input, textarea {
+/* Input Rule: Border-free default for search inputs */
+input.search-input, input[type="search"], select.search-input {
   background-color: #FFFFFF;
   border: none;
   border-bottom: 2px solid transparent;
@@ -201,7 +203,7 @@ input.search-input, input[type="text"], input[type="search"], select.search-inpu
   box-shadow: 0 2px 8px rgba(16, 32, 61, 0.03);
 }
 
-input.search-input:focus, input[type="text"]:focus, input[type="search"]:focus, select.search-input:focus, textarea:focus {
+input.search-input:focus, input[type="search"]:focus, select.search-input:focus {
   outline: none;
   border-bottom-color: var(--color-primary);
   background-color: #FFFFFF;
@@ -238,4 +240,6 @@ input.search-input:focus, input[type="text"]:focus, input[type="search"]:focus, 
 ::-webkit-scrollbar-thumb:hover {
   background: #9BB0D3;
 }
+
+
 

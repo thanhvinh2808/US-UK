@@ -194,7 +194,7 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
   };
 
   return (
-    <div className="shadowing-screen animate-slideup p-6 glass bg-white rounded-xl shadow-sm max-w-3xl mx-auto">
+    <div className="shadowing-screen animate-slideup max-w-5xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -206,38 +206,48 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
         </button>
       )}
 
-      <div className="mb-8">
-        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Shadowing Reflex - Luyện Nói Đuổi</h1>
-        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Luyện phản xạ nghe nói đuổi theo giọng bản xứ với độ trễ thấp</p>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">SHADOWING REFLEX STUDIO</div>
+        <h1 className="hero-main-title">Shadowing Reflex — Luyện Nói Đuổi</h1>
+        <p className="hero-main-sub">
+          Luyện phản xạ nghe và nói đuổi theo âm thanh giọng đọc bản xứ US-UK với độ trễ thấp để tăng ngữ điệu tự nhiên.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Side: Sentences List */}
-        <div className="lg:col-span-1 glass p-5 flex flex-col gap-4 max-h-[500px] overflow-y-auto">
-          <h3 className="font-bold border-b border-light pb-2">Danh sách câu nói</h3>
-          <div className="flex flex-col gap-2">
-            {topic.dialogues.map((dlg, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleSelectSentence(idx)}
-                className={`p-3 rounded-md cursor-pointer transition flex items-center justify-between gap-3 ${currentIdx === idx ? 'glass-glow border-primary' : 'hover:bg-white/5'}`}
-                style={{
-                  borderLeft: currentIdx === idx ? '4px solid var(--color-primary)' : '4px solid transparent',
-                  background: currentIdx === idx ? 'var(--color-primary-glow)' : ''
-                }}
-              >
-                <div className="flex-1">
-                  <span className="text-xs color-text-muted font-bold block">Câu {idx + 1} ({dlg.speaker}):</span>
-                  <p className="text-sm line-clamp-1 color-text-dark font-medium">{dlg.text}</p>
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Narrow Sidebar (Sentences List) */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass max-h-[520px] overflow-y-auto">
+            <h3 className="stats-sidebar-header">DANH SÁCH CÂU THOẠI ({topic.dialogues?.length || 0})</h3>
+            <div className="flex flex-col gap-2">
+              {topic.dialogues.map((dlg, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSelectSentence(idx)}
+                  className={`p-3 rounded-lg cursor-pointer transition-all text-xs ${
+                    idx === currentIdx ? 'bg-amber-500/10 border-amber-500 font-bold color-text-dark' : 'hover:bg-black/5 color-text-muted'
+                  }`}
+                  style={{
+                    border: idx === currentIdx ? '2px solid var(--color-primary)' : 'none',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="badge-pos text-xxs">{dlg.speaker || `Speaker ${idx + 1}`}</span>
+                  </div>
+                  <div className="truncate">{dlg.sentence}</div>
                 </div>
-                <span className="text-xs color-text-muted">💬</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </aside>
 
-        {/* Right Side: Working Area */}
-        <div className="lg:col-span-2 glass p-6 flex flex-col gap-6 justify-between">
+        {/* 📚 Right Wide Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          {/* Right Side: Working Area */}
+          <div className="glass p-6 flex flex-col gap-6 justify-between rounded-xl">
           <div className="flex items-center justify-between border-b border-light pb-3">
             <span className="badge-level">Câu {currentIdx + 1} / {topic.dialogues.length}</span>
             <span className="text-sm color-text-muted font-bold">Người nói: {dialogue?.speaker}</span>
@@ -365,7 +375,8 @@ export default function Shadowing({ topic, onNavigateBack, showToast }) {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
+  </div>
   );
 }

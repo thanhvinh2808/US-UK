@@ -118,8 +118,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
   const learningCount = vocabList.filter(item => item.status === 'learning').length;
 
   return (
-    <div className="notebook-screen animate-slideup">
-      
+    <div className="notebook-screen animate-slideup max-w-6xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -131,42 +130,56 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
         </button>
       )}
 
-      {/* 📌 Header Banner */}
-      <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
-        <span className="badge-level level-b2 mb-2 inline-block">Notebook</span>
-        <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Sổ Tay Từ Vựng Cá Nhân</h1>
-        <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400' }}>Quản lý, phân loại và ôn luyện các từ vựng bạn đã lưu trong quá trình học</p>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">PERSONAL VOCABULARY NOTEBOOK</div>
+        <h1 className="hero-main-title">Sổ Tay Từ Vựng Cá Nhân</h1>
+        <p className="hero-main-sub">
+          Quản lý, tạo bộ thẻ ghi nhớ (Custom Decks) và theo dõi thuật toán lặp lại ngắt quãng Spaced Repetition (SM-2).
+        </p>
       </div>
 
-      {/* 📊 Top Metric Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#1B3B6F] shadow-sm">
-          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Tổng số từ đã lưu
-          </span>
-          <span className="text-3xl font-mono font-bold color-text-dark">
-            {vocabList.length}
-          </span>
-        </div>
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Metrics & Quick Action */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">THỐNG KÊ TỪ VỰNG</h3>
+            
+            <div className="vertical-stat-item notebook">
+              <span className="stat-icon">📚</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">{vocabList.length} từ</span>
+                <span className="stat-sub">Tổng số từ đã lưu</span>
+              </div>
+            </div>
 
-        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#1E8A5F] shadow-sm">
-          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Đã thuộc (Mastered)
-          </span>
-          <span className="text-3xl font-mono font-bold" style={{ color: 'var(--color-success)' }}>
-            {masteredCount}
-          </span>
-        </div>
+            <div className="vertical-stat-item completed">
+              <span className="stat-icon">✅</span>
+              <div className="stat-info">
+                <span className="stat-value-mono" style={{ color: 'var(--color-success)' }}>{masteredCount} từ</span>
+                <span className="stat-sub">Đã thuộc (Mastered)</span>
+              </div>
+            </div>
 
-        <div className="bg-white p-5 rounded-xl border-t-4 border-t-[#C17817] shadow-sm">
-          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
-            Đang học (Learning)
-          </span>
-          <span className="text-3xl font-mono font-bold" style={{ color: 'var(--color-warning)' }}>
-            {learningCount}
-          </span>
-        </div>
-      </div>
+            <div className="vertical-stat-item streak">
+              <span className="stat-icon">⏳</span>
+              <div className="stat-info">
+                <span className="stat-value-mono" style={{ color: 'var(--color-warning)' }}>{learningCount} từ</span>
+                <span className="stat-sub">Đang học (Learning)</span>
+              </div>
+            </div>
+
+            <div className="sidebar-action-box mt-2">
+              <button className="btn-primary w-full justify-center text-xs" onClick={() => onNavigateToFlashcards && onNavigateToFlashcards()}>
+                🔥 Ôn tập Flashcards ngay
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
 
       {/* 🗂️ Custom Decks Bar */}
       <div className="bg-white p-5 rounded-xl mb-6 shadow-sm">
@@ -392,6 +405,8 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
           </div>
         )}
       </div>
-    </div>
+    </main>
+  </div>
+</div>
   );
 }

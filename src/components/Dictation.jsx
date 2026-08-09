@@ -173,7 +173,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
   const matchedIndices = checked ? alignWords(targetWords, userWords) : new Set();
 
   return (
-    <div className="dictation-screen animate-slideup">
+    <div className="dictation-screen animate-slideup max-w-5xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -185,15 +185,51 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
         </button>
       )}
 
-      {/* Header */}
-      <div className="screen-header mb-8 flex justify-between items-center">
-        <div className="topic-meta flex items-center gap-2">
-          <span className="badge-level level-b2">{topic.level}</span>
-          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
-        </div>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">DICTATION CONSOLE — LEVEL {topic.level || 'B2'}</div>
+        <h1 className="hero-main-title">{topic.topic || 'Luyện Nghe Chép Chính Tả'}</h1>
+        <p className="hero-main-sub">
+          Luyện phản xạ nghe chi tiết từng từ bản xứ, điền gợi ý từ vựng và nhận điểm phản hồi từng ký tự.
+        </p>
       </div>
 
-      <div className="dictation-layout glass bg-white p-6 max-w-3xl mx-auto rounded-xl shadow-sm">
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Stats */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">TIẾN TRÌNH CHÉP CHÍNH TẢ</h3>
+            
+            <div className="vertical-stat-item streak">
+              <span className="stat-icon">🎧</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">{currentIdx + 1} / {topic.dialogues.length}</span>
+                <span className="stat-sub">Câu thoại chép chính tả</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item level">
+              <span className="stat-icon">🎓</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Level {topic.level || 'B2'}</span>
+                <span className="stat-sub">{topic.title || 'Bài tập chính tả'}</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item completed">
+              <span className="stat-icon">💡</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Smart Hints</span>
+                <span className="stat-sub">Gợi ý nghĩa & từ đầu</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="dictation-layout glass bg-white p-6 rounded-xl shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
@@ -300,7 +336,9 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
             </button>
           )}
         </div>
-      </div>
+        </div>
+      </main>
     </div>
+  </div>
   );
 }

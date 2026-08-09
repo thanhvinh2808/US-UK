@@ -162,7 +162,7 @@ export default function Writing({ topic, onNavigateBack }) {
   }
 
   return (
-    <div className="writing-screen animate-slideup">
+    <div className="writing-screen animate-slideup max-w-5xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -174,15 +174,51 @@ export default function Writing({ topic, onNavigateBack }) {
         </button>
       )}
 
-      {/* Header */}
-      <div className="screen-header mb-8 flex justify-between items-center">
-        <div className="topic-meta flex items-center gap-2">
-          <span className="badge-level level-b2">{topic.level}</span>
-          <span className="topic-name font-bold color-text-dark">{topic.topic}</span>
-        </div>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">WRITING STUDIO — LEVEL {topic.level || 'B2'}</div>
+        <h1 className="hero-main-title">{topic.topic || 'Luyện Kỹ Năng Viết Câu & Đoạn Văn'}</h1>
+        <p className="hero-main-sub">
+          Luyện ghép từ xếp câu (Scramble) và viết lại câu chuẩn ngữ pháp với gợi ý ngữ cảnh thực tế.
+        </p>
       </div>
 
-      <div className="writing-layout glass bg-white p-6 max-w-2xl mx-auto rounded-xl shadow-sm">
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Stats */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">TIẾN TRÌNH BÀI VIẾT</h3>
+            
+            <div className="vertical-stat-item streak">
+              <span className="stat-icon">✍️</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">{currentIdx + 1} / {totalDialogues}</span>
+                <span className="stat-sub">Câu viết hiện tại</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item level">
+              <span className="stat-icon">🎓</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Level {topic.level || 'B2'}</span>
+                <span className="stat-sub">{topic.title || 'Bài tập viết'}</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item completed">
+              <span className="stat-icon">🧩</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Scramble & Free</span>
+                <span className="stat-sub">Đa dạng hình thức ghép câu</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="writing-layout glass bg-white p-6 rounded-xl shadow-sm">
         <div className="progress-bar-container mb-6">
           <div 
             className="progress-bar-fill" 
@@ -372,7 +408,9 @@ export default function Writing({ topic, onNavigateBack }) {
           )}
         </div>
 
-      </div>
+        </div>
+      </main>
     </div>
+  </div>
   );
 }

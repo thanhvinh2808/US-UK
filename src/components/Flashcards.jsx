@@ -216,7 +216,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
   if (gameState === 'settings') {
     const canPlay = savedVocab.length >= 4;
     return (
-      <div className="quiz-screen animate-slideup max-w-xl mx-auto mt-2">
+      <div className="asymmetric-layout animate-slideup max-w-5xl mx-auto">
         {/* Back button top-left */}
         {onNavigateBack && (
           <button 
@@ -228,133 +228,175 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           </button>
         )}
 
-        <div className="screen-header mb-8 flex justify-between items-center">
-          <span className="badge-level">Flashcards</span>
+        {/* 🚀 Top Headline Hero Banner */}
+        <div className="asymmetric-hero-banner">
+          <div className="hero-badge-tag">ANTIGRAVITY FLASHCARDS STUDIO</div>
+          <h1 className="hero-main-title">Trắc nghiệm & Ôn tập từ vựng</h1>
+          <p className="hero-main-sub">
+            Ôn tập từ vựng đã lưu bằng hệ thống trắc nghiệm đa năng 4 lựa chọn và điền từ ngắt quãng Spaced Repetition.
+          </p>
         </div>
 
-        <div className="quiz-card glass p-8 text-center bg-white rounded-xl">
-          <h1 className="text-2xl font-bold mt-2 mb-2 color-text-dark" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Trắc nghiệm & Ôn tập từ vựng</h1>
-          <p className="color-text-muted text-xs mb-6" style={{ fontSize: '13px', fontWeight: '400' }}>
-            Ôn tập từ vựng đã lưu bằng chế độ trắc nghiệm đa năng và điền từ thông minh.
-          </p>
-
-          {!canPlay && (
-            <div className="quiz-alert-info p-4 mb-6 text-left rounded-lg bg-amber-50 border-l-4 border-amber-500">
-              <strong className="block text-amber-900 text-sm mb-1">Chưa đủ từ vựng:</strong>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                Bạn cần lưu ít nhất <strong>4 từ vựng</strong> vào sổ tay để kích hoạt tính năng Trắc nghiệm. Hiện tại bạn đã lưu <strong>{savedVocab.length}</strong> từ.
-              </p>
-              <p className="mt-2 text-xs text-amber-700">
-                Mẹo: Hãy mở bài đọc (Reading) và chạm vào từ mới để lưu vào sổ tay nhé!
-              </p>
-            </div>
-          )}
-
-          {canPlay ? (
-            <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg">
-              <h3 className="text-xs font-mono font-bold mb-4 color-text-muted uppercase tracking-wider">CẤU HÌNH PHÒNG ĐẤU:</h3>
+        {/* 📐 Asymmetric 2-Column Split Body */}
+        <div className="asymmetric-body-grid">
+          {/* 📌 Left Narrow Vertical Stats Column */}
+          <aside className="vertical-stats-sidebar">
+            <div className="stats-sidebar-card glass">
+              <h3 className="stats-sidebar-header">THỐNG KÊ FLASHCARDS</h3>
               
-              {/* Mode Select */}
-              <div className="mb-4">
-                <label className="text-xs color-text-muted block mb-1 font-medium">Chế độ thử thách:</label>
-                <div className="quiz-modes-container flex gap-2">
-                  <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active' : ''}`}
-                    onClick={() => setQuizMode('mixed')}
-                  >
-                    Hỗn hợp
-                  </button>
-                  <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'choice' ? 'active' : ''}`}
-                    onClick={() => setQuizMode('choice')}
-                  >
-                    4 Đáp án
-                  </button>
-                  <button 
-                    className={`btn-secondary text-xs flex-1 ${quizMode === 'spelling' ? 'active' : ''}`}
-                    onClick={() => setQuizMode('spelling')}
-                  >
-                    Viết từ
-                  </button>
+              <div className="vertical-stat-item notebook">
+                <span className="stat-icon">📖</span>
+                <div className="stat-info">
+                  <span className="stat-value-mono">{savedVocab.length} từ</span>
+                  <span className="stat-sub">Trong sổ tay cá nhân</span>
                 </div>
               </div>
 
-              {/* Deck Select */}
-              <div className="mb-4">
-                <label className="text-xs color-text-muted block mb-1 font-medium">Chọn bộ từ vựng (Custom Deck):</label>
-                <select
-                  value={selectedDeckId}
-                  onChange={(e) => setSelectedDeckId(e.target.value)}
-                  className="search-input w-full"
-                >
-                  <option value="all">Sổ tay cá nhân ({savedVocab.length} từ)</option>
-                  
-                  {cloudSets.length > 0 && (
-                    <optgroup label="MongoDB Cloud Study Sets">
-                      {cloudSets.map(set => (
-                        <option key={set._id} value={`cloud_${set._id}`}>
-                          {set.title} ({set.cards?.length || 0} từ) [{set.levelTag || 'C1'}]
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+              <div className="vertical-stat-item level">
+                <span className="stat-icon">☁️</span>
+                <div className="stat-info">
+                  <span className="stat-value-mono">{cloudSets.length} bộ</span>
+                  <span className="stat-sub">Cloud Study Sets</span>
+                </div>
+              </div>
 
-                  {customDecks.length > 0 && (
-                    <optgroup label="Custom Decks">
-                      {customDecks.map(deck => {
-                        const count = savedVocab.filter(item => item.deckId === deck.id).length;
+              <div className="vertical-stat-item streak">
+                <span className="stat-icon">⚡</span>
+                <div className="stat-info">
+                  <span className="stat-value-mono">{quizMode.toUpperCase()}</span>
+                  <span className="stat-sub">Chế độ đang chọn</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* 📚 Right Wide Main Workspace */}
+          <main className="asymmetric-gallery-main">
+            <div className="quiz-card glass p-8 text-center bg-white rounded-xl">
+              <h2 className="text-2xl font-bold mb-2 color-text-dark" style={{ fontSize: '1.6rem', fontWeight: '800' }}>Cấu hình bài ôn tập</h2>
+              <p className="color-text-muted text-xs mb-6" style={{ fontSize: '13px', fontWeight: '400' }}>
+                Chọn bộ từ vựng, hình thức thử thách và số lượng câu để bắt đầu.
+              </p>
+
+              {!canPlay && (
+                <div className="quiz-alert-info p-4 mb-6 text-left rounded-lg bg-amber-50 border-l-4 border-amber-500">
+                  <strong className="block text-amber-900 text-sm mb-1">Chưa đủ từ vựng:</strong>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Bạn cần lưu ít nhất <strong>4 từ vựng</strong> vào sổ tay để kích hoạt tính năng Trắc nghiệm. Hiện tại bạn đã lưu <strong>{savedVocab.length}</strong> từ.
+                  </p>
+                  <p className="mt-2 text-xs text-amber-700">
+                    Mẹo: Hãy mở bài đọc (Reading) và chạm vào từ mới để lưu vào sổ tay nhé!
+                  </p>
+                </div>
+              )}
+
+              {canPlay ? (
+                <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg">
+                  <h3 className="text-xs font-mono font-bold mb-4 color-text-muted uppercase tracking-wider">CẤU HÌNH PHÒNG ĐẤU:</h3>
+                  
+                  {/* Mode Select */}
+                  <div className="mb-4">
+                    <label className="text-xs color-text-muted block mb-1 font-medium">Chế độ thử thách:</label>
+                    <div className="quiz-modes-container flex gap-2">
+                      <button 
+                        className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active' : ''}`}
+                        onClick={() => setQuizMode('mixed')}
+                      >
+                        Hỗn hợp
+                      </button>
+                      <button 
+                        className={`btn-secondary text-xs flex-1 ${quizMode === 'choice' ? 'active' : ''}`}
+                        onClick={() => setQuizMode('choice')}
+                      >
+                        4 Đáp án
+                      </button>
+                      <button 
+                        className={`btn-secondary text-xs flex-1 ${quizMode === 'spelling' ? 'active' : ''}`}
+                        onClick={() => setQuizMode('spelling')}
+                      >
+                        Viết từ
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Deck Select */}
+                  <div className="mb-4">
+                    <label className="text-xs color-text-muted block mb-1 font-medium">Chọn bộ từ vựng (Custom Deck):</label>
+                    <select
+                      value={selectedDeckId}
+                      onChange={(e) => setSelectedDeckId(e.target.value)}
+                      className="search-input w-full"
+                    >
+                      <option value="all">Sổ tay cá nhân ({savedVocab.length} từ)</option>
+                      
+                      {cloudSets.length > 0 && (
+                        <optgroup label="MongoDB Cloud Study Sets">
+                          {cloudSets.map(set => (
+                            <option key={set._id} value={`cloud_${set._id}`}>
+                              {set.title} ({set.cards?.length || 0} từ) [{set.levelTag || 'C1'}]
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      {customDecks.length > 0 && (
+                        <optgroup label="Custom Decks">
+                          {customDecks.map(deck => {
+                            const count = savedVocab.filter(item => item.deckId === deck.id).length;
+                            return (
+                              <option key={deck.id} value={deck.id}>
+                                {deck.name} ({count} từ)
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
+                    </select>
+                    {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
+                      <small className="block mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
+                        Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
+                      </small>
+                    )}
+                  </div>
+
+                  {/* Length Select */}
+                  <div>
+                    <label className="text-xs color-text-muted block mb-1 font-medium">Số lượng câu hỏi:</label>
+                    <div className="flex gap-2">
+                      {[5, 10, 15, 20].map((num) => {
+                        const currentPoolSize = selectedDeckId === 'all' 
+                          ? savedVocab.length 
+                          : (selectedDeckId.startsWith('cloud_') 
+                            ? (cloudSets.find(s => s._id === selectedDeckId.replace('cloud_', ''))?.cards?.length || 0)
+                            : savedVocab.filter(item => item.deckId === selectedDeckId).length);
+                        const disabled = currentPoolSize < num;
                         return (
-                          <option key={deck.id} value={deck.id}>
-                            {deck.name} ({count} từ)
-                          </option>
+                          <button
+                            key={num}
+                            disabled={disabled}
+                            className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active' : ''}`}
+                            onClick={() => setQuizLength(num)}
+                            style={{ opacity: disabled ? 0.4 : 1 }}
+                          >
+                            {num} câu
+                          </button>
                         );
                       })}
-                    </optgroup>
-                  )}
-                </select>
-                {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
-                  <small className="block mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
-                    Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
-                  </small>
-                )}
-              </div>
-
-              {/* Length Select */}
-              <div>
-                <label className="text-xs color-text-muted block mb-1 font-medium">Số lượng câu hỏi:</label>
-                <div className="flex gap-2">
-                  {[5, 10, 15, 20].map((num) => {
-                    const currentPoolSize = selectedDeckId === 'all' 
-                      ? savedVocab.length 
-                      : (selectedDeckId.startsWith('cloud_') 
-                        ? (cloudSets.find(s => s._id === selectedDeckId.replace('cloud_', ''))?.cards?.length || 0)
-                        : savedVocab.filter(item => item.deckId === selectedDeckId).length);
-                    const disabled = currentPoolSize < num;
-                    return (
-                      <button
-                        key={num}
-                        disabled={disabled}
-                        className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active' : ''}`}
-                        onClick={() => setQuizLength(num)}
-                        style={{ opacity: disabled ? 0.4 : 1 }}
-                      >
-                        {num} câu
-                      </button>
-                    );
-                  })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : null}
+              ) : null}
 
-          <button 
-            className="btn-primary w-full justify-center py-3"
-            disabled={!canPlay}
-            onClick={handleStartQuiz}
-            style={{ opacity: canPlay ? 1 : 0.5, cursor: canPlay ? 'pointer' : 'not-allowed' }}
-          >
-            Bắt đầu trắc nghiệm
-          </button>
+              <button 
+                className="btn-primary w-full justify-center py-3"
+                disabled={!canPlay}
+                onClick={handleStartQuiz}
+                style={{ opacity: canPlay ? 1 : 0.5, cursor: canPlay ? 'pointer' : 'not-allowed' }}
+              >
+                Bắt đầu trắc nghiệm
+              </button>
+            </div>
+          </main>
         </div>
       </div>
     );

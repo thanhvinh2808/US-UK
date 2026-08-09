@@ -220,7 +220,7 @@ export default function IdiomsHandbook({ onNavigateBack }) {
   };
 
   return (
-    <div className="idioms-handbook-screen animate-slideup p-6 glass" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
+    <div className="idioms-handbook-screen animate-slideup max-w-6xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -232,28 +232,57 @@ export default function IdiomsHandbook({ onNavigateBack }) {
         </button>
       )}
 
-      <div className="mb-8">
-        <h1 className="glow-text text-gradient text-2xl font-bold" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Idioms & Phrasal Verbs Handbook</h1>
-        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Tra cứu thành ngữ và phrasal verbs thông dụng kèm ngữ cảnh và ví dụ thực tế</p>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">IDIOMS & PHRASAL VERBS HANDBOOK</div>
+        <h1 className="hero-main-title">Sổ Tay Thành Ngữ & Cụm Động Từ</h1>
+        <p className="hero-main-sub">
+          Tra cứu thành ngữ (Idioms) và Phrasal Verbs thông dụng kèm phát âm bản xứ, dịch nghĩa và ngữ cảnh ví dụ thực tế.
+        </p>
       </div>
 
-      {/* Main Tab Switcher */}
-      <div className="flex gap-4 border-b border-light pb-4 mb-6">
-        <button
-          onClick={() => switchTab('list')}
-          className={`pb-2 font-semibold text-sm cursor-pointer border-b-2 transition ${activeTab === 'list' ? 'border-primary color-primary' : 'border-transparent color-text-muted'}`}
-          style={{ borderColor: activeTab === 'list' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'list' ? 'var(--color-primary)' : '' }}
-        >
-          📖 Tra cứu từ & cụm từ
-        </button>
-        <button
-          onClick={() => switchTab('quiz')}
-          className={`pb-2 font-semibold text-sm cursor-pointer border-b-2 transition ${activeTab === 'quiz' ? 'border-primary color-primary' : 'border-transparent color-text-muted'}`}
-          style={{ borderColor: activeTab === 'quiz' ? 'var(--color-primary)' : 'transparent', color: activeTab === 'quiz' ? 'var(--color-primary)' : '' }}
-        >
-          🎮 Trắc nghiệm ôn tập nhanh
-        </button>
-      </div>
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Navigation & Filter */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">CHẾ ĐỘ & CHỦ ĐỀ</h3>
+            
+            <button
+              onClick={() => switchTab('list')}
+              className={`vertical-stat-item w-full text-left cursor-pointer ${activeTab === 'list' ? 'active-pill' : ''}`}
+              style={{
+                border: activeTab === 'list' ? '2px solid var(--color-primary)' : 'none',
+                borderRadius: '8px'
+              }}
+            >
+              <span className="stat-icon">📖</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Tra Cứu</span>
+                <span className="stat-sub">Idioms & Phrasal Verbs</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => switchTab('quiz')}
+              className={`vertical-stat-item w-full text-left cursor-pointer ${activeTab === 'quiz' ? 'active-pill' : ''}`}
+              style={{
+                border: activeTab === 'quiz' ? '2px solid var(--color-primary)' : 'none',
+                borderRadius: '8px'
+              }}
+            >
+              <span className="stat-icon">🎮</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Trắc Nghiệm</span>
+                <span className="stat-sub">Ôn tập phản xạ nhanh</span>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="flex flex-col gap-6">
 
       {/* TAB 1: LIST LOOKUP */}
       {activeTab === 'list' && (
@@ -411,5 +440,8 @@ export default function IdiomsHandbook({ onNavigateBack }) {
         </div>
       )}
     </div>
+  </main>
+</div>
+</div>
   );
 }

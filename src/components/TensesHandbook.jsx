@@ -384,7 +384,7 @@ export default function TensesHandbook({ onNavigateBack }) {
   };
 
   return (
-    <div className="tenses-handbook-container animate-slideup">
+    <div className="tenses-handbook-container animate-slideup max-w-6xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
@@ -396,23 +396,59 @@ export default function TensesHandbook({ onNavigateBack }) {
         </button>
       )}
 
-      {/* Header Card */}
-      <div className="handbook-header glass p-6 mb-8 rounded-xl" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
-        <h1 className="glow-text text-gradient" style={{ fontSize: '1.85rem', fontWeight: '800', margin: 0 }}>Sổ Tay 12 Thì Tiếng Anh</h1>
-        <p className="color-text-muted mt-2" style={{ fontSize: '13px', fontWeight: '400', margin: '6px 0 0 0' }}>Tra cứu trực quan công thức cấu trúc, định nghĩa và ví dụ mẫu của toàn bộ 12 thì.</p>
+      {/* 🚀 Top Headline Hero Banner */}
+      <div className="asymmetric-hero-banner">
+        <div className="hero-badge-tag">ENGLISH GRAMMAR HANDBOOK</div>
+        <h1 className="hero-main-title">Sổ Tay 12 Thì Tiếng Anh</h1>
+        <p className="hero-main-sub">
+          Tra cứu trực quan công thức cấu trúc, dấu hiệu nhận biết, cách chia động từ và ví dụ mẫu của toàn bộ 12 thì tiếng Anh chuẩn.
+        </p>
       </div>
 
-      {/* Search Input bar */}
-      <div className="handbook-controls mb-8">
-        <input 
-          type="text" 
-          placeholder="🔍 Tìm kiếm thì nhanh (ví dụ: hoàn thành, tiếp diễn, past...)" 
-          className="search-input glass px-4 py-3 w-full"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ fontSize: '15px' }}
-        />
-      </div>
+      {/* 📐 Asymmetric 2-Column Split Body */}
+      <div className="asymmetric-body-grid">
+        {/* 📌 Left Sidebar Navigation & Filter */}
+        <aside className="vertical-stats-sidebar">
+          <div className="stats-sidebar-card glass">
+            <h3 className="stats-sidebar-header">TÌM KIẾM & PHÂN LOẠI</h3>
+            
+            <input 
+              type="text" 
+              placeholder="🔍 Tìm thì nhanh..." 
+              className="search-input glass px-3 py-2 w-full text-xs"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+
+            <div className="vertical-stat-item streak">
+              <span className="stat-icon">🕒</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Hiện Tại</span>
+                <span className="stat-sub">4 Thì nhóm Present</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item level">
+              <span className="stat-icon">⏳</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Quá Khứ</span>
+                <span className="stat-sub">4 Thì nhóm Past</span>
+              </div>
+            </div>
+
+            <div className="vertical-stat-item completed">
+              <span className="stat-icon">🚀</span>
+              <div className="stat-info">
+                <span className="stat-value-mono">Tương Lai</span>
+                <span className="stat-sub">4 Thì nhóm Future</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* 📚 Right Main Workspace */}
+        <main className="asymmetric-gallery-main">
+          <div className="flex flex-col gap-6">
 
       {/* Timeline Bố cục Dọc (Present, Past, Future) với các thì xếp ngang */}
       <div className="tenses-rows-container flex flex-col gap-6 mb-8">
@@ -565,5 +601,8 @@ export default function TensesHandbook({ onNavigateBack }) {
         </div>
       )}
     </div>
+  </main>
+</div>
+</div>
   );
 }
