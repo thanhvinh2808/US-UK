@@ -177,7 +177,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           const words = data[1]
             .map(item => Array.isArray(item) ? item[0] : item)
             .filter(Boolean);
-          setSuggestions(words.slice(0, 5)); // show top 5 suggestions
+          setSuggestions(words.slice(0, 5));
           setShowSuggestions(true);
         }
       } catch (e) {
@@ -219,14 +219,12 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
     };
   }, []);
 
-  // Search History States & Actions (Safeguarded against legacy plain string history)
   const [searchHistory, setSearchHistory] = useState(() => {
     try {
       const data = localStorage.getItem("eng_app_search_history");
       if (!data) return [];
       const parsed = JSON.parse(data);
       if (!Array.isArray(parsed)) return [];
-      // Sanitize: filter out nulls or string primitives
       return parsed.filter(item => item && typeof item === 'object' && item.word);
     } catch (e) {
       return [];
@@ -361,10 +359,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
       const sl = isSourceEn ? 'en' : 'vi';
       const tl = isSourceEn ? 'vi' : 'en';
 
-      // Strip leading articles (a, an, the, to) for headword dictionary lookup
       const queryHeadword = isSourceEn ? cleanQuery.replace(/^(a|an|the|to)\s+/i, '').trim() : cleanQuery;
 
-      // Primary fetch to Google Translate API with quality check (&dt=qc)
       const primaryTransRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=bd&dt=qc&dt=rm&q=${encodeURIComponent(queryHeadword)}`)
         .then(res => res.json())
         .catch(() => null);
@@ -430,7 +426,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               const phonetics = data[0].phonetics || [];
               const foundIpa = phonetics.find(p => p.text)?.text || data[0].phonetic || `/${rootEnglishWord}/`;
 
-              // Parse separate UK and US IPAs
               let ipaUK = '';
               let ipaUS = '';
               phonetics.forEach(p => {
@@ -489,7 +484,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
       let dictInfo = await dictPromise;
 
-      // Fallback Datamuse spell check if Google Translate didn't offer a suggestion but dictionary lookup failed
       if (!spellSuggestion && isSourceEn && isTargetSingleWord && !dictInfo.example && !dictInfo.apiPos) {
         try {
           const sugRes = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(rootEnglishWord)}`).then(r => r.json());
@@ -673,7 +667,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
   const renderTranslatorContent = () => (
     <div className="lexicon-studio-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Direction Pills Bar - Dynamic Royal Blue System */}
       <div className="direction-tabs-studio flex gap-3 justify-center flex-wrap" style={{ position: 'relative' }}>
         <button 
           type="button"
@@ -726,7 +719,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           🇻🇳 Việt ➔ 🇬🇧 Anh
         </button>
 
-        {/* Nút hoán đổi chiều dịch (⇄) */}
         <button
           type="button"
           title="Hoán đổi ngôn ngữ"
@@ -768,7 +760,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         </button>
       </div>
 
-      {/* Solid Search Console */}
       <form onSubmit={handleTranslate} className="translator-search-console">
         <div style={{
           position: 'relative',
@@ -812,7 +803,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                   lineHeight: 1.5
                 }}
               />
-              {/* Action Cluster inside Search Console */}
               <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {query && (
                   <button
@@ -862,7 +852,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             </div>
 
-            {/* Suggestions Dropdown */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="suggestions-dropdown" style={{
                 position: 'absolute',
@@ -927,7 +916,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         </div>
       </form>
 
-      {/* Results & History Section */}
       <div className="translator-results-container">
         {isLoading && (
           <div className="text-center p-8 glass rounded-2xl">
@@ -1002,7 +990,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
         {result && (
           <div className="translator-result-box glass p-6 animate-slideup mb-7" style={{ borderRadius: '16px', background: 'var(--bg-card)' }}>
-            {/* Spell Correction / Did You Mean Banner */}
             {result.isAutoCorrected && result.originalQuery && (
               <div className="spell-suggestion-banner p-3.5 mb-5 flex items-center justify-between flex-wrap gap-2 animate-fadeIn" style={{ 
                 background: 'rgba(59, 130, 246, 0.08)', 
@@ -1068,7 +1055,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* Header Result Card */}
             <div className="result-header flex justify-between items-start flex-wrap gap-4" style={{ paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -1092,7 +1078,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     onClick={() => handleCopy(`${result.word} (${result.ipa || ''}) - ${result.vietnamese}`, 'từ & bản dịch')}
                     style={{
                       background: 'var(--bg-input)',
-                      border: '1px solid var(--border-light)',
+                      border: 'none',
                       color: 'var(--color-text-main)',
                       borderRadius: '6px',
                       padding: '4px 10px',
@@ -1109,13 +1095,12 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                   </button>
                 </div>
 
-                {/* Phonetics Bar */}
                 {result.ipaUK && result.ipaUS ? (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', border: '1px solid var(--border-light)' }}>
+                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }}>
                       🇬🇧 UK: {result.ipaUK}
                     </span>
-                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700', border: '1px solid var(--border-light)' }}>
+                    <span style={{ background: 'var(--color-primary-glow)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }}>
                       🇺🇸 US: {result.ipaUS}
                     </span>
                   </div>
@@ -1124,7 +1109,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 ) : null}
               </div>
 
-              {/* Voice Player Actions */}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button className="btn-secondary text-xs" onClick={() => handleSpeak(direction === 'en-vi' ? result.word : result.word, 'US')} style={{ padding: '8px 14px', borderRadius: '8px', fontWeight: '700' }}>
                   🔊 🇺🇸 US
@@ -1138,7 +1122,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             </div>
 
-            {/* Part of Speech Badge */}
             {result.partOfSpeech && (
               <div className="mt-3">
                 <span style={{
@@ -1155,7 +1138,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* Grammar Warning Box */}
             {result.hasGrammarError && result.correctedText && (
               <div className="grammar-correction-box mt-4 p-4" style={{ borderLeft: '4px solid var(--color-error)', background: 'var(--color-error-glow)', borderRadius: '8px' }}>
                 <strong className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-error)' }}>
@@ -1175,7 +1157,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* Primary Translation Box */}
             <div className="result-meaning-box mt-4 p-4" style={{ background: 'var(--bg-input)', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)' }}>
               <strong className="color-text-muted text-xs uppercase block mb-1">
                 {direction === 'en-vi' ? 'DỊCH NGHĨA CHÍNH (TIẾNG VIỆT):' : 'DỊCH NGHĨA CHÍNH (TIẾNG ANH):'}
@@ -1185,7 +1166,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </p>
             </div>
 
-            {/* Categorized POS Meanings (Rendered as Clean Pill Tags) */}
             {result.meaningsByPos && result.meaningsByPos.length > 0 && (
               <div className="meanings-by-pos-box mt-4 p-5" style={{ borderLeft: '4px solid var(--color-primary)', borderRadius: '12px', background: 'var(--bg-input)' }}>
                 <strong className="color-text-muted text-xs uppercase block mb-3 font-bold" style={{ color: 'var(--color-primary)' }}>
@@ -1193,7 +1173,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 </strong>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {result.meaningsByPos.map((posGroup, idx) => (
-                    <div key={idx} style={{ background: 'var(--bg-card)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                    <div key={idx} style={{ background: 'var(--bg-card)', padding: '12px 14px', borderRadius: '10px' }}>
                       <span style={{ fontWeight: '800', color: 'var(--color-primary)', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
                         {posGroup.label}:
                       </span>
@@ -1207,8 +1187,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                               padding: '4px 10px', 
                               borderRadius: '6px', 
                               fontSize: '13px', 
-                              fontWeight: '600',
-                              border: '1px solid var(--border-light)'
+                              fontWeight: '600'
                             }}
                           >
                             {m.normalize ? m.normalize("NFC") : m}
@@ -1221,7 +1200,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* Synonyms Grid (Deduplicated & Cleaned) */}
             {result.synonyms && result.synonyms.length > 0 && (() => {
               const uniqueSynonyms = [];
               const seen = new Set();
@@ -1246,7 +1224,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                         key={idx} 
                         style={{ 
                           background: 'var(--bg-card)', 
-                          border: '1px solid var(--border-light)',
                           borderRadius: '8px',
                           padding: '8px 14px',
                           flex: '1 1 140px',
@@ -1265,7 +1242,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               );
             })()}
 
-            {/* ⚡ Dedicated 12 Tenses Verb & Word Forms Conjugation Table */}
             {result.word && !result.word.trim().replace(/^(a|an|the|to)\s+/i, '').includes(" ") && (
               <div className="result-forms mt-5 p-5" style={{ borderRadius: '14px', border: '2px solid var(--color-primary)', background: 'var(--bg-card)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
@@ -1365,9 +1341,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
                     return (
                       <div className="tenses-grid mt-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {/* Present */}
-                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
-                          <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>🕒 NÓM THÌ HIỆN TẠI (PRESENT TENSES)</strong>
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)' }}>
+                          <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>🕒 NHÓM THÌ HIỆN TẠI (PRESENT TENSES)</strong>
                           <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                             <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
                               <span className="text-xs color-text-muted block">Hiện tại đơn:</span> 
@@ -1387,8 +1362,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                             </div>
                           </div>
                         </div>
-                        {/* Past */}
-                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)' }}>
                           <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>⏳ NHÓM THÌ QUÁ KHỨ (PAST TENSES)</strong>
                           <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                             <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
@@ -1409,8 +1383,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                             </div>
                           </div>
                         </div>
-                        {/* Future */}
-                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)', border: '1px solid var(--border-light)' }}>
+                        <div className="p-3.5 rounded-xl" style={{ background: 'var(--bg-input)' }}>
                           <strong className="text-xs block mb-2 font-bold" style={{ color: 'var(--color-primary)' }}>🚀 NHÓM THÌ TƯƠNG LAI (FUTURE TENSES)</strong>
                           <div className="tense-grid-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                             <div className="tense-card-item p-2.5 rounded-lg" style={{ background: 'var(--bg-card)' }}>
@@ -1461,7 +1434,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* Definition & Example */}
             {result.example && (
               <div className="result-example-box mt-4 p-4" style={{ borderLeft: '4px solid var(--color-primary)', borderRadius: '8px', background: 'var(--bg-input)' }}>
                 <strong className="color-text-muted text-xs uppercase block mb-1">VÍ DỤ TIẾNG ANH:</strong>
@@ -1474,7 +1446,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             )}
 
-            {/* ✨ Gemini AI Deep Insights Hub */}
             <div className="ai-deep-analysis-section mt-5">
               {!aiAnalysis ? (
                 <button
@@ -1495,8 +1466,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 </button>
               ) : (
                 <div className="ai-analysis-card p-5 rounded-xl glass animate-slideup" style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-light)'
+                  background: 'var(--bg-card)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '10px', borderBottom: '1px solid var(--border-light)' }}>
                     <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--color-primary)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1510,7 +1480,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     </button>
                   </div>
 
-                  {/* Nuances */}
                   {aiAnalysis.nuances && (
                     <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
                       <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
@@ -1522,7 +1491,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     </div>
                   )}
 
-                  {/* Collocations */}
                   {aiAnalysis.collocations && aiAnalysis.collocations.length > 0 && (
                     <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
                       <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
@@ -1539,7 +1507,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     </div>
                   )}
 
-                  {/* Real-world Examples */}
                   {aiAnalysis.real_examples && aiAnalysis.real_examples.length > 0 && (
                     <div style={{ marginBottom: '14px', padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
                       <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
@@ -1566,7 +1533,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     </div>
                   )}
 
-                  {/* Alternatives */}
                   {aiAnalysis.alternatives && (
                     <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--bg-input)', borderLeft: '4px solid var(--color-primary)' }}>
                       <strong style={{ color: 'var(--color-primary)', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
@@ -1598,7 +1564,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               )}
             </div>
 
-            {/* Save Button Action */}
             <div className="result-actions mt-5 flex gap-3">
               {isSaved ? (
                 <button className="btn-secondary w-full justify-center py-3" disabled style={{ borderRadius: '12px' }}>
@@ -1614,10 +1579,10 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         )}
 
         {!isLoading && !result && (
-          <div className="translator-empty p-8 text-center glass rounded-2xl mt-8 pt-8" style={{ background: 'var(--bg-card)' }}>
+          <div className="translator-empty glass rounded-2xl" style={{ padding: '32px', marginTop: '32px', textAlign: 'center', background: 'var(--bg-card)' }}>
             <span className="icon-huge" style={{ fontSize: '44px', display: 'block', marginBottom: '12px' }}>💡</span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '6px', color: 'var(--color-text-dark)' }}>Next-Gen AI Lexicon Console</h3>
-            <p className="color-text-muted text-sm" style={{ fontSize: '13px', fontWeight: '400', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', marginBottom: '6px', color: 'var(--color-text-dark)' }}>Bắt Đầu Tra Cứu Ngay!</h3>
+            <p className="color-text-muted" style={{ fontSize: '13px', fontWeight: '400', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
               {direction === 'en-vi' 
                 ? 'Nhập từ/câu tiếng Anh bất kỳ (vd: "amazing", "hit the books") để trải nghiệm tra cứu từ điển US-UK kết hợp Gia sư AI 1:1!'
                 : 'Nhập từ/câu tiếng Việt bất kỳ (vd: "tuyệt vời", "tôi đang chuẩn bị đi làm") để dịch sang tiếng Anh chuẩn bản xứ.'
@@ -1632,7 +1597,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
   if (isPageMode) {
     return (
       <div className="translator-page animate-slideup" style={{ maxWidth: '960px', margin: '0 auto', width: '100%' }}>
-        {/* Back Button FIRST on Top-Left */}
         {onNavigateBack && (
           <button 
             className="btn-secondary text-xs mb-4" 
@@ -1643,16 +1607,15 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           </button>
         )}
 
-        {/* Dynamic Page Header Card */}
         <div className="page-header glass p-6 mb-8 rounded-xl" style={{
           background: 'var(--bg-card)'
         }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--bg-input)', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--color-primary)', marginBottom: '8px' }}>
-              ⚡ POWERED BY GEMINI AI & DICTIONARY API
+              ⚡ TRA CỨU THÔNG MINH BẰNG AI
             </div>
             <h1 style={{ fontSize: '1.85rem', fontWeight: '800', margin: '4px 0 0 0', color: 'var(--color-text-dark)' }}>
-              🔍 AI Lexicon Studio (US-UK)
+              🔍 Tra Từ & Dịch Nghĩa (US-UK)
             </h1>
             <p className="color-text-muted text-xs mt-2" style={{ margin: '6px 0 0 0', fontSize: '13px', fontWeight: '400', lineHeight: 1.5 }}>
               Hệ thống tra cứu từ điển chuyên sâu, phân tích ngữ pháp, 12 thì & sắc thái hội thoại
@@ -1669,7 +1632,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
   return (
     <>
-      {/* Floating Action Button */}
       <button 
         className="floating-translate-btn glass-glow"
         onClick={() => setIsOpen(true)}
@@ -1678,13 +1640,11 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         📖
       </button>
 
-      {/* Modal Overlay */}
       {isOpen && (
         <div className="modal-overlay" onClick={() => setIsOpen(false)}>
           <div className="modal-content translator-modal glass-glow" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', borderRadius: '24px' }}>
-            {/* Modal Header */}
             <div className="modal-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800' }}>🔍 AI Lexicon Studio</h3>
+              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800' }}>🔍 Tra Từ & Dịch Nghĩa</h3>
               <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
             </div>
             {renderTranslatorContent()}
