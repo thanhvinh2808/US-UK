@@ -1,5 +1,6 @@
 import express from 'express';
 import Topic from '../models/Topic.js';
+import adminAuth from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST create topic
-router.post('/', async (req, res) => {
+router.post('/', adminAuth, async (req, res) => {
   try {
     const newTopic = new Topic(req.body);
     const saved = await newTopic.save();
@@ -40,7 +41,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update topic (theo slugId hoặc Mongo _id)
-router.put('/:id', async (req, res) => {
+router.put('/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };
@@ -53,7 +54,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE topic (theo slugId hoặc Mongo _id)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };

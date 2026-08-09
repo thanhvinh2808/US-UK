@@ -1,5 +1,6 @@
 import express from 'express';
 import StudySet from '../models/StudySet.js';
+import adminAuth from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST create new study set
-router.post('/', async (req, res) => {
+router.post('/', adminAuth, async (req, res) => {
   try {
     const newSet = new StudySet(req.body);
     const saved = await newSet.save();
@@ -36,7 +37,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update study set
-router.put('/:id', async (req, res) => {
+router.put('/:id', adminAuth, async (req, res) => {
   try {
     const updated = await StudySet.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
@@ -46,7 +47,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE study set
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', adminAuth, async (req, res) => {
   try {
     await StudySet.findByIdAndDelete(req.params.id);
     res.json({ message: 'Study set deleted successfully' });

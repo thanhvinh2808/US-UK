@@ -1,5 +1,36 @@
 @import "../node_modules/tailwindcss/index.css";
 
+@theme {
+  --color-slate-50: #F5F7FA;
+  --color-slate-100: #EEF3FA;
+  --color-slate-200: #D9E4F5;
+  --color-slate-300: #AAC4E8;
+  --color-slate-400: #9BB0D3;
+  --color-slate-500: #5C6B85;
+  --color-slate-600: #3A5A8C;
+  --color-slate-700: #1B3B6F;
+  --color-slate-800: #10203D;
+  --color-slate-900: #0A1428;
+
+  --color-blue-600: #1B3B6F;
+  --color-blue-700: #10203D;
+
+  --color-red-500: #E05252;
+  --color-red-600: #C23B3B;
+  --color-red-700: #A82E2E;
+  --color-red-800: #8E2424;
+
+  --color-amber-500: #D48C17;
+  --color-amber-700: #9C650F;
+
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
 /* ==========================================================================
    🇬🇧 🇺🇸 OFFICIAL US-UK ANTIGRAVITY ENGLISH DESIGN SYSTEM
    ========================================================================== */

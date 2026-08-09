@@ -1,3 +1,5 @@
+import { api } from '../services/api.js';
+
 // Spaced Repetition SM-2 Algorithm Implementation
 export function calculateSM2(grade, repetitions, previousInterval, previousEase) {
   let ease = parseFloat(previousEase) || 2.5;
@@ -56,6 +58,18 @@ const defaultStats = {
 };
 
 export const storage = {
+  getDeviceId: () => {
+    try {
+      let id = localStorage.getItem("eng_app_device_id");
+      if (!id) {
+        id = "dev_" + (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now());
+        localStorage.setItem("eng_app_device_id", id);
+      }
+      return id;
+    } catch (e) {
+      return "dev_guest";
+    }
+  },
   getSavedVocab: () => {
     try {
       const data = localStorage.getItem(KEY_VOCAB);
@@ -126,11 +140,13 @@ export const storage = {
     }
   },
 
-  updateWordProgress: (wordText, grade) => {
+  updateWordProgress: (wordText, grade, setId = 'vocab_notebook') => {
     try {
       const list = storage.getSavedVocab();
+      let targetSetId = setId;
       const updatedList = list.map(item => {
         if (item.word.toLowerCase() === wordText.toLowerCase()) {
+          if (item.deckId) targetSetId = item.deckId;
           const sm2Result = calculateSM2(
             grade,
             item.repetitions,
@@ -152,6 +168,16 @@ export const storage = {
       localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
       // Increment user learning activity as well
       storage.incrementActivity(1);
+
+      // Async sync review to backend SM-2 database API (non-blocking)
+      api.submitCardReview(
+        storage.getDeviceId(),
+        targetSetId || 'vocab_notebook',
+        wordText,
+        grade >= 3,
+        grade
+      ).catch(() => {});
+
       return updatedList;
     } catch (e) {
       console.error("Error updating word progress", e);
@@ -162,19 +188,32 @@ export const storage = {
   resetWord: (wordText) => {
     try {
       const list = storage.getSavedVocab();
-      const updatedList = list.map(item =>
-        item.word.toLowerCase() === wordText.toLowerCase()
-          ? {
-              ...item,
-              repetitions: 0,
-              interval: 1,
-              easinessFactor: 2.5,
-              nextReviewDate: Date.now(),
-              status: "learning"
-            }
-          : item
-      );
+      let targetSetId = 'vocab_notebook';
+      const updatedList = list.map(item => {
+        if (item.word.toLowerCase() === wordText.toLowerCase()) {
+          if (item.deckId) targetSetId = item.deckId;
+          return {
+            ...item,
+            repetitions: 0,
+            interval: 1,
+            easinessFactor: 2.5,
+            nextReviewDate: Date.now(),
+            status: "learning"
+          };
+        }
+        return item;
+      });
       localStorage.setItem(KEY_VOCAB, JSON.stringify(updatedList));
+
+      // Async sync reset to backend SM-2 database API (non-blocking)
+      api.submitCardReview(
+        storage.getDeviceId(),
+        targetSetId || 'vocab_notebook',
+        wordText,
+        false,
+        1
+      ).catch(() => {});
+
       return updatedList;
     } catch (e) {
       console.error("Error resetting word", e);

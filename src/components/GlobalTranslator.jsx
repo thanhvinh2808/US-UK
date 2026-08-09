@@ -1121,14 +1121,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
   if (isPageMode) {
     return (
-      <div className="translator-page animate-slideup max-w-4xl mx-auto px-4 py-6">
-        {/* Centered Content Card */}
-        <div 
-          className="bg-white rounded-3xl p-6 sm:p-8"
-          style={{
-            boxShadow: '0 10px 30px rgba(16, 32, 61, 0.06), 0 2px 6px rgba(16, 32, 61, 0.04)'
-          }}
-        >
+      <div className="translator-page animate-slideup w-full flex justify-center py-4">
+        <div className="w-full max-w-5xl mx-auto p-6 sm:p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
           {renderTranslatorContent()}
         </div>
       </div>

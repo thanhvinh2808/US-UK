@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_API_URL) || 'http://localhost:5000/api';
 
 export const api = {
   // Check backend server health
@@ -77,11 +77,13 @@ export const api = {
   },
 
   // Create new topic (bài học) via API
-  async createTopic(topicData) {
+  async createTopic(topicData, adminKey) {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminKey) headers['x-admin-key'] = adminKey;
       const res = await fetch(`${API_BASE}/topics`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(topicData)
       });
       if (!res.ok) {
@@ -96,11 +98,13 @@ export const api = {
   },
 
   // Update existing topic (bài học) via API
-  async updateTopic(id, topicData) {
+  async updateTopic(id, topicData, adminKey) {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminKey) headers['x-admin-key'] = adminKey;
       const res = await fetch(`${API_BASE}/topics/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(topicData)
       });
       if (!res.ok) throw new Error('Failed to update topic');
@@ -112,9 +116,14 @@ export const api = {
   },
 
   // Delete topic (bài học) via API
-  async deleteTopic(id) {
+  async deleteTopic(id, adminKey) {
     try {
-      const res = await fetch(`${API_BASE}/topics/${id}`, { method: 'DELETE' });
+      const headers = {};
+      if (adminKey) headers['x-admin-key'] = adminKey;
+      const res = await fetch(`${API_BASE}/topics/${id}`, {
+        method: 'DELETE',
+        headers
+      });
       if (!res.ok) throw new Error('Failed to delete topic');
       return await res.json();
     } catch (e) {
@@ -123,17 +132,18 @@ export const api = {
     }
   },
 
-  // Submit card review result for Spaced Repetition (Leitner 5-box calculation)
-  async submitCardReview(userId, setId, cardId, isCorrect) {
+  // Submit card review result for Spaced Repetition (SM-2)
+  async submitCardReview(userId, setId, cardId, isCorrect, grade) {
     try {
       const res = await fetch(`${API_BASE}/progress/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, setId, cardId, isCorrect })
+        body: JSON.stringify({ userId, setId, cardId, isCorrect, grade })
       });
+      if (!res.ok) return null;
       return await res.json();
     } catch (e) {
-      console.error("API error submitCardReview:", e);
+      console.warn("API submitCardReview skipped (offline mode):", e.message);
       return null;
     }
   }

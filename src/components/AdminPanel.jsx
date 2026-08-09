@@ -288,6 +288,10 @@ function generateDynamicMockLesson(englishTopic, vietnameseTopic, tense, level) 
 }
 
 export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
+  // Auth state (sessionStorage based)
+  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('admin_secret_key') || '');
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!sessionStorage.getItem('admin_secret_key'));
+
   // Generation parameters
   const [form, setForm] = useState({ topicName: '', tense: 'Present Simple', level: 'A2' });
   const [generatedData, setGeneratedData] = useState(null);
@@ -315,7 +319,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
 
     // Đẩy tuần tự (không dùng Promise.all) để tránh làm quá tải server nếu danh sách dài
     for (const topic of customTopics) {
-      const result = await api.createTopic(toCloudTopicPayload(topic));
+      const result = await api.createTopic(toCloudTopicPayload(topic), adminKey);
       if (result) success++;
       else failed++;
     }
@@ -425,7 +429,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     onTopicsListChange();
 
     // Đồng bộ lên MongoDB Cloud
-    const cloudResult = await api.createTopic(toCloudTopicPayload(generatedData));
+    const cloudResult = await api.createTopic(toCloudTopicPayload(generatedData), adminKey);
     if (cloudResult) {
       alert("🎉 Đã DUYỆT, công khai cho học viên, và đồng bộ lên MongoDB Cloud thành công!");
     } else {
@@ -470,7 +474,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     setCustomTopics(storage.getCustomTopics());
     onTopicsListChange();
 
-    const cloudResult = await api.createTopic(toCloudTopicPayload(topicObj));
+    const cloudResult = await api.createTopic(toCloudTopicPayload(topicObj), adminKey);
     if (cloudResult) {
       alert(`Đã duyệt và đồng bộ Cloud thành công cho bài học "${topicObj.title}"!`);
     } else {
@@ -490,23 +494,78 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       const updated = storage.deleteCustomTopic(topicId);
       setCustomTopics(updated);
       onTopicsListChange();
-      await api.deleteTopic(topicId);
+      await api.deleteTopic(topicId, adminKey);
       alert("Đã xóa bài học!");
     }
   };
 
+  const handleLogoutAdmin = () => {
+    sessionStorage.removeItem('admin_secret_key');
+    setAdminKey('');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-panel-screen animate-slideup">
+        {onNavigateBack && (
+          <button 
+            className="btn-secondary text-xs mb-4" 
+            onClick={onNavigateBack}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            ← Quay lại Dashboard
+          </button>
+        )}
+        <div className="glass p-8 rounded-xl max-w-md mx-auto mt-12 text-center" style={{ background: 'var(--bg-card)', boxShadow: 'var(--shadow-subtle)' }}>
+          <div className="text-4xl mb-3">🔒</div>
+          <h2 className="text-xl font-bold mb-2">Xác thực Quản trị viên</h2>
+          <p className="color-text-muted text-xs mb-6">Vui lòng nhập Admin Secret Key để truy cập và quản lý bài học.</p>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (adminKey.trim()) {
+              sessionStorage.setItem('admin_secret_key', adminKey.trim());
+              setIsAuthenticated(true);
+            }
+          }} className="flex flex-col gap-4">
+            <input 
+              type="password"
+              placeholder="Nhập Secret Admin Key..."
+              className="search-input glass w-full"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              autoFocus
+            />
+            <button type="submit" className="btn-primary w-full justify-center py-2.5">
+              Đăng nhập Admin
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-panel-screen animate-slideup">
-      {/* Back button top-left */}
-      {onNavigateBack && (
-        <button 
-          className="btn-secondary text-xs mb-4" 
-          onClick={onNavigateBack}
-          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+      {/* Back button top-left & Logout */}
+      <div className="flex justify-between items-center mb-4">
+        {onNavigateBack ? (
+          <button 
+            className="btn-secondary text-xs" 
+            onClick={onNavigateBack}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            ← Quay lại Dashboard
+          </button>
+        ) : <div />}
+        <button
+          className="btn-secondary text-xs"
+          onClick={handleLogoutAdmin}
+          style={{ padding: '8px 16px', borderRadius: '8px', color: 'var(--color-error)' }}
         >
-          ← Quay lại Dashboard
+          🔒 Đăng xuất Admin
         </button>
-      )}
+      </div>
 
       {/* Header */}
       <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>

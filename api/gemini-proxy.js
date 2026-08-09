@@ -10,6 +10,8 @@
 // gemini-3.5-flash-lite (GA, nhanh, rẻ, phù hợp cho tác vụ text đơn giản như sinh từ
 // vựng/phân tích ngắn) để tránh phải cập nhật lại sớm. Nếu sau này model này cũng bị
 // deprecate, chỉ cần đổi giá trị GEMINI_MODEL bên dưới.
+// TODO: gemini-3.5-flash-lite dự kiến còn dùng được đến hết 2026 — kiểm tra lại
+// https://ai.google.dev/gemini-api/docs/models trước 01/10/2026 để đổi model kịp thời nếu cần
 const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 // Giới hạn độ dài prompt đầu vào để tránh bị lạm dụng gửi prompt khổng lồ gây tốn quota/API cost
