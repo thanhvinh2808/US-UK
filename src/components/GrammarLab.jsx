@@ -242,6 +242,15 @@ export default function GrammarLab({ topic, onComplete, onNavigateBack }) {
         type: 'error',
         text: ` chưa chính xác! ${question.explanation}`
       });
+      // Tự động lưu câu sai vào Ngân hàng câu sai để người dùng ôn lại sau
+      storage.saveMistake({
+        module: 'grammar',
+        skill: `Ngữ pháp - ${grammar.tense_vi || grammar.tense}`,
+        question: question.sentence,
+        userAnswer: answerBool ? 'Cho là đúng' : 'Cho là sai',
+        correctAnswer: `${question.isCorrect ? 'Câu ĐÚNG' : 'Câu SAI'} — ${question.explanation}`,
+        topicId: topic.id
+      });
     }
   };
 

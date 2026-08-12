@@ -20,6 +20,7 @@ import Shadowing from './components/Shadowing';
 import IdiomsHandbook from './components/IdiomsHandbook';
 import MiniGames from './components/MiniGames';
 import Alphabet from './components/Alphabet';
+import MistakeBank from './components/MistakeBank';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -274,6 +275,9 @@ function App() {
                   <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('notebook')}>
                     📙 Sổ tay từ vựng ({savedVocabCount})
                   </button>
+                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mistake_bank')}>
+                    📌 Ngân hàng câu sai
+                  </button>
 
                   <div className="qz-dropdown-label mt-2">🤖 CÔNG CỤ AI</div>
                   <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('translator')}>
@@ -482,6 +486,12 @@ function App() {
             <MiniGames 
               onNavigateBack={handleBackToDashboard}
               showToast={showToast}
+            />
+          )}
+
+          {activeScreen === 'mistake_bank' && (
+            <MistakeBank 
+              onNavigateBack={handleBackToDashboard}
             />
           )}
         </div>

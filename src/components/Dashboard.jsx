@@ -28,6 +28,14 @@ export default function Dashboard({
     }
   }, [now]);
 
+  const mistakesCount = useMemo(() => {
+    try {
+      return storage.getMistakes().length;
+    } catch (e) {
+      return 0;
+    }
+  }, []);
+
   // Filter topics by selected level tag
   const filteredTopics = useMemo(() => {
     if (selectedFilter === 'ALL') return safeTopics;
@@ -51,6 +59,16 @@ export default function Dashboard({
   }, [filteredTopics, featuredTopic]);
 
   const safeStats = stats || { streak: 1, level: 'A2', points: 0, completedModules: 0 };
+
+  // Top 1 kỹ năng đang yếu nhất, lấy từ Ngân hàng câu sai, để hiện cảnh báo nhanh trên Dashboard
+  const topWeakness = useMemo(() => {
+    try {
+      const list = storage.getWeaknessStats();
+      return list.length > 0 ? list[0] : null;
+    } catch (e) {
+      return null;
+    }
+  }, [safeStats]);
 
   return (
     <div className="dashboard-asymmetric-layout animate-slideup">
@@ -105,6 +123,34 @@ export default function Dashboard({
                 <span className="stat-sub">Đã hoàn thành</span>
               </div>
             </div>
+
+            {topWeakness ? (
+              <div
+                className="vertical-stat-item weakness cursor-pointer"
+                onClick={() => onNavigate && onNavigate('mistake_bank')}
+                title="Bấm để mở Ngân hàng câu sai và ôn lại"
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="stat-icon">📌</span>
+                <div className="stat-info">
+                  <span className="stat-value-mono" style={{ fontSize: '13px' }}>Đang yếu: {topWeakness.skill}</span>
+                  <span className="stat-sub">{topWeakness.count} câu sai — bấm để ôn lại</span>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className="vertical-stat-item cursor-pointer" 
+                onClick={() => onNavigate && onNavigate('mistake_bank')}
+                title="Mở Ngân hàng câu sai"
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="stat-icon">📌</span>
+                <div className="stat-info">
+                  <span className="stat-value-mono">{mistakesCount} câu sai</span>
+                  <span className="stat-sub">Ngân hàng câu sai</span>
+                </div>
+              </div>
+            )}
 
             <div className="sidebar-action-box mt-4">
               {reviewsDue > 0 ? (

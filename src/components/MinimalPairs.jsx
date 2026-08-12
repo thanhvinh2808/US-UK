@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { storage } from '../utils/storage';
 import { speak, speakCompare, playSound, vibrate } from '../utils/sounds';
 import confetti from 'canvas-confetti';
 
@@ -190,6 +191,13 @@ export default function MinimalPairs({ onNavigateBack }) {
       playSound('incorrect');
       vibrate([50, 50]);
       setFeedback(`Chưa đúng! Từ vừa phát âm là "${targetWord}". Bấm nút loa để nghe lại nhé.`);
+      storage.saveMistake({
+        module: 'minimal_pairs',
+        skill: `Phát âm - ${selectedGroup?.title || 'Phân biệt âm'}`,
+        question: `Từ vừa nghe trong cặp (${quizPair?.word1} vs ${quizPair?.word2})`,
+        userAnswer: word,
+        correctAnswer: targetWord
+      });
     }
   };
 
@@ -214,7 +222,7 @@ export default function MinimalPairs({ onNavigateBack }) {
     
     if (cleanSpoken === cleanTarget) {
       playSound('correct');
-vibrate(50);
+      vibrate(50);
       setSpeakScore('perfect');
     } else {
       // LƯU Ý: đã bỏ nhánh so khớp "includes()" 2 chiều trước đây, vì nó cho điểm "Khá tốt"
@@ -225,6 +233,13 @@ vibrate(50);
       playSound('incorrect');
       vibrate([50, 50]);
       setSpeakScore('try_again');
+      storage.saveMistake({
+        module: 'minimal_pairs',
+        skill: 'Phát âm - Phân biệt âm',
+        question: `Phát âm từ "${speakTarget}"`,
+        userAnswer: cleanSpoken || '(không nghe rõ)',
+        correctAnswer: speakTarget
+      });
     }
   };
 
