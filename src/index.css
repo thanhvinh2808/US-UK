@@ -353,6 +353,47 @@ button.is-disabled {
 .modal-title { margin: 0; font-size: 1.3rem; font-weight: 800; }
 .close-btn { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
 
+/* Translator suggestions */
+.translator-suggestions {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: calc(100% - 12px);
+  z-index: 30;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-elev-2);
+  border: 1px solid var(--border-light);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.translator-suggestion-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--color-text-main);
+}
+.translator-suggestion-item:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+.translator-suggestion-item span:first-child { opacity: 0.85; }
+
+/* History chips */
+.translator-history-chips { padding: var(--space-sm); background: transparent; }
+.translator-history-chips > div { background: var(--bg-card-strong); padding: 8px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; margin: 6px 6px 6px 0; box-shadow: var(--shadow-subtle); }
+.translator-history-chips button[title="Xóa mục này"] { margin-left: 6px; color: rgba(0,0,0,0.45); }
+
+/* When history list is long, allow horizontal scroll */
+.translator-history-chips { overflow-x: auto; white-space: nowrap; }
+.translator-history-chips > div { display: inline-block; vertical-align: middle; }
+
 /* Minor layout normalization */
 .asymmetric-layout.max-w-5xl, .max-w-5xl { max-width: 1100px; margin: 0 auto; }
 

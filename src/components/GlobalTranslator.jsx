@@ -1061,7 +1061,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           </div>
 
           {/* Chips Grid */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 translator-history-chips">
             {searchHistory.map((item, index) => (
               <div 
                 key={index} 
