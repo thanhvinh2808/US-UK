@@ -343,7 +343,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     setLogs([]);
     setValidationErrors([]);
 
-    addLog(`[Antigravity AI] Bắt đầu sinh bài học cho chủ đề "${form.topicName}"...`);
+    addLog(`[V English AI] Bắt đầu sinh bài học cho chủ đề "${form.topicName}"...`);
     
     let englishTopicName = form.topicName.trim();
     let vietnameseTopicName = form.topicName.trim();
@@ -390,7 +390,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     }
     
     if (matchedSample) {
-      addLog(`Kết nối thành công (Sử dụng kho dữ liệu mô phỏng cục bộ của Antigravity)...`);
+      addLog(`Kết nối thành công (Sử dụng kho dữ liệu mô phỏng cục bộ của V English)...`);
       await new Promise(resolve => setTimeout(resolve, 800));
       addLog(`Đang trích xuất cấu trúc bài đọc và hội thoại...`);
       await new Promise(resolve => setTimeout(resolve, 600));
@@ -400,7 +400,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       addLog(`🎉 Bài học đã được sinh thành công!`);
       return;
     } else {
-      addLog(`Chủ đề mới! Đang kích hoạt bộ sinh nội dung động của Antigravity...`);
+      addLog(`Chủ đề mới! Đang kích hoạt bộ sinh nội dung động của V English...`);
       await new Promise(resolve => setTimeout(resolve, 800));
       addLog(`Đang biên dịch cấu trúc bài học động cho chủ đề "${englishTopicName}"...`);
       
@@ -570,7 +570,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       {/* Header */}
       <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
         <span className="badge-level font-bold mb-2 inline-block">Admin</span>
-        <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Antigravity AI Portal</h1>
+        <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>V English Admin Portal</h1>
         <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400' }}>Quản trị và sinh chủ đề bài học tự động với Gia sư AI</p>
       </div>
 
@@ -579,9 +579,9 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
         {/* Left Column: Form & Configuration */}
         <div className="admin-form-section flex flex-col gap-6">
           
-          {/* Antigravity AI Engine Card */}
+          {/* V English AI Engine Card */ }
           <div className="api-key-card glass p-6">
-            <h3 className="mb-2" style={{ color: 'var(--color-primary)' }}>✨ Antigravity Engine Offline</h3>
+            <h3 className="mb-2" style={{ color: 'var(--color-primary)' }}>✨ V English Engine (Offline)</h3>
             <p className="color-text-muted text-xs leading-relaxed">
               Hệ thống đang hoạt động ở chế độ không cần khóa (Offline/Serverless). Bạn có thể tự do nhập bất kỳ chủ đề tiếng Việt hoặc tiếng Anh nào để sinh bài học ngay lập tức.
             </p>
@@ -590,7 +590,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
           {/* AI Generator Form */}
           {!generatedData && (
             <div className="generator-card glass p-6">
-              <h3 className="mb-4">Sinh bài học bằng Antigravity AI</h3>
+              <h3 className="mb-4">Sinh bài học bằng V English AI</h3>
               
               <div className="flex flex-col gap-4 mb-6">
                 <div>
@@ -672,7 +672,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
                 onClick={handleGenerate}
                 disabled={isLoading || !form.topicName.trim()}
               >
-                {isLoading ? "Đang sinh bài học..." : "Sinh bài học bằng Antigravity AI"}
+                {isLoading ? "Đang sinh bài học..." : "Sinh bài học bằng V English AI"}
               </button>
             </div>
           )}

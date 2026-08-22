@@ -3,6 +3,10 @@ import { storage } from '../utils/storage';
 import { playSound, vibrate, speak } from '../utils/sounds';
 import confetti from 'canvas-confetti';
 
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
+
 export default function Pronunciation({ topic, onNavigateBack, showToast }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -185,30 +189,21 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
     const xpEarned = Math.round(finalScore * 100);
 
     return (
-      <div className="pronunciation-finished glass bg-white p-8 text-center max-w-xl mx-auto mt-6 animate-slideup rounded-xl shadow-sm">
-        <h2 className="text-2xl font-bold color-text-dark">
-          Hoàn Thành Bài Luyện Phát Âm!
-        </h2>
+      <Card className="pronunciation-finished p-8 text-center max-w-xl mx-auto mt-6 animate-slideup rounded-xl">
+        <h2 className="text-2xl font-bold color-text-dark">Hoàn Thành Bài Luyện Phát Âm!</h2>
         <p className="color-text-muted text-sm mt-1 mb-6">Chủ đề: {topic.topic}</p>
 
         <div className="score-radial-progress p-6 bg-[#FAFBFD] mb-6 rounded-xl">
-          <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>
+          <div className="text-4xl font-mono font-bold pron-badge-primary">
             {Math.round(finalScore * 100)}%
           </div>
           <div className="color-text-muted text-xs font-mono uppercase font-bold mt-1">Độ chính xác phát âm</div>
         </div>
 
-        <p className="text-base font-semibold mb-8 color-text-main">
-          Bạn nhận được <strong style={{ color: 'var(--color-primary)' }}>+{xpEarned} XP</strong> kinh nghiệm
-        </p>
+        <p className="text-base font-semibold mb-8 color-text-main">Bạn nhận được <strong className="pron-badge-primary">+{xpEarned} XP</strong> kinh nghiệm</p>
 
-        <button 
-          className="btn-primary w-full justify-center py-3 text-base" 
-          onClick={onNavigateBack}
-        >
-          Quay lại Trang chủ
-        </button>
-      </div>
+        <Button className="w-full justify-center py-3 text-base" variant="primary" onClick={onNavigateBack}>Quay lại Trang chủ</Button>
+      </Card>
     );
   }
 
@@ -219,23 +214,22 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
     <div className="pronunciation-screen animate-slideup max-w-5xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
-        <button 
-          className="btn-secondary text-xs mb-4" 
-          onClick={onNavigateBack}
-          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          ← Quay lại Dashboard
-        </button>
-      )}
+      <Button
+      className="text-xs mb-4 action-btn-round"
+      variant="secondary"
+      onClick={onNavigateBack}
+      aria-label="Quay lại Dashboard"
+      >
+      ← Quay lại Dashboard
+      </Button>
+    )}
 
-      {/* 🚀 Top Headline Hero Banner */}
-      <div className="asymmetric-hero-banner">
-        <div className="hero-badge-tag">PRONUNCIATION LAB — LEVEL {topic.level || 'B2'}</div>
-        <h1 className="hero-main-title">{topic.topic || 'Luyện Phát Âm Chuẩn US-UK'}</h1>
-        <p className="hero-main-sub">
-          Luyện phát âm từng câu thoại mẫu với nhận diện giọng nói AI và phân tích điểm IPA thời gian thực.
-        </p>
-      </div>
+    {/* 🚀 Top Headline Hero Banner */}
+    <Card className="asymmetric-hero-banner">
+      <div className="hero-badge-tag">PRONUNCIATION LAB — LEVEL {topic.level || 'B2'}</div>
+      <h1 className="hero-main-title">{topic.topic || 'Luyện Phát Âm Chuẩn US-UK'}</h1>
+      <p className="hero-main-sub">giọng nói AI và phân tích điểm IPA thời gian thực.</p>
+    </Card>
 
       {/* 📐 Asymmetric 2-Column Split Body */}
       <div className="asymmetric-body-grid">
@@ -277,68 +271,47 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
         <div className="progress-bar-container mb-6">
           <div className="flex justify-between mb-2 text-xs font-bold">
             <span className="color-text-muted">Tiến độ bài học</span>
-            <span style={{ color: 'var(--color-primary)' }}>Câu {currentIdx + 1} / {totalDialogues}</span>
+            <span className="pron-badge-primary">Câu {currentIdx + 1} / {totalDialogues}</span>
           </div>
-          <div style={{ width: '100%', height: '8px', background: 'var(--bg-input)', borderRadius: '10px', overflow: 'hidden' }}>
-            <div 
-              style={{ 
-                width: `${((currentIdx + 1) / totalDialogues) * 100}%`, 
-                height: '100%', 
-                background: 'var(--color-primary)',
-                borderRadius: '10px',
-                transition: 'width 0.3s ease'
-              }}
-            />
-          </div>
+          <div className="pron-progress-track">
+                      <div className="pron-progress-fill" style={{ width: `${((currentIdx + 1) / totalDialogues) * 100}%` }} />
+                    </div>
         </div>
 
         {/* Target Sentence Display Card */}
-        <div className="sentence-display-card p-6 mb-6 text-center glass" style={{ background: 'var(--bg-input)', borderRadius: '16px' }}>
-          {dialogue && (
-            <div className="speaker-role mb-2 text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--color-primary)' }}>
-              👤 Nhân vật: {dialogue.speaker}
-            </div>
-          )}
-          <h2 className="target-pronounce-text mb-4" style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--color-text-main)', lineHeight: 1.4 }}>
-            "{targetText}"
-          </h2>
+        <div className="sentence-display-card p-6 mb-6 text-center glass">
+                  {dialogue && (
+                    <div className="speaker-role mb-2 text-xs uppercase tracking-wider font-bold pron-badge-primary">
+                      👤 Nhân vật: {dialogue.speaker}
+                    </div>
+                  )}
+                  <h2 className="target-pronounce-text mb-4">
+                    "{targetText}"
+                  </h2>
           
-          <button 
-            type="button"
-            className="btn-secondary text-xs" 
-            onClick={handleSpeakSample} 
-            style={{ padding: '8px 18px', borderRadius: '10px', fontWeight: '700', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', background: 'var(--bg-card)' }}
-          >
-            🔊 Nghe câu mẫu chuẩn bản xứ (US)
-          </button>
-        </div>
+                  <button 
+                    type="button"
+                    className="btn-secondary text-xs pill-outline" 
+                    onClick={handleSpeakSample} 
+                  >
+                    🔊 Nghe câu mẫu chuẩn bản xứ (US)
+                  </button>
+                </div>
 
         {/* Mic / Recording Section */}
         <div className="recording-section text-center mb-6">
           {isIOSSafari ? (
-            <div className="alert-unsupported p-4 glass mb-4" style={{ background: 'var(--bg-input)', border: '1px solid var(--color-error)', color: 'var(--color-error)', borderRadius: '12px', fontSize: '13px' }}>
+            <div className="alert-unsupported p-4 glass mb-4 alert-error">
               ⚠️ Trình duyệt Safari trên iOS hạn chế nhận diện giọng nói tự động. Bạn có thể dùng nút Giả lập bên dưới để kiểm tra giao diện bài tập.
             </div>
           ) : recognitionSupported ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <div className="center-column">
               <button 
                 type="button"
                 className={`mic-button ${isRecording ? 'recording' : ''}`}
                 onClick={handleToggleRecord}
                 style={{
-                  width: '84px',
-                  height: '84px',
-                  borderRadius: '50%',
-                  background: isRecording ? 'var(--color-error)' : 'var(--color-primary)',
-                  color: '#ffffff',
-                  border: 'none',
-                  fontSize: '32px',
-                  cursor: 'pointer',
-                  boxShadow: isRecording ? '0 0 24px rgba(239, 68, 68, 0.5)' : '0 6px 20px var(--color-primary-glow)',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  background: isRecording ? 'var(--color-error)' : 'var(--color-primary)'
                 }}
               >
                 {isRecording ? '⏹' : '🎙️'}
@@ -348,7 +321,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
               </p>
             </div>
           ) : (
-            <div className="alert-unsupported p-4 glass mb-4" style={{ background: 'var(--bg-input)', borderRadius: '12px', fontSize: '13px' }}>
+            <div className="alert-unsupported p-4 glass mb-4 alert-error">
               ⚠️ Web Speech API chưa được hỗ trợ trực tiếp. Dùng các nút thử nghiệm bên dưới để kiểm tra quy trình chấm điểm.
             </div>
           )}
@@ -356,13 +329,13 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
 
         {/* Developer / Browser Fallback Testing Tools — CHỈ hiện khi chạy dev build, không lộ ra production */}
         {import.meta.env.DEV && (
-          <div className="simulation-tools mb-6 p-4 glass" style={{ background: 'var(--bg-input)', borderRadius: '12px', textAlign: 'center' }}>
+          <div className="simulation-tools mb-6 p-4 glass simulation-panel">
             <span className="text-xs color-text-muted font-semibold block mb-2">[DEV ONLY] Thử nghiệm mô phỏng chấm điểm:</span>
             <div className="sim-buttons flex gap-3 justify-center flex-wrap">
-              <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(true)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
+                        <button className="btn-secondary text-xs sim-btn" onClick={() => handleSimulateSpeech(true)}>
                 ✓ Mô phỏng phát âm chuẩn (100%)
               </button>
-              <button className="btn-secondary text-xs" onClick={() => handleSimulateSpeech(false)} style={{ padding: '6px 14px', borderRadius: '8px' }}>
+                        <button className="btn-secondary text-xs sim-btn" onClick={() => handleSimulateSpeech(false)}>
                 ⚠ Mô phỏng phát âm chưa đạt (50%)
               </button>
             </div>
@@ -371,10 +344,10 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
 
         {/* Results assessment */}
         {checked && (
-          <div className="assessment-results-card glass p-5 mb-6" style={{ background: 'var(--bg-card)', borderRadius: '16px' }}>
+                  <div className="assessment-results-card glass p-5 mb-6 assessment-card">
             <div className="score-summary mb-3 flex justify-between items-center">
-              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--color-text-main)' }}>Đánh giá kết quả đọc:</h4>
-              <span className="text-xl font-bold" style={{ color: sentenceScore >= 0.7 ? 'var(--color-success)' : 'var(--color-error)' }}>
+                      <h4 className="metric-label">Đánh giá kết quả đọc:</h4>
+                      <span className={`text-xl font-bold ${sentenceScore >= 0.7 ? 'text-success' : 'text-error'}`}>
                 {Math.round(sentenceScore * 100)}% Chính xác
               </span>
             </div>
@@ -405,7 +378,7 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
             </div>
 
             {spokenText && (
-              <p className="italic text-xs color-text-muted mt-2" style={{ margin: 0 }}>
+                          <p className="italic text-xs color-text-muted mt-2 muted-italic">
                 Văn bản thu âm được: "{spokenText}"
               </p>
             )}
@@ -415,11 +388,11 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
         {/* Action buttons */}
         <div className="action-buttons flex gap-3">
           {!checked ? (
-            <button className="btn-secondary w-full justify-center py-3" onClick={handleSkip} style={{ borderRadius: '12px', fontWeight: '700' }}>
+                      <button className="btn-secondary w-full justify-center py-3 action-btn-round" onClick={handleSkip}>
               Bỏ qua câu này
             </button>
           ) : (
-            <button className="btn-primary w-full justify-center py-3" onClick={handleNext} style={{ borderRadius: '12px', background: 'var(--color-primary)', color: '#ffffff', fontWeight: '700' }}>
+                      <button className="btn-primary w-full justify-center py-3 action-btn-round" onClick={handleNext}>
               {currentIdx < totalDialogues - 1 ? 'Câu tiếp theo ➔' : 'Xem tổng kết bài tập 🏆'}
             </button>
           )}

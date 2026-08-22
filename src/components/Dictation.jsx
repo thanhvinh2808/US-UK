@@ -156,7 +156,7 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
         <p className="color-text-muted text-sm mb-6">Chủ đề: {topic.topic}</p>
         
         <div className="score-radial-progress p-6 bg-[#FAFBFD] rounded-xl mb-6">
-          <div className="text-4xl font-mono font-bold" style={{ color: 'var(--color-primary)' }}>{Math.round(finalScore * 100)}%</div>
+          <div className="text-4xl font-mono font-bold pron-badge-primary">{Math.round(finalScore * 100)}%</div>
           <div className="text-xs font-mono font-bold color-text-muted uppercase mt-1">Độ chính xác</div>
         </div>
 
@@ -177,12 +177,11 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
       {/* Back button top-left */}
       {onNavigateBack && (
         <button 
-          className="btn-secondary text-xs mb-4" 
-          onClick={onNavigateBack}
-          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          ← Quay lại Dashboard
-        </button>
+                  className="btn-secondary text-xs mb-4 action-btn-round" 
+                  onClick={onNavigateBack}
+                >
+                  ← Quay lại Dashboard
+                </button>
       )}
 
       {/* 🚀 Top Headline Hero Banner */}
@@ -231,10 +230,9 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
         <main className="asymmetric-gallery-main">
           <div className="dictation-layout glass bg-white p-6 rounded-xl shadow-sm">
         <div className="progress-bar-container mb-6">
-          <div 
-            className="progress-bar-fill" 
-            style={{ width: `${(currentIdx / topic.dialogues.length) * 100}%` }}
-          />
+          <div className="pron-progress-track">
+                      <div className="pron-progress-fill" style={{ width: `${(currentIdx / topic.dialogues.length) * 100}%` }} />
+                    </div>
           <span className="progress-text font-mono text-xs">Câu {currentIdx + 1} / {topic.dialogues.length}</span>
         </div>
 

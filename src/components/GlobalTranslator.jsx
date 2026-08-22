@@ -4,6 +4,11 @@ import { playSound, speak, speakCompare } from '../utils/sounds';
 import { conjugateWithCompromise, getSForm, getPastForm, getIngForm } from '../utils/helpers/conjugationEngine';
 import { checkLocalGrammarErrors, checkGrammarOnline } from '../utils/helpers/grammarChecker';
 
+// Reusable UI primitives
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
+
 export default function GlobalTranslator({ onSavedVocabChange, showToast, isPageMode = false, onNavigateBack }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -827,13 +832,14 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </button>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading || !query.trim()}
+              variant="primary"
               className="translator-primary-btn"
             >
               {isLoading ? <span className="spinner" /> : <><span>Dịch nghĩa</span> ✨</>}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -850,7 +856,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 <p>Đang xử lý bản dịch...</p>
               </div>
             ) : result ? (
-              <div className="translator-result-card animate-fadeIn">
+              <Card className="translator-result-card animate-fadeIn">
                 <p className="translator-result-word">
                   {direction === 'en-vi' ? result.vietnamese : result.word}
                 </p>
@@ -859,7 +865,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                   {result.ipaUK && <span className="translator-ipa">🇬🇧 {result.ipaUK}</span>}
                   {result.ipaUS && <span className="translator-ipa">🇺🇸 {result.ipaUS}</span>}
                 </div>
-              </div>
+              </Card>
             ) : (
               <div className="translator-empty-state">
                 Kết quả dịch sẽ xuất hiện ở đây...
@@ -1040,61 +1046,51 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         </div>
       )}
 
-      {/* History Section */}
-      {searchHistory && searchHistory.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 margin-0">
-              🕒 Lịch sử tra cứu
-            </h3>
-            <button 
-              type="button"
-              onClick={() => {
-                localStorage.removeItem("eng_app_search_history");
-                setSearchHistory([]);
-                if (showToast) showToast("Đã xóa toàn bộ lịch sử tra cứu!", "info");
-              }}
-              className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 hover:underline border-none bg-none cursor-pointer"
-            >
-              🗑️ Xóa lịch sử
-            </button>
-          </div>
-
-          {/* Chips Grid */}
-          <div className="flex flex-wrap gap-2 translator-history-chips">
-            {searchHistory.map((item, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full text-xs text-slate-700 transition-colors"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (item && item.word) {
-                      setQuery(item.word);
-                      handleTranslate(null, item.word);
+      {/* History Section (center actions + hidden pills on desktop) */}
+          {searchHistory && searchHistory.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-slate-100 translator-history-center">
+              <div className="translator-footer-actions" role="region" aria-label="Nhật ký và Đã lưu">
+                <div className="translator-footer-action">
+                  <button type="button" className="action-circle" onClick={() => {
+                    // open history: show most recent entry
+                    if (searchHistory.length > 0) {
+                      const w = searchHistory[0].word;
+                      setQuery(w); handleTranslate(null, w);
                     }
-                  }}
-                  className="bg-none border-none p-0 cursor-pointer text-slate-700 hover:text-blue-600 font-normal text-xs"
-                >
-                  <span><strong>{item.word}</strong> {item.translation ? `→ ${item.translation}` : ''}</span>
-                </button>
-                <button 
-                  type="button"
-                  title="Xóa mục này"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteSingleHistoryItem(item.word);
-                  }}
-                  className="text-slate-400 hover:text-slate-600 font-bold ml-1 border-none bg-none cursor-pointer text-xs p-0"
-                >
-                  ✕
-                </button>
+                  }} aria-label="Mở Nhật ký">
+                    ⟳
+                  </button>
+                  <div className="text-xs">Nhật ký</div>
+                </div>
+
+                <div className="translator-footer-action">
+                  <button type="button" className="action-circle" onClick={() => {
+                    // navigate to notebook if parent provides a navigation handler
+                    if (onNavigateBack) onNavigateBack('notebook');
+                  }} aria-label="Mở Đã lưu">
+                    ★
+                  </button>
+                  <div className="text-xs">Đã lưu</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+
+              {/* Preserve pills for small screens only (they are hidden on desktop by CSS) */}
+              <div className="flex flex-wrap gap-2 translator-history-chips" style={{ display: 'none' }}>
+                {searchHistory.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full text-xs text-slate-700 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => { if (item && item.word) { setQuery(item.word); handleTranslate(null, item.word); } }}
+                      className="bg-none border-none p-0 cursor-pointer text-slate-700 hover:text-blue-600 font-normal text-xs"
+                    >
+                      <span><strong>{item.word}</strong> {item.translation ? `→ ${item.translation}` : ''}</span>
+                    </button>
+                    <button type="button" title="Xóa mục này" onClick={(e) => { e.stopPropagation(); deleteSingleHistoryItem(item.word); }} className="text-slate-400 hover:text-slate-600 font-bold ml-1 border-none bg-none cursor-pointer text-xs p-0">✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
     </div>
   );
 

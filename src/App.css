@@ -1,5 +1,5 @@
 /* ==========================================================================
-   🇬🇧 🇺🇸 OFFICIAL US-UK ANTIGRAVITY STUDIO APP STYLES
+   V English — Official app styles
    ========================================================================== */
 
 .quizlet-app-layout {
@@ -346,6 +346,17 @@
   border: 1px solid rgba(22, 63, 118, 0.08);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-shell,
+.panel-shell,
+.utility-panel,
+.card-surface,
+.screen-surface {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(246,249,255,0.96) 100%);
+  border: 1px solid rgba(22, 63, 118, 0.08);
+  border-radius: 22px;
   box-shadow: var(--shadow-soft);
 }
 

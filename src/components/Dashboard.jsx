@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { storage } from '../utils/storage';
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
 
 export default function Dashboard({ 
   stats = { streak: 1, level: 'A2', points: 0, completedModules: 0 }, 
@@ -89,9 +92,9 @@ export default function Dashboard({
         
         {/* 📌 Left Narrow Vertical Stats Column (Dồn dọc 1 cột hẹp) */}
         <aside className="vertical-stats-sidebar">
-          <div className="stats-sidebar-card card-surface">
+          <Panel className="stats-sidebar-card">
             <h3 className="stats-sidebar-header">BẢNG THỐNG KÊ</h3>
-            
+
             <div className="vertical-stat-item streak">
               <span className="stat-icon">🔥</span>
               <div className="stat-info">
@@ -152,16 +155,16 @@ export default function Dashboard({
 
             <div className="sidebar-action-box mt-4">
               {reviewsDue > 0 ? (
-                <button type="button" className="btn-primary w-full justify-center" onClick={() => onNavigate('flashcards')}>
+                <Button type="button" className="w-full justify-center" variant="primary" onClick={() => onNavigate('flashcards')}>
                   🔥 Ôn tập {reviewsDue} từ
-                </button>
+                </Button>
               ) : (
-                <button type="button" className="btn-secondary w-full justify-center" onClick={() => onNavigate('translator')}>
+                <Button type="button" className="w-full justify-center" variant="secondary" onClick={() => onNavigate('translator')}>
                   🔍 Tra từ AI [Ctrl+K]
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Panel>
         </aside>
 
         {/* 📚 Right Wide Asymmetric Lessons Gallery */}
@@ -190,34 +193,28 @@ export default function Dashboard({
 
           {/* 🌟 FEATURED / IN-PROGRESS LARGE CARD */}
           {featuredTopic && (
-            <div
-              className="featured-large-card card-surface"
-              role="button"
-              tabIndex={0}
-              onClick={() => onSelectTopic && onSelectTopic(featuredTopic)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectTopic && onSelectTopic(featuredTopic); }}
-            >
-              <div className="featured-card-badge">
-                <span>🔥 BÀI ĐANG HỌC DỞ</span>
-                <span className="featured-level">{featuredTopic.level || 'A2'}</span>
-              </div>
+           <Card className="featured-large-card" role="button" tabIndex={0} onClick={() => onSelectTopic && onSelectTopic(featuredTopic)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectTopic && onSelectTopic(featuredTopic); }}>
+             <div className="featured-card-badge">
+               <span>🔥 BÀI ĐANG HỌC DỞ</span>
+               <span className="featured-level">{featuredTopic.level || 'A2'}</span>
+             </div>
 
-              <h3 className="featured-card-title">{featuredTopic.title || 'Bài đọc học tiếng Anh'}</h3>
-              <span className="featured-card-category">{featuredTopic.topicCategory || featuredTopic.topic || 'Chủ đề'}</span>
+             <h3 className="featured-card-title">{featuredTopic.title || 'Bài đọc học tiếng Anh'}</h3>
+             <span className="featured-card-category">{featuredTopic.topicCategory || featuredTopic.topic || 'Chủ đề'}</span>
               
-              <p className="featured-card-snippet">
-                {featuredTopic.reading_passage ? featuredTopic.reading_passage.slice(0, 160) + '...' : ''}
-              </p>
+             <p className="featured-card-snippet">
+               {featuredTopic.reading_passage ? featuredTopic.reading_passage.slice(0, 160) + '...' : ''}
+             </p>
 
-              <div className="featured-card-footer">
-                <span className="featured-terms-count font-mono">
-                  📚 {(featuredTopic.default_vocabs || []).length || 6} thuật ngữ IPA
-                </span>
-                <button type="button" className="btn-primary featured-start-btn">
-                  Tiếp tục học ngay ➔
-                </button>
-              </div>
-            </div>
+             <div className="featured-card-footer">
+               <span className="featured-terms-count font-mono">
+                 📚 {(featuredTopic.default_vocabs || []).length || 6} thuật ngữ IPA
+               </span>
+               <Button type="button" variant="primary" className="featured-start-btn">
+                 Tiếp tục học ngay ➔
+               </Button>
+             </div>
+           </Card>
           )}
 
           {/* 📦 COMPACT UNSTUDIED CARDS GRID */}
@@ -233,9 +230,9 @@ export default function Dashboard({
               const cardClass = isUKTopic ? 'uk-accent-card' : 'us-accent-card';
 
               return (
-                <div 
+                <Card
                   key={topic.id || topic._id || idx}
-                  className={`compact-lesson-card card-surface ${cardClass}`}
+                  className={`compact-lesson-card ${cardClass}`}
                   onClick={() => onSelectTopic && onSelectTopic(topic)}
                   role="button"
                   tabIndex={0}
@@ -261,7 +258,7 @@ export default function Dashboard({
                       {(topic.default_vocabs || []).length || 6} từ
                     </span>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

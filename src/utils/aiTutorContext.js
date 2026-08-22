@@ -8,7 +8,7 @@ import { storage } from "./storage.js";
 // 1. SYSTEM PROMPT CỐ ĐỊNH — viết 1 lần, không đổi mỗi lần gọi
 // ─────────────────────────────────────────────
 export const TUTOR_SYSTEM_PROMPT = `
-Bạn là "Gia sư AI" trong ứng dụng học tiếng Anh Antigravity English (US-UK).
+Bạn là "Gia sư AI" trong ứng dụng học tiếng Anh V English (US-UK).
 Vai trò: gia sư 1:1 kiên nhẫn, dạy người Việt qua hội thoại tự nhiên, không giảng lý thuyết dài dòng.
 
 QUY TẮC BẮT BUỘC:

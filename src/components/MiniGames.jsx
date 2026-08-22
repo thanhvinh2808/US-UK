@@ -646,21 +646,21 @@ export default function MiniGames({ onNavigateBack, showToast }) {
   // Highlight prefix typed correctly (Using hex inline styles to prevent missing Tailwind blank text color)
   const highlightWord = (word, input) => {
     if (!word) return null;
-    if (!input) return <span style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{word}</span>;
+    if (!input) return <span className="mono-strong primary-text">{word}</span>;
     
     const trimmedInput = input.trim().toLowerCase();
     if (word.toLowerCase().startsWith(trimmedInput)) {
       const matchLen = trimmedInput.length;
       return (
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>
-          <span style={{ color: 'var(--color-primary)', fontWeight: '800' }}>
+        <span className="mono-strong">
+          <span className="primary-text" style={{ fontWeight: 800 }}>
             {word.slice(0, matchLen)}
           </span>
-          <span style={{ color: 'var(--color-text-muted)' }}>{word.slice(matchLen)}</span>
+          <span className="muted-text">{word.slice(matchLen)}</span>
         </span>
       );
     }
-    return <span style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>{word}</span>;
+    return <span className="mono-strong primary-text">{word}</span>;
   };
 
   useEffect(() => {
@@ -686,18 +686,17 @@ export default function MiniGames({ onNavigateBack, showToast }) {
     <div className="mini-games-screen animate-slideup max-w-6xl mx-auto">
       {/* Back button top-left */}
       {onNavigateBack && (
-        <button 
-          className="btn-secondary text-xs mb-4" 
-          onClick={activeGame ? handleBackToMenu : onNavigateBack}
-          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          {activeGame ? '← Thoát game' : '← Quay lại Dashboard'}
-        </button>
-      )}
+              <button 
+                className="btn-secondary text-xs mb-4 btn-back" 
+                onClick={activeGame ? handleBackToMenu : onNavigateBack}
+              >
+                {activeGame ? '← Thoát game' : '← Quay lại Dashboard'}
+              </button>
+            )}
 
       {/* 🚀 Top Headline Hero Banner */}
       <div className="asymmetric-hero-banner">
-        <div className="hero-badge-tag">ANTIGRAVITY PLAYZONE</div>
+        <div className="hero-badge-tag">V English Playzone</div>
         <h1 className="hero-main-title">Khu Vui Chơi Học Từ Vựng (Mini Games)</h1>
         <p className="hero-main-sub">
           Ôn luyện phản xạ từ vựng qua các minigames thú vị như Hangman, Time Attack và Space Typer.
@@ -722,11 +721,6 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                   key={tab.id}
                   onClick={() => handleSourceChange(tab.id)}
                   className={`btn-secondary text-xs text-left justify-start py-2.5 px-3 w-full ${selectedSource === tab.id ? 'active-pill' : ''}`}
-                  style={{
-                    borderRadius: '8px',
-                    border: selectedSource === tab.id ? '2px solid var(--color-primary)' : 'none',
-                    fontWeight: selectedSource === tab.id ? '700' : '500'
-                  }}
                 >
                   {tab.label}
                 </button>
@@ -845,8 +839,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                     key={char}
                     disabled={used}
                     onClick={() => handleGuess(char)}
-                    className={`w-10 h-10 flex items-center justify-center font-bold rounded cursor-pointer transition ${used ? correct ? 'bg-emerald-600 text-white' : 'bg-rose-950 text-slate-500 opacity-40' : 'bg-slate-800 hover:bg-slate-700 color-text-dark'}`}
-                    style={{ fontSize: '16px' }}
+                    className={`w-10 h-10 flex items-center justify-center font-bold rounded cursor-pointer transition text-16 ${used ? correct ? 'bg-emerald-600 text-white' : 'bg-rose-950 text-slate-500 opacity-40' : 'bg-slate-800 hover:bg-slate-700 color-text-dark'}`}
                   >
                     {char.toUpperCase()}
                   </button>
@@ -898,15 +891,15 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                 <div className="text-sm color-text-muted font-semibold">
                   Điểm: <strong className="color-primary text-lg">{quizScore}</strong>
                 </div>
-                <div className="text-sm font-bold flex items-center gap-2" style={{ color: timeLeft <= 10 ? 'var(--color-error)' : 'var(--color-secondary)' }}>
+                <div className={`text-sm font-bold flex items-center gap-2 ${timeLeft <= 10 ? 'text-error' : 'text-success'}`}>
                   ⏱️ Thời gian: <span className="text-lg font-extrabold">{timeLeft}s</span>
                 </div>
               </div>
 
               <div className="w-full h-2 rounded bg-slate-800 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-1000"
-                  style={{ width: `${(timeLeft / 60) * 100}%`, background: timeLeft <= 10 ? 'var(--color-error)' : 'var(--color-secondary)' }}
+                  className={`h-full transition-all duration-1000 ${timeLeft <= 10 ? 'bg-error-fill' : 'bg-secondary-fill'}`}
+                  style={{ width: `${(timeLeft / 60) * 100}%` }}
                 ></div>
               </div>
 
@@ -1081,12 +1074,8 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                       }}
                     >
                       <div className={cardClass}>
-                        <span style={{ fontSize: '14px', fontWeight: '800', fontFamily: 'monospace', letterSpacing: '0.05em', display: 'block' }}>
-                          {highlightWord(w.word, stInput)}
-                        </span>
-                        <span style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontFamily: 'sans-serif', display: 'block', whiteSpace: 'nowrap' }}>
-                          {w.vietnamese}
-                        </span>
+                        <span className="text-14 mono-strong" style={{ letterSpacing: '0.05em', display: 'block' }}>{highlightWord(w.word, stInput)}</span>
+                        <span className="small-muted">{w.vietnamese}</span>
                       </div>
                     </div>
                   );
@@ -1136,7 +1125,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                 </div>
                 <div>
                   <span className="text-xs color-text-muted block font-semibold uppercase">XP Nhận được</span>
-                  <span className="text-3xl font-extrabold" style={{ color: 'var(--color-success)' }}>+{Math.floor(stScore * 1.5)} XP</span>
+                  <span className="text-3xl font-extrabold xp-badge">+{Math.floor(stScore * 1.5)} XP</span>
                 </div>
               </div>
 
@@ -1145,8 +1134,7 @@ export default function MiniGames({ onNavigateBack, showToast }) {
                   Menu chính
                 </button>
                 <button 
-                  className="btn-primary py-2 px-6" 
-                  style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)' }}
+                  className="btn-primary py-2 px-6 primary-gradient" 
                   onClick={startSpaceTyper}
                 >
                   Chơi lại 🚀

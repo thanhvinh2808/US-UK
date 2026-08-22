@@ -4,6 +4,10 @@ import { playSound, vibrate, speak } from '../utils/sounds';
 import { api } from '../services/api';
 import confetti from 'canvas-confetti';
 
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
+
 export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToast }) {
   const [savedVocab, setSavedVocab] = useState(() => storage.getSavedVocab());
   const [cloudSets, setCloudSets] = useState([]);
@@ -219,14 +223,15 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
       <div className="asymmetric-layout animate-slideup max-w-5xl mx-auto">
         {/* Back button top-left */}
         {onNavigateBack && (
-          <button
+          <Button
             type="button"
-            className="btn-secondary text-xs mb-4"
+            variant="secondary"
+            className="text-xs mb-4"
             onClick={onNavigateBack}
             aria-label="Quay lại Dashboard"
           >
             ← Quay lại Dashboard
-          </button>
+          </Button>
         )}
 
         {/* 🚀 Top Headline Hero Banner */}
@@ -242,33 +247,31 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
         <div className="asymmetric-body-grid">
           {/* 📌 Left Narrow Vertical Stats Column */}
           <aside className="vertical-stats-sidebar">
-            <div className="stats-sidebar-card card-surface">
-              <h3 className="stats-sidebar-header">THỐNG KÊ FLASHCARDS</h3>
-              
-              <div className="vertical-stat-item notebook">
-                <span className="stat-icon">📖</span>
-                <div className="stat-info">
-                  <span className="stat-value-mono">{savedVocab.length} từ</span>
-                  <span className="stat-sub">Trong sổ tay cá nhân</span>
+              <Panel className="stats-sidebar-card">
+                <div className="vertical-stat-item notebook">
+                  <span className="stat-icon">📖</span>
+                  <div className="stat-info">
+                    <span className="stat-value-mono">{savedVocab.length} từ</span>
+                    <span className="stat-sub">Trong sổ tay cá nhân</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="vertical-stat-item level">
-                <span className="stat-icon">☁️</span>
-                <div className="stat-info">
-                  <span className="stat-value-mono">{cloudSets.length} bộ</span>
-                  <span className="stat-sub">Cloud Study Sets</span>
+                <div className="vertical-stat-item level">
+                  <span className="stat-icon">☁️</span>
+                  <div className="stat-info">
+                    <span className="stat-value-mono">{cloudSets.length} bộ</span>
+                    <span className="stat-sub">Cloud Study Sets</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="vertical-stat-item streak">
-                <span className="stat-icon">⚡</span>
-                <div className="stat-info">
-                  <span className="stat-value-mono">{quizMode.toUpperCase()}</span>
-                  <span className="stat-sub">Chế độ đang chọn</span>
+                <div className="vertical-stat-item streak">
+                  <span className="stat-icon">⚡</span>
+                  <div className="stat-info">
+                    <span className="stat-value-mono">{quizMode.toUpperCase()}</span>
+                    <span className="stat-sub">Chế độ đang chọn</span>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </Panel>
           </aside>
 
           {/* 📚 Right Wide Main Workspace */}
@@ -376,14 +379,13 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                         const disabled = currentPoolSize < num;
                         return (
                           <button
-                            key={num}
-                            disabled={disabled}
-                            className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active' : ''}`}
-                            onClick={() => setQuizLength(num)}
-                            style={{ opacity: disabled ? 0.4 : 1 }}
-                          >
-                            {num} câu
-                          </button>
+                                                      key={num}
+                                                      disabled={disabled}
+                                                      className={`btn-secondary text-xs flex-1 ${quizLength === num ? 'active' : ''} ${disabled ? 'btn-disabled' : ''}`}
+                                                      onClick={() => setQuizLength(num)}
+                                                    >
+                                                      {num} câu
+                                                    </button>
                         );
                       })}
                     </div>
@@ -391,14 +393,14 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                 </div>
               ) : null}
 
-              <button 
-                className="btn-primary w-full justify-center py-3"
-                disabled={!canPlay}
-                onClick={handleStartQuiz}
-                style={{ opacity: canPlay ? 1 : 0.5, cursor: canPlay ? 'pointer' : 'not-allowed' }}
-              >
-                Bắt đầu trắc nghiệm
-              </button>
+              <Button
+                              className={`w-full justify-center py-3 ${!canPlay ? 'btn-disabled' : ''}`}
+                              variant="primary"
+                              disabled={!canPlay}
+                              onClick={handleStartQuiz}
+                            >
+                              Bắt đầu trắc nghiệm
+                            </Button>
             </div>
           </main>
         </div>
@@ -413,7 +415,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
         {/* Header */}
         <div className="screen-header mb-4 flex justify-between items-center text-sm color-text-muted">
           <span>Câu hỏi <strong>{currentIndex + 1}</strong> / {quizWords.length}</span>
-          <span>Điểm số: <strong style={{ color: 'var(--color-success)' }}>{score}</strong></span>
+                    <span>Điểm số: <strong className="text-success">{score}</strong></span>
         </div>
 
         {/* Progress Bar */}
@@ -428,7 +430,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
         <div className="quiz-card card-surface p-6 mb-6">
           {/* Question Text */}
           <div className="question-prompt text-center mb-6">
-            <span className="badge-pos mb-2" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-primary)', border: 'none' }}>
+            <span className="badge-pos mb-2">
               {isSpellingQuestion ? '✍️ Thử thách Viết' : '🔘 Trắc nghiệm chọn'}
             </span>
             
@@ -457,17 +459,16 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           {isSpellingQuestion ? (
             <div className="spelling-answer-container mb-6">
               <input
-                type="text"
-                className="translator-input w-full card-surface text-center font-bold"
-                style={{ fontSize: '18px', padding: '12px' }}
-                placeholder="Gõ từ tiếng Anh vào đây..."
-                value={spellingInput}
-                onChange={(e) => setSpellingInput(e.target.value)}
-                disabled={checked}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-              />
+                              type="text"
+                              className="translator-input w-full card-surface text-center font-bold spelling-input"
+                              placeholder="Gõ từ tiếng Anh vào đây..."
+                              value={spellingInput}
+                              onChange={(e) => setSpellingInput(e.target.value)}
+                              disabled={checked}
+                              autoComplete="off"
+                              autoCorrect="off"
+                              autoCapitalize="off"
+                            />
             </div>
           ) : (
             <div className="choice-options-grid flex flex-col gap-3 mb-6">
@@ -475,48 +476,36 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                 const isSelected = selectedOption === option;
                 const isCorrectAns = isEngToVi ? option === currentWord.vietnamese : option === currentWord.word;
                 
-                let btnStyle = {};
-                let labelClass = "";
-                
-                if (checked) {
-                  if (isCorrectAns) {
-                    btnStyle = { borderColor: 'var(--color-success)', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)' };
-                  } else if (isSelected) {
-                    btnStyle = { borderColor: 'var(--color-error)', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-error)' };
-                  } else {
-                    btnStyle = { opacity: 0.5 };
-                  }
-                } else if (isSelected) {
-                  btnStyle = { borderColor: 'var(--color-primary)', background: 'var(--color-primary-glow)' };
-                }
+                let optionClasses = 'btn-secondary text-left w-full p-4 flex justify-between items-center transition-all option-btn';
 
-                return (
-                  <button
-                    key={idx}
-                    className="btn-secondary text-left w-full p-4 flex justify-between items-center transition-all"
-                    style={{ borderRadius: 'var(--radius-md)', fontSize: '16px', fontWeight: '500', ...btnStyle }}
-                    onClick={() => handleSelectOption(option)}
-                    disabled={checked}
-                  >
-                    <span>{option}</span>
-                    {checked && isCorrectAns && <span style={{ color: 'var(--color-success)' }}>✓</span>}
-                    {checked && isSelected && !isCorrectAns && <span style={{ color: 'var(--color-error)' }}>✕</span>}
-                  </button>
-                );
+                                if (checked) {
+                                  if (isCorrectAns) optionClasses += ' option-correct';
+                                  else if (isSelected) optionClasses += ' option-wrong';
+                                  else optionClasses += ' option-muted';
+                                } else if (isSelected) {
+                                  optionClasses += ' option-selected';
+                                }
+
+                                return (
+                                  <button
+                                    key={idx}
+                                    className={optionClasses}
+                                    onClick={() => handleSelectOption(option)}
+                                    disabled={checked}
+                                  >
+                                    <span>{option}</span>
+                                    {checked && isCorrectAns && <span className="text-success">✓</span>}
+                                    {checked && isSelected && !isCorrectAns && <span className="text-error">✕</span>}
+                                  </button>
+                                );
               })}
             </div>
           )}
 
           {/* Submission Feedback */}
           {checked && (
-            <div 
-              className="feedback-alert p-4 glass-glow rounded mb-6 animate-slideup"
-              style={{ 
-                borderLeft: `4px solid ${isCorrect ? 'var(--color-success)' : 'var(--color-error)'}`,
-                background: isCorrect ? 'rgba(16, 185, 129, 0.03)' : 'rgba(239, 68, 68, 0.03)'
-              }}
-            >
-              <h4 className="font-bold mb-1" style={{ color: isCorrect ? 'var(--color-success)' : 'var(--color-error)' }}>
+            <div className={`feedback-alert p-4 glass-glow rounded mb-6 animate-slideup ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`}>
+              <h4 className={`font-bold mb-1 ${isCorrect ? 'text-success' : 'text-error'}`}>
                 {isCorrect ? '🎉 Trả lời chính xác!' : '😢 Trả lời sai mất rồi'}
               </h4>
               <div className="text-sm color-text-main mt-2">
@@ -532,22 +521,24 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           {/* Action Button */}
           <div className="action-area">
             {!checked ? (
-              <button 
+              <Button
                 type="button"
-                className="btn-primary w-full justify-center py-3"
+                variant="primary"
+                className="w-full justify-center py-3"
                 disabled={isSpellingQuestion ? !spellingInput.trim() : !selectedOption}
                 onClick={handleSubmitAnswer}
               >
                 Kiểm tra câu trả lời
-              </button>
+              </Button>
             ) : (
-              <button 
+              <Button
                 type="button"
-                className="btn-primary w-full justify-center py-3"
+                variant="primary"
+                className="w-full justify-center py-3"
                 onClick={handleNextQuestion}
               >
                 {currentIndex < quizWords.length - 1 ? 'Tiếp theo →' : 'Xem kết quả kết thúc'}
-              </button>
+              </Button>
             )}
             <p className="text-center color-text-muted text-xxs mt-3">Mẹo: Bạn có thể nhấn phím <strong>Enter</strong> để kiểm tra nhanh và chuyển câu hỏi.</p>
           </div>
@@ -572,7 +563,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
           {/* Radial score progress */}
           <div className="score-radial-progress mb-6 flex flex-col items-center">
-            <div className="score-percentage" style={{ fontSize: '42px', fontWeight: '900', color: percentage >= 80 ? 'var(--color-success)' : 'var(--color-secondary)' }}>
+                      <div className="score-percentage text-4xl font-black" style={{ color: percentage >= 80 ? 'var(--color-success)' : 'var(--color-secondary)' }}>
               {percentage}%
             </div>
             <div className="score-label mt-1 text-sm color-text-muted">Độ chính xác ({finalScore}/{totalQuestions} câu đúng)</div>
@@ -585,38 +576,34 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
             <h3 className="text-sm font-semibold mb-3 color-text-main">CHI TIẾT PHÒNG ĐẤU:</h3>
             <div className="card-surface p-3 results-scroll">
               {resultsList.map((item, idx) => (
-                <div 
-                  key={idx} 
-                  className="flex justify-between items-center py-2 border-b border-light last:border-0"
-                  style={{ fontSize: '14px' }}
-                >
-                  <div>
-                    <strong className={item.correct ? 'color-text-main' : 'color-text-muted'}>{item.word.word}</strong>
-                    <span className="text-xs color-text-muted block">{item.word.vietnamese}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xxs badge-pos" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--color-text-muted)', border: 'none' }}>
-                      {item.isSpelling ? 'Viết' : 'Trắc nghiệm'}
-                    </span>
-                    <span style={{ 
-                      color: item.correct ? 'var(--color-success)' : 'var(--color-error)',
-                      fontWeight: 'bold'
-                    }}>
-                      {item.correct ? 'Đúng' : 'Sai'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                              <div 
+                                key={idx} 
+                                className="flex justify-between items-center py-2 border-b border-light last:border-0 text-14"
+                              >
+                                <div>
+                                  <strong className={item.correct ? 'color-text-main' : 'color-text-muted'}>{item.word.word}</strong>
+                                  <span className="text-xs color-text-muted block">{item.word.vietnamese}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xxs badge-pos badge-muted">
+                                    {item.isSpelling ? 'Viết' : 'Trắc nghiệm'}
+                                  </span>
+                                  <span className={item.correct ? 'text-success font-bold' : 'text-error font-bold'}>
+                                    {item.correct ? 'Đúng' : 'Sai'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
             </div>
           </div>
 
           <div className="flex gap-3">
-            <button type="button" className="btn-secondary flex-1 justify-center py-3" onClick={() => setGameState('settings')}>
+          <Button type="button" variant="secondary" className="flex-1 justify-center py-3" onClick={() => setGameState('settings')}>
               🔄 Luyện lại
-            </button>
-            <button type="button" className="btn-primary flex-1 justify-center py-3" onClick={onNavigateBack}>
+          </Button>
+          <Button type="button" variant="primary" className="flex-1 justify-center py-3" onClick={onNavigateBack}>
               Quay về trang chủ
-            </button>
+          </Button>
           </div>
         </div>
       </div>

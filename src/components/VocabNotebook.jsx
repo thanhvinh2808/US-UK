@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
 import { speak, speakCompare, playSound, vibrate } from '../utils/sounds';
 
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
+
 export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, showToast }) {
   const [vocabList, setVocabList] = useState(() => storage.getSavedVocab());
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,13 +135,13 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       )}
 
       {/* 🚀 Top Headline Hero Banner */}
-      <div className="asymmetric-hero-banner">
+      <Card className="asymmetric-hero-banner">
         <div className="hero-badge-tag">PERSONAL VOCABULARY NOTEBOOK</div>
         <h1 className="hero-main-title">Sổ Tay Từ Vựng Cá Nhân</h1>
         <p className="hero-main-sub">
           Quản lý, tạo bộ thẻ ghi nhớ (Custom Decks) và theo dõi thuật toán lặp lại ngắt quãng Spaced Repetition (SM-2).
         </p>
-      </div>
+      </Card>
 
       {/* 📐 Asymmetric 2-Column Split Body */}
       <div className="asymmetric-body-grid">
@@ -171,9 +175,9 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
             </div>
 
             <div className="sidebar-action-box mt-2">
-              <button className="btn-primary w-full justify-center text-xs" onClick={() => onNavigateToFlashcards && onNavigateToFlashcards()}>
+              <Button className="w-full justify-center text-xs" variant="primary" onClick={() => onNavigateToFlashcards && onNavigateToFlashcards()}>
                 🔥 Ôn tập Flashcards ngay
-              </button>
+              </Button>
             </div>
           </div>
         </aside>

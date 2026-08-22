@@ -1,4 +1,6 @@
 import React from 'react';
+import Card from './ui/Card';
+import Button from './ui/Button';
 
 export default function TopicDetail({ topic, progress, onSelectModule, onNavigateBack }) {
   const topicProg = progress[topic.id] || {
@@ -19,18 +21,19 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
     <div className="topic-hub-screen animate-slideup">
       {/* Back Button top-left */}
       {onNavigateBack && (
-        <button 
-                type="button"
-                className="btn-secondary text-xs mb-4"
-                onClick={onNavigateBack}
-                aria-label="Quay lại Dashboard"
-              >
-                ← Quay lại Dashboard
-              </button>
-            )}
+        <Button
+          type="button"
+          variant="secondary"
+          className="text-xs mb-4"
+          onClick={onNavigateBack}
+          aria-label="Quay lại Dashboard"
+        >
+          ← Quay lại Dashboard
+        </Button>
+      )}
 
       {/* Topic Hero Card */}
-      <div className="topic-hero-card card-surface p-8 mb-8">
+          <Card className="topic-hero-card p-8 mb-8">
         <div className="flex justify-between items-center mb-3">
           <span className={`badge-level level-${topic.level.toLowerCase()}`}>{topic.level}</span>
           <span className="color-text-muted text-xs font-mono">{topic.topic} Topic</span>
@@ -39,13 +42,13 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
         <p className="topic-hero-desc color-text-muted max-w-2xl leading-relaxed text-xs">
           {topic.description}
         </p>
-      </div>
+          </Card>
 
       {/* Modules Selection Grid */}
       <div className="modules-grid mb-8">
         {/* Module 1: Reading & Vocab */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">R</div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">R</div>
           <h3 className="mb-2">Module 1: Reading passage</h3>
           <p className="color-text-muted text-sm mb-6">
             Read the main passage and build your vocabulary. Select any words to get instant translations, pronunciation, and detailed definitions.
@@ -57,18 +60,19 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
               <span className="status-pill learning">Not Started</span>
             )}
           </div>
-          <button 
-                      type="button"
-                      className="btn-primary w-full justify-center mt-auto"
-                      onClick={() => onSelectModule('reader')}
-                    >
-                      Start Reading
-                    </button>
-        </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full justify-center mt-auto"
+            onClick={() => onSelectModule('reader')}
+          >
+            Start Reading
+          </Button>
+        </Card>
 
         {/* Module 1.5: Grammar Lab */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">G</div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">G</div>
           <h3 className="mb-2">
             {hasGrammar ? "Module 1.5: Grammar Lab" : "Grammar Lab: Coming Soon"}
           </h3>
@@ -88,19 +92,20 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
               <span className="status-pill learning">Locked</span>
             )}
           </div>
-          <button 
-                      type="button"
-                      className={`btn-primary w-full justify-center mt-auto ${!hasGrammar ? 'is-disabled' : ''}`}
-                      onClick={() => onSelectModule('grammar')}
-                      disabled={!hasGrammar}
-                    >
-                      {hasGrammar ? "Start Grammar Lab" : "Locked"}
-                    </button>
-        </div>
+          <Button
+            type="button"
+            variant="primary"
+            className={`w-full justify-center mt-auto ${!hasGrammar ? 'is-disabled' : ''}`}
+            onClick={() => onSelectModule('grammar')}
+            disabled={!hasGrammar}
+          >
+            {hasGrammar ? "Start Grammar Lab" : "Locked"}
+          </Button>
+        </Card>
 
         {/* Module 2: Listening & Dictation */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">D</div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">D</div>
           <h3 className="mb-2">Module 2: Dictation Arena</h3>
           <p className="color-text-muted text-sm mb-6">
             Listen to dialogues sentence by sentence and transcribe them. Test your listening comprehension and spelling precision.
@@ -114,18 +119,19 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
               <span className="status-pill learning">Not Started</span>
             )}
           </div>
-          <button 
-                      type="button"
-                      className="btn-primary w-full justify-center mt-auto"
-                      onClick={() => onSelectModule('dictation')}
-                    >
-                      Start Dictation
-                    </button>
-        </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full justify-center mt-auto"
+            onClick={() => onSelectModule('dictation')}
+          >
+            Start Dictation
+          </Button>
+        </Card>
 
         {/* Module 2.5: Writing Lab */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">W</div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">W</div>
           <h3 className="mb-2">
             {hasGrammar ? "Module 2.5: Writing Challenge" : "Writing Challenge: Coming Soon"}
           </h3>
@@ -147,19 +153,20 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
               <span className="status-pill learning">Locked</span>
             )}
           </div>
-          <button 
-                      type="button"
-                      className={`btn-primary w-full justify-center mt-auto ${!hasGrammar ? 'is-disabled' : ''}`}
-                      onClick={() => onSelectModule('writing')}
-                      disabled={!hasGrammar}
-                    >
-                      {hasGrammar ? "Start Writing Lab" : "Locked"}
-                    </button>
-        </div>
+          <Button
+            type="button"
+            variant="primary"
+            className={`w-full justify-center mt-auto ${!hasGrammar ? 'is-disabled' : ''}`}
+            onClick={() => onSelectModule('writing')}
+            disabled={!hasGrammar}
+          >
+            {hasGrammar ? "Start Writing Lab" : "Locked"}
+          </Button>
+        </Card>
 
         {/* Module 3: Speaking & Pronunciation */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">S</div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">S</div>
           <h3 className="mb-2">Module 3: Speaking Arena</h3>
           <p className="color-text-muted text-sm mb-6">
             Speak into the microphone to read the sentences. Our system evaluates your voice input and highlights pronunciation errors.
@@ -173,35 +180,37 @@ export default function TopicDetail({ topic, progress, onSelectModule, onNavigat
               <span className="status-pill learning">Not Started</span>
             )}
           </div>
-          <button 
-                      type="button"
-                      className="btn-primary w-full justify-center mt-auto"
-                      onClick={() => onSelectModule('pronunciation')}
-                    >
-                      Start Speaking
-                    </button>
-        </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full justify-center mt-auto"
+            onClick={() => onSelectModule('pronunciation')}
+          >
+            Start Speaking
+          </Button>
+        </Card>
 
         {/* Module 3.5: Shadowing Reflex */}
-        <div className="module-select-card card-surface p-6">
-                  <div className="module-icon-large module-icon-strong">⚡</div>
-                  <h3 className="mb-2">Module 3.5: Shadowing Reflex</h3>
-                  <p className="color-text-muted text-sm mb-6">
-                    Luyện phản xạ nói đuổi theo giọng mẫu. Hệ thống tự động mở ghi âm sau khi âm thanh kết thúc và đo đạc độ trễ phản hồi của bạn.
-                  </p>
-                  <div className="module-status-indicator mb-6">
-                    <span className="status-pill status-pill-ready">
-                      Sẵn sàng
-                    </span>
-                  </div>
-                  <button 
-                    type="button"
-                    className="btn-primary w-full justify-center mt-auto"
-                    onClick={() => onSelectModule('shadowing')}
-                  >
-                    Start Shadowing
-                  </button>
-                </div>
+        <Card className="module-select-card p-6">
+          <div className="module-icon-large module-icon-strong">⚡</div>
+          <h3 className="mb-2">Module 3.5: Shadowing Reflex</h3>
+          <p className="color-text-muted text-sm mb-6">
+            Luyện phản xạ nói đuổi theo giọng mẫu. Hệ thống tự động mở ghi âm sau khi âm thanh kết thúc và đo đạc độ trễ phản hồi của bạn.
+          </p>
+          <div className="module-status-indicator mb-6">
+            <span className="status-pill status-pill-ready">
+              Sẵn sàng
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="w-full justify-center mt-auto"
+            onClick={() => onSelectModule('shadowing')}
+          >
+            Start Shadowing
+          </Button>
+        </Card>
       </div>
     </div>
   );

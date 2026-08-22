@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 import { speak, speakCompare } from '../utils/sounds';
 
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Panel from './ui/Panel';
+
 export default function VocabReader({ topic, onSavedVocabChange, onComplete, onNavigateBack, showToast }) {
   const [selectedWord, setSelectedWord] = useState(null);
   const [customTranslation, setCustomTranslation] = useState('');
@@ -357,8 +361,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                   setFontFamily(e.target.value);
                   localStorage.setItem('eng_app_reader_font_family', e.target.value);
                 }}
-                className="btn-secondary text-xs"
-                style={{ padding: '4px 8px', background: 'var(--bg-dark)', color: 'var(--color-text-main)' }}
+                className="btn-secondary text-xs reader-select"
               >
                 <option value="var(--font-sans)">Không chân (Sans-Serif)</option>
                 <option value="Georgia, Cambria, 'Times New Roman', Times, serif">Có chân (Serif)</option>
@@ -369,12 +372,10 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
           </div>
           
           <div 
-            className="reading-text-box mb-6"
+            className="reading-text-box mb-6 reading-text"
             style={{ 
               fontSize: `${fontSize}px`, 
-              fontFamily: fontFamily,
-              lineHeight: '1.8',
-              letterSpacing: '0.02em'
+              fontFamily: fontFamily
             }}
           >
             {words.map((word, idx) => {
@@ -421,7 +422,7 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
           </div>
 
           {showFullTranslation && (
-            <div className="paragraph-translation-box glass p-5 mb-6 animate-slideup" style={{ borderLeft: '4px solid var(--color-secondary)' }}>
+            <div className="paragraph-translation-box glass p-5 mb-6 animate-slideup paragraph-translation">
               <h4 className="color-text-muted mb-2 text-sm">🇻🇳 Bản dịch nghĩa tiếng Việt:</h4>
               <p className="color-text-main leading-relaxed paragraph-translation-text">
                 {topic.reading_passage_translation}
@@ -438,26 +439,19 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
             <div className="word-details-box glass-glow p-5 mb-6">
               <div className="details-header mb-3">
                 <h3 className="word-title">{selectedWord.word}</h3>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div className="flex gap-2 items-center">
+                  <div className="flex gap-1 items-center">
                     <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word, 'US')} title="US Pronunciation">🇺🇸</button>
                     <button className="speak-btn" onClick={() => handleSpeak(selectedWord.word, 'UK')} title="UK Pronunciation">🇬🇧</button>
                     <button className="speak-btn" onClick={() => speakCompare(selectedWord.word)} title="Compare US/UK">🆚</button>
                   </div>
                   <button 
-                    className="speak-btn close-details-btn" 
+                    className="speak-btn close-details-btn close-details-danger" 
                     onClick={() => {
                       setSelectedWord(null);
                       setIsSidebarOpen(false);
                     }} 
                     title="Close details"
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      color: 'var(--color-error)',
-                      borderColor: 'rgba(239, 68, 68, 0.2)',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}
                   >
                     ✕
                   </button>
@@ -465,11 +459,11 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
               </div>
 
               {selectedWord.ipaUK && selectedWord.ipaUS ? (
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  <span className="vocab-row-ipa" style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--color-secondary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <span className="vocab-row-ipa ipa-badge uk">
                     🇬🇧 UK: {selectedWord.ipaUK}
                   </span>
-                  <span className="vocab-row-ipa" style={{ background: 'rgba(124,58,237,0.06)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                  <span className="vocab-row-ipa ipa-badge us">
                     🇺🇸 US: {selectedWord.ipaUS}
                   </span>
                 </div>
@@ -493,14 +487,14 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
 
               {/* Meanings grouped by Part of Speech */}
               {selectedWord.meaningsByPos && selectedWord.meaningsByPos.length > 0 && (
-                <div className="meanings-by-pos-box mb-4 p-3 rounded" style={{ background: 'rgba(255, 255, 255, 0.03)' }}>
-                  <span className="text-xs color-text-muted font-bold block mb-2" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <div className="meanings-by-pos-box mb-4 p-3 rounded meanings-bg">
+                  <span className="text-xs color-text-muted font-bold block mb-2 small-letterspace uppercase">
                     📚 Các nghĩa theo từ loại (Phù hợp ngữ cảnh):
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="flex flex-col gap-2">
                     {selectedWord.meaningsByPos.map((posGroup, idx) => (
-                      <div key={idx} style={{ fontSize: '13px' }}>
-                        <span style={{ fontWeight: 'bold', color: 'var(--color-primary-light)', marginRight: '6px' }}>
+                      <div key={idx} className="text-13">
+                        <span className="pos-label">
                           {posGroup.label}:
                         </span>
                         <span className="color-text-main">
@@ -514,15 +508,15 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
 
               {/* Sentence Context & Translation */}
               {selectedWord.sentenceContext && (
-                <div className="sentence-context-box mb-4 p-3 rounded" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-                  <span className="text-xs font-bold block mb-1" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', color: '#60a5fa' }}>
+                <div className="sentence-context-box mb-4 p-3 rounded sentence-context">
+                  <span className="text-xs font-bold block mb-1 sentence-badge">
                     💡 Ngữ cảnh trong câu bài đọc:
                   </span>
-                  <p className="text-sm font-semibold color-text-main italic mb-1" style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                  <p className="text-sm font-semibold color-text-main italic mb-1 sentence-text">
                     "{selectedWord.sentenceContext}"
                   </p>
                   {selectedWord.sentenceTranslation && (
-                    <p className="text-xs color-text-muted" style={{ fontSize: '12px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '4px', marginTop: '4px' }}>
+                    <p className="text-xs color-text-muted sentence-translation">
                       🇻🇳 Dịch câu: "{selectedWord.sentenceTranslation}"
                     </p>
                   )}
@@ -563,8 +557,8 @@ export default function VocabReader({ topic, onSavedVocabChange, onComplete, onN
                       <span className="vocab-row-word">{vocab.word}</span>
                       <span className="vocab-row-ipa">{vocab.ipa}</span>
                     </div>
-                    <div className="vocab-row-right" style={{ display: 'flex', alignItems: 'center' }}>
-                      <div className="flex gap-1" style={{ marginRight: '8px', display: 'flex' }}>
+                    <div className="vocab-row-right flex items-center">
+                      <div className="flex gap-1 mr-2">
                         <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word, 'US')} title="US">🇺🇸</button>
                         <button className="row-speak-btn" onClick={() => handleSpeak(vocab.word, 'UK')} title="UK">🇬🇧</button>
                         <button className="row-speak-btn" onClick={() => speakCompare(vocab.word)} title="So sánh">🆚</button>

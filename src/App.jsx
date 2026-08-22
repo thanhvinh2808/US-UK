@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { storage } from './utils/storage';
-import Dashboard from './components/Dashboard';
-import TopicDetail from './components/TopicDetail';
-import VocabReader from './components/VocabReader';
-import Dictation from './components/Dictation';
-import Pronunciation from './components/Pronunciation';
-import Flashcards from './components/Flashcards';
-import VocabNotebook from './components/VocabNotebook';
+// Lazy-load major screens to reduce initial bundle size
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const TopicDetail = lazy(() => import('./components/TopicDetail'));
+const VocabReader = lazy(() => import('./components/VocabReader'));
+const Dictation = lazy(() => import('./components/Dictation'));
+const Pronunciation = lazy(() => import('./components/Pronunciation'));
+const Flashcards = lazy(() => import('./components/Flashcards'));
+const VocabNotebook = lazy(() => import('./components/VocabNotebook'));
+const GrammarLab = lazy(() => import('./components/GrammarLab'));
+const Writing = lazy(() => import('./components/Writing'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const Toast = lazy(() => import('./components/Toast'));
+const GlobalTranslator = lazy(() => import('./components/GlobalTranslator'));
+const TensesHandbook = lazy(() => import('./components/TensesHandbook'));
+const MinimalPairs = lazy(() => import('./components/MinimalPairs'));
+const Shadowing = lazy(() => import('./components/Shadowing'));
+const IdiomsHandbook = lazy(() => import('./components/IdiomsHandbook'));
+const MiniGames = lazy(() => import('./components/MiniGames'));
+const Alphabet = lazy(() => import('./components/Alphabet'));
+const MistakeBank = lazy(() => import('./components/MistakeBank'));
+
 import { contentBank } from './data/contentBank';
 import { api } from './services/api';
-import GrammarLab from './components/GrammarLab';
-import Writing from './components/Writing';
-import AdminPanel from './components/AdminPanel';
-import Toast from './components/Toast';
-import GlobalTranslator from './components/GlobalTranslator';
-import TensesHandbook from './components/TensesHandbook';
-import MinimalPairs from './components/MinimalPairs';
-import Shadowing from './components/Shadowing';
-import IdiomsHandbook from './components/IdiomsHandbook';
-import MiniGames from './components/MiniGames';
-import Alphabet from './components/Alphabet';
-import MistakeBank from './components/MistakeBank';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -221,7 +223,7 @@ function App() {
               <span className="brand-us">US</span>
             </div>
             <div className="qz-brand-text">
-              <span className="qz-brand-title">Antigravity English</span>
+              <span className="qz-brand-title">V English</span>
             </div>
           </div>
 
@@ -347,42 +349,44 @@ function App() {
       {/* ⚪ Main Content Area */}
       <main className="quizlet-workspace">
         <div className="quizlet-spacious-container">
-          {activeScreen === 'dashboard' && (
-            <Dashboard 
-              stats={stats}
-              progress={progress}
-              savedVocabCount={savedVocabCount}
-              onSelectTopic={handleSelectTopic}
-              onNavigate={handleNavigateWithClose}
-              topics={topicsList}
-            />
-          )}
+          <Suspense fallback={<div className="loading-shell">Đang tải giao diện…</div>}>
+            {activeScreen === 'dashboard' && (
+              <Dashboard 
+                stats={stats}
+                progress={progress}
+                savedVocabCount={savedVocabCount}
+                onSelectTopic={handleSelectTopic}
+                onNavigate={handleNavigateWithClose}
+                topics={topicsList}
+              />
+            )}
 
-          {activeScreen === 'translator' && (
-            <GlobalTranslator 
-              isPageMode={true}
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
+            {activeScreen === 'translator' && (
+              <GlobalTranslator 
+                isPageMode={true}
+                onNavigateBack={handleBackToDashboard}
+                onSavedVocabChange={refreshState}
+                showToast={showToast}
+              />
+            )}
 
-          {activeScreen === 'admin' && (
-            <AdminPanel 
-              onNavigateBack={handleBackToDashboard}
-              onTopicsListChange={refreshTopicsList}
-            />
-          )}
+            {activeScreen === 'admin' && (
+              <AdminPanel 
+                onNavigateBack={handleBackToDashboard}
+                onTopicsListChange={refreshTopicsList}
+              />
+            )}
 
-          {activeScreen === 'topic_detail' && (
-            selectedTopic ? (
+            {activeScreen === 'topic_detail' && selectedTopic && (
               <TopicDetail 
                 topic={selectedTopic}
                 progress={progress}
                 onSelectModule={handleSelectModule}
                 onNavigateBack={handleBackToDashboard}
               />
-            ) : (
+            )}
+
+            {activeScreen === 'topic_detail' && !selectedTopic && (
               <Dashboard 
                 topicsList={topicsList}
                 progress={progress}
@@ -392,127 +396,123 @@ function App() {
                 onOpenNotebook={() => setActiveScreen('notebook')}
                 onOpenFlashcards={() => setActiveScreen('flashcards')}
                 onOpenMinimalPairs={() => setActiveScreen('minimal_pairs')}
-                onOpenTensesHandbook={() => setActiveScreen('tenses_handbook')}
-                onOpenIdiomsHandbook={() => setActiveScreen('idioms_handbook')}
-                onOpenMiniGames={() => setActiveScreen('mini_games')}
-                onOpenAlphabet={() => setActiveScreen('alphabet')}
               />
-            )
-          )}
+            )}
 
-          {activeScreen === 'reader' && (
-            (selectedTopic || topicsList[0]) ? (
-              <VocabReader 
-                topic={selectedTopic || topicsList[0]}
+            {activeScreen === 'reader' && (
+              (selectedTopic || topicsList[0]) ? (
+                <VocabReader 
+                  topic={selectedTopic || topicsList[0]}
+                  onSavedVocabChange={refreshState}
+                  onComplete={refreshState}
+                  onNavigateBack={handleBackToTopicDetail}
+                  showToast={showToast}
+                />
+              ) : null
+            )}
+
+            {activeScreen === 'dictation' && (
+              (selectedTopic || topicsList[0]) ? (
+                <Dictation 
+                  topic={selectedTopic || topicsList[0]}
+                  onNavigateBack={handleBackToTopicDetail}
+                  showToast={showToast}
+                />
+              ) : null
+            )}
+
+            {activeScreen === 'pronunciation' && (
+              (selectedTopic || topicsList[0]) ? (
+                <Pronunciation 
+                  topic={selectedTopic || topicsList[0]}
+                  onNavigateBack={handleBackToTopicDetail}
+                  showToast={showToast}
+                />
+              ) : null
+            )}
+
+            {activeScreen === 'grammar' && (
+              (selectedTopic || topicsList[0]) ? (
+                <GrammarLab
+                  topic={selectedTopic || topicsList[0]}
+                  onComplete={refreshState}
+                  onNavigateBack={handleBackToTopicDetail}
+                  showToast={showToast}
+                />
+              ) : null
+            )}
+
+            {activeScreen === 'writing' && (
+              (selectedTopic || topicsList[0]) ? (
+                <Writing
+                  topic={selectedTopic || topicsList[0]}
+                  onNavigateBack={handleBackToTopicDetail}
+                  showToast={showToast}
+                />
+              ) : null
+            )}
+
+            {activeScreen === 'flashcards' && (
+              <Flashcards 
+                onNavigateBack={handleBackToDashboard}
                 onSavedVocabChange={refreshState}
-                onComplete={refreshState}
+                showToast={showToast}
+              />
+            )}
+
+            {activeScreen === 'notebook' && (
+              <VocabNotebook 
+                onNavigateBack={handleBackToDashboard}
+                onSavedVocabChange={refreshState}
+                showToast={showToast}
+              />
+            )}
+
+            {activeScreen === 'alphabet' && (
+              <Alphabet 
+                onNavigateBack={handleBackToDashboard}
+              />
+            )}
+
+            {activeScreen === 'tenses_handbook' && (
+              <TensesHandbook 
+                onNavigateBack={handleBackToDashboard}
+              />
+            )}
+
+            {activeScreen === 'minimal_pairs' && (
+              <MinimalPairs 
+                onNavigateBack={handleBackToDashboard}
+              />
+            )}
+
+            {activeScreen === 'shadowing' && selectedTopic && (
+              <Shadowing 
+                topic={selectedTopic}
                 onNavigateBack={handleBackToTopicDetail}
                 showToast={showToast}
               />
-            ) : null
-          )}
+            )}
 
-          {activeScreen === 'dictation' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Dictation 
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
+            {activeScreen === 'idioms_handbook' && (
+              <IdiomsHandbook 
+                onNavigateBack={handleBackToDashboard}
+              />
+            )}
+
+            {activeScreen === 'mini_games' && (
+              <MiniGames 
+                onNavigateBack={handleBackToDashboard}
                 showToast={showToast}
               />
-            ) : null
-          )}
+            )}
 
-          {activeScreen === 'pronunciation' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Pronunciation 
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
+            {activeScreen === 'mistake_bank' && (
+              <MistakeBank 
+                onNavigateBack={handleBackToDashboard}
               />
-            ) : null
-          )}
-
-          {activeScreen === 'grammar' && (
-            (selectedTopic || topicsList[0]) ? (
-              <GrammarLab
-                topic={selectedTopic || topicsList[0]}
-                onComplete={refreshState}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'writing' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Writing
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'flashcards' && (
-            <Flashcards 
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'notebook' && (
-            <VocabNotebook 
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'alphabet' && (
-            <Alphabet 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'tenses_handbook' && (
-            <TensesHandbook 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'minimal_pairs' && (
-            <MinimalPairs 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'shadowing' && selectedTopic && (
-            <Shadowing 
-              topic={selectedTopic}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'idioms_handbook' && (
-            <IdiomsHandbook 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'mini_games' && (
-            <MiniGames 
-              onNavigateBack={handleBackToDashboard}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'mistake_bank' && (
-            <MistakeBank 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
+              )}
+          </Suspense>
         </div>
       </main>
 
