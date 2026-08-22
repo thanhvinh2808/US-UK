@@ -89,7 +89,7 @@ export default function Dashboard({
         
         {/* 📌 Left Narrow Vertical Stats Column (Dồn dọc 1 cột hẹp) */}
         <aside className="vertical-stats-sidebar">
-          <div className="stats-sidebar-card">
+          <div className="stats-sidebar-card card-surface">
             <h3 className="stats-sidebar-header">BẢNG THỐNG KÊ</h3>
             
             <div className="vertical-stat-item streak">
@@ -129,7 +129,6 @@ export default function Dashboard({
                 className="vertical-stat-item weakness cursor-pointer"
                 onClick={() => onNavigate && onNavigate('mistake_bank')}
                 title="Bấm để mở Ngân hàng câu sai và ôn lại"
-                style={{ cursor: 'pointer' }}
               >
                 <span className="stat-icon">📌</span>
                 <div className="stat-info">
@@ -142,7 +141,6 @@ export default function Dashboard({
                 className="vertical-stat-item cursor-pointer" 
                 onClick={() => onNavigate && onNavigate('mistake_bank')}
                 title="Mở Ngân hàng câu sai"
-                style={{ cursor: 'pointer' }}
               >
                 <span className="stat-icon">📌</span>
                 <div className="stat-info">
@@ -154,11 +152,11 @@ export default function Dashboard({
 
             <div className="sidebar-action-box mt-4">
               {reviewsDue > 0 ? (
-                <button className="btn-primary w-full justify-center" onClick={() => onNavigate('flashcards')}>
+                <button type="button" className="btn-primary w-full justify-center" onClick={() => onNavigate('flashcards')}>
                   🔥 Ôn tập {reviewsDue} từ
                 </button>
               ) : (
-                <button className="btn-secondary w-full justify-center" onClick={() => onNavigate('translator')}>
+                <button type="button" className="btn-secondary w-full justify-center" onClick={() => onNavigate('translator')}>
                   🔍 Tra từ AI [Ctrl+K]
                 </button>
               )}
@@ -192,7 +190,13 @@ export default function Dashboard({
 
           {/* 🌟 FEATURED / IN-PROGRESS LARGE CARD */}
           {featuredTopic && (
-            <div className="featured-large-card" onClick={() => onSelectTopic && onSelectTopic(featuredTopic)}>
+            <div
+              className="featured-large-card card-surface"
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectTopic && onSelectTopic(featuredTopic)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectTopic && onSelectTopic(featuredTopic); }}
+            >
               <div className="featured-card-badge">
                 <span>🔥 BÀI ĐANG HỌC DỞ</span>
                 <span className="featured-level">{featuredTopic.level || 'A2'}</span>
@@ -209,7 +213,7 @@ export default function Dashboard({
                 <span className="featured-terms-count font-mono">
                   📚 {(featuredTopic.default_vocabs || []).length || 6} thuật ngữ IPA
                 </span>
-                <button className="btn-primary featured-start-btn">
+                <button type="button" className="btn-primary featured-start-btn">
                   Tiếp tục học ngay ➔
                 </button>
               </div>
@@ -231,8 +235,11 @@ export default function Dashboard({
               return (
                 <div 
                   key={topic.id || topic._id || idx}
-                  className={`compact-lesson-card ${cardClass}`}
+                  className={`compact-lesson-card card-surface ${cardClass}`}
                   onClick={() => onSelectTopic && onSelectTopic(topic)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectTopic && onSelectTopic(topic); }}
                 >
                   <div className="compact-card-top flex justify-between items-center mb-2">
                     <span className="compact-flag-tag">
