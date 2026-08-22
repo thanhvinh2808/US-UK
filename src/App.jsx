@@ -90,6 +90,7 @@ function App() {
   const [savedVocabCount, setSavedVocabCount] = useState(() => storage.getSavedVocab().length);
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
   const [voiceAccent, setVoiceAccent] = useState(() => localStorage.getItem('eng_app_voice_accent') || 'US');
+  const [designTheme, setDesignTheme] = useState(() => localStorage.getItem('eng_app_design_theme') || 'modern');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
@@ -145,10 +146,11 @@ function App() {
   const theme = 'light';
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-theme', designTheme);
     document.documentElement.setAttribute('data-accent', voiceAccent);
     localStorage.setItem('eng_app_theme', 'light');
-  }, [voiceAccent]);
+    localStorage.setItem('eng_app_design_theme', designTheme);
+  }, [voiceAccent, designTheme]);
 
   const toggleVoiceAccent = () => {
     const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
@@ -250,6 +252,23 @@ function App() {
             <span className={`channel-pill ${voiceAccent.toLowerCase()} active`}>
               {voiceAccent === 'UK' ? '🇬🇧 UK' : '🇺🇸 US'}
             </span>
+          </div>
+
+          <div className="design-theme-switcher" aria-label="Chọn giao diện">
+            {[
+              { key: 'modern', label: 'Modern' },
+              { key: 'minimal', label: 'Minimal' },
+              { key: 'glass', label: 'Glass' }
+            ].map(option => (
+              <button
+                key={option.key}
+                type="button"
+                className={`design-theme-option ${designTheme === option.key ? 'active' : ''}`}
+                onClick={() => setDesignTheme(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           {/* Clean Navigation Links */}
