@@ -669,6 +669,123 @@
   display: none !important; /* Hidden completely on desktop / laptop / wide tablet (>768px) */
 }
 
+/* 📱 MOBILE BOTTOM SHEET MODAL MENU */
+.mobile-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: rgba(10, 20, 38, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.mobile-sheet-content {
+  width: 100%;
+  max-height: 85vh;
+  background: #FFFFFF;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 20px 18px 40px 18px;
+  overflow-y: auto;
+  box-shadow: 0 -10px 30px rgba(16, 32, 61, 0.15);
+  border-top: 1px solid rgba(16, 32, 61, 0.08);
+}
+
+.mobile-sheet-handle-bar {
+  width: 40px;
+  height: 5px;
+  background: #D9E4F5;
+  border-radius: 3px;
+  margin: 0 auto 16px auto;
+}
+
+.mobile-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.mobile-sheet-title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.mobile-sheet-close {
+  background: #EEF3FA;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.mobile-sheet-close:hover {
+  background: #D9E4F5;
+  color: var(--color-text-dark);
+}
+
+.mobile-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .mobile-sheet-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.mobile-grid-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-base);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  width: 100%;
+  color: var(--color-text-main);
+}
+
+.mobile-grid-card:hover, .mobile-grid-card.active {
+  background: #EEF3FA;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mobile-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.mobile-card-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 900px) {
   .asymmetric-body-grid {
@@ -684,17 +801,52 @@
 }
 
 @media (max-width: 768px) {
+  .qz-nav-links {
+    display: none;
+  }
   .qz-header-container {
-    padding: 0 16px;
+    padding: 0 14px;
+    height: 60px;
+    gap: 10px;
   }
-  .asymmetric-hero-banner {
-    padding: 20px;
+  .qz-brand-title {
+    font-size: 15px;
   }
-  .hero-main-title {
-    font-size: 24px;
+  .qz-logo-badge-dual {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .radio-dial-widget {
+    padding: 3px 8px 3px 6px;
+    gap: 6px;
+  }
+  .radio-dial-knob-wrapper {
+    width: 24px;
+    height: 24px;
+  }
+  .radio-knob-outer {
+    width: 22px;
+    height: 22px;
+  }
+  .radio-knob-line {
+    height: 6px;
+  }
+  .channel-pill {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  .qz-create-btn {
+    display: none; /* Hide on small screens for clean header */
+  }
+  .qz-stat-pill {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .quizlet-workspace {
+    padding: 20px 0 90px 0;
   }
   .quizlet-spacious-container {
-    padding: 0 16px 80px 16px;
+    padding: 0 14px 90px 14px;
   }
 
   .mobile-bottom-bar {
@@ -707,7 +859,7 @@
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(12px);
     border-top: 1px solid rgba(16, 32, 61, 0.08);
-    padding: 8px 12px;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom)) 8px;
     justify-content: space-around;
     align-items: center;
     box-shadow: 0 -4px 16px rgba(16, 32, 61, 0.06);
@@ -723,10 +875,11 @@
     color: var(--color-text-muted);
     font-size: 11px;
     font-weight: 500;
-    padding: 6px 10px;
+    padding: 6px 8px;
     border-radius: 8px;
     cursor: pointer;
     transition: var(--transition);
+    min-width: 48px;
   }
 
   .mobile-bottom-item.active {
@@ -739,4 +892,105 @@
     align-items: center;
     justify-content: center;
   }
+}
+
+@media (max-width: 480px) {
+  .qz-brand-title {
+    font-size: 14px;
+  }
+  .asymmetric-hero-banner {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .hero-main-title {
+    font-size: 20px;
+  }
+  .hero-main-sub {
+    font-size: 13px;
+  }
+  .gallery-top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .gallery-level-filters {
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .featured-large-card {
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .featured-card-title {
+    font-size: 20px;
+  }
+  .featured-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .featured-start-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .compact-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ==========================================================================
+   🔍 MODERN AI TRANSLATOR STUDIO STYLES
+   ========================================================================== */
+.translator-modern-container {
+  width: 100%;
+}
+
+.floating-translate-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 990;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #FFFFFF;
+  border: none;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(27, 59, 111, 0.3);
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.floating-translate-btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 30px rgba(27, 59, 111, 0.4);
+}
+
+@media (max-width: 768px) {
+  .floating-translate-btn {
+    bottom: 76px; /* Position above mobile bottom navigation bar */
+    right: 18px;
+    width: 48px;
+    height: 48px;
+    font-size: 19px;
+  }
+}
+
+.translator-modal {
+  width: 92%;
+  max-width: 820px !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 24px !important;
+  padding: 24px !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 20px 50px rgba(16, 32, 61, 0.2) !important;
+  border: 1px solid rgba(16, 32, 61, 0.08) !important;
 }

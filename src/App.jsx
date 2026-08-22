@@ -68,6 +68,19 @@ const NavSvgIcon = ({ iconType }) => {
   }
 };
 
+const navMenuItems = [
+  { id: 'dashboard', label: 'Trang chủ', iconType: 'home' },
+  { id: 'translator', label: 'Tra từ AI', iconType: 'search' },
+  { id: 'notebook', label: 'Sổ tay từ vựng', iconType: 'notebook' },
+  { id: 'flashcards', label: 'Flashcards', iconType: 'flashcards' },
+  { id: 'minimal_pairs', label: 'Minimal Pairs', iconType: 'pairs' },
+  { id: 'tenses_handbook', label: '12 Thì Tiếng Anh', iconType: 'tenses' },
+  { id: 'idioms_handbook', label: 'Idioms & Cụm từ', iconType: 'idioms' },
+  { id: 'mini_games', label: 'Playzone Games', iconType: 'games' },
+  { id: 'alphabet', label: 'Bảng chữ cái', iconType: 'alphabet' },
+  { id: 'admin', label: 'Quản trị hệ thống', iconType: 'admin' },
+];
+
 function App() {
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [selectedTopic, setSelectedTopic] = useState(null);

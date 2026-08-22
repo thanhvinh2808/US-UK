@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, speak, speakCompare } from '../utils/sounds';
+import { playSound, speak } from '../utils/sounds';
 import { conjugateWithCompromise, getSForm, getPastForm, getIngForm } from '../utils/helpers/conjugationEngine';
 import { checkLocalGrammarErrors, checkGrammarOnline } from '../utils/helpers/grammarChecker';
 
@@ -12,7 +12,6 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast, isPage
   const [isSaved, setIsSaved] = useState(false);
   const [direction, setDirection] = useState('en-vi');
   const inputRef = useRef(null);
-  const [grammarMode, setGrammarMode] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionTimeoutRef = useRef(null);
@@ -132,59 +131,114 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
     }
 
     const trimmed = val.trim();
-    if (!trimmed) {
+    // Do not suggest for empty, single char, or long sentences/paragraphs
+    if (!trimmed || trimmed.length < 2 || trimmed.length > 35 || /[.,!?;:\n]/.test(trimmed)) {
       setSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
     suggestionTimeoutRef.current = setTimeout(async () => {
       try {
-        const hl = direction === 'en-vi' ? 'en' : 'vi';
-        const callbackName = 'googleSuggest_' + Math.random().toString(36).substring(2, 10);
-        const url = `https://suggestqueries.google.com/complete/search?client=youtube&hl=${hl}&q=${encodeURIComponent(trimmed)}&jsonp=${callbackName}`;
+        let cleanWords = [];
 
-        const data = await new Promise((resolve, reject) => {
-          window[callbackName] = (resData) => {
-            cleanup();
-            resolve(resData);
-          };
-
-          const script = document.createElement('script');
-          script.src = url;
-          script.id = callbackName;
-          script.async = true;
-
-          const timeout = setTimeout(() => {
-            cleanup();
-            reject(new Error('JSONP timeout'));
-          }, 3000);
-
-          function cleanup() {
-            clearTimeout(timeout);
-            const el = document.getElementById(callbackName);
-            if (el) el.remove();
-            delete window[callbackName];
+        if (direction === 'en-vi') {
+          // 1. Primary: Datamuse API (pure English dictionary vocabulary words)
+          try {
+            const datamuseRes = await fetch(`https://api.datamuse.com/sug?s=${encodeURIComponent(trimmed)}`)
+              .then(r => r.json());
+            if (Array.isArray(datamuseRes)) {
+              cleanWords = datamuseRes
+                .map(item => item.word)
+                .filter(w => w && w.length >= 2 && !w.includes('_') && w.split(/\s+/).length <= 2)
+                .slice(0, 5);
+            }
+          } catch (e) {
+            console.warn("Datamuse sug error:", e);
           }
 
-          script.onerror = () => {
-            cleanup();
-            reject(new Error('JSONP error'));
-          };
+          // 2. Fallback to dictionary completion if Datamuse returned few results
+          if (cleanWords.length < 4) {
+            const callbackName = 'googleSuggest_' + Math.random().toString(36).substring(2, 10);
+            const url = `https://suggestqueries.google.com/complete/search?client=dict&ds=d&hl=en&q=${encodeURIComponent(trimmed)}&jsonp=${callbackName}`;
 
-          document.body.appendChild(script);
-        });
+            const googleData = await new Promise((resolve) => {
+              window[callbackName] = (resData) => {
+                cleanup();
+                resolve(resData);
+              };
+              const script = document.createElement('script');
+              script.src = url;
+              script.id = callbackName;
+              script.async = true;
+              const timeout = setTimeout(() => { cleanup(); resolve(null); }, 1500);
+              function cleanup() {
+                clearTimeout(timeout);
+                const el = document.getElementById(callbackName);
+                if (el) el.remove();
+                delete window[callbackName];
+              }
+              script.onerror = () => { cleanup(); resolve(null); };
+              document.body.appendChild(script);
+            });
 
-        if (data && Array.isArray(data[1])) {
-          const words = data[1]
-            .map(item => Array.isArray(item) ? item[0] : item)
-            .filter(Boolean);
-          setSuggestions(words.slice(0, 5));
+            if (googleData && Array.isArray(googleData[1])) {
+              const extraWords = googleData[1]
+                .map(item => (Array.isArray(item) ? item[0] : item))
+                .filter(w => typeof w === 'string' && w.trim())
+                .map(w => w.replace(/<[^>]*>/g, '').trim())
+                // Strictly filter to dictionary terms (max 2 words, no web search noise)
+                .filter(w => w.split(/\s+/).length <= 2 && !/(youtube|mp3|free|download|game|movie|song|lyrics|pdf|hack|online)/i.test(w));
+              
+              cleanWords = Array.from(new Set([...cleanWords, ...extraWords])).slice(0, 5);
+            }
+          }
+        } else {
+          // Vietnamese -> English dictionary term suggestions
+          const callbackName = 'googleSuggest_' + Math.random().toString(36).substring(2, 10);
+          const url = `https://suggestqueries.google.com/complete/search?client=firefox&hl=vi&q=${encodeURIComponent(trimmed)}&jsonp=${callbackName}`;
+
+          const googleData = await new Promise((resolve) => {
+            window[callbackName] = (resData) => {
+              cleanup();
+              resolve(resData);
+            };
+            const script = document.createElement('script');
+            script.src = url;
+            script.id = callbackName;
+            script.async = true;
+            const timeout = setTimeout(() => { cleanup(); resolve(null); }, 1500);
+            function cleanup() {
+              clearTimeout(timeout);
+              const el = document.getElementById(callbackName);
+              if (el) el.remove();
+              delete window[callbackName];
+            }
+            script.onerror = () => { cleanup(); resolve(null); };
+            document.body.appendChild(script);
+          });
+
+          if (googleData && Array.isArray(googleData[1])) {
+            cleanWords = googleData[1]
+              .filter(w => typeof w === 'string' && w.trim())
+              .filter(w => w.split(/\s+/).length <= 3 && !/(youtube|mp3|phim|game|hack|online|download|pdf|xem|tải)/i.test(w))
+              .slice(0, 5);
+          }
+        }
+
+        if (cleanWords.length > 0) {
+          setSuggestions(cleanWords);
           setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
       } catch (e) {
-        console.warn("Failed to fetch autocomplete suggestions via JSONP:", e);
+        console.warn("Failed to fetch autocomplete suggestions:", e);
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
-    }, 250);
+    }, 200);
   };
 
   const handleInputChange = (e) => {
@@ -266,19 +320,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
       console.error("Failed to delete history item", e);
     }
   };
-
-  useEffect(() => {
-    if (result) {
-      const isVerb = result.partOfSpeech && (
-        result.partOfSpeech.toLowerCase().includes("động từ") || 
-        result.partOfSpeech.toLowerCase().includes("verb") ||
-        (result.forms && result.forms.present_continuous)
-      );
-      setGrammarMode(isVerb ? 'verb' : 'non-verb');
-    } else {
-      setGrammarMode(null);
-    }
-  }, [result]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -666,7 +707,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
       updateSearchHistory(finalWord, finalTrans);
     } catch (err) {
       console.error("Global translation failed:", err);
-      showToast("Có lỗi xảy ra khi dịch, vui lòng thử lại.", "error");
+      if (showToast) showToast("Có lỗi xảy ra khi dịch, vui lòng thử lại.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -677,307 +718,375 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
   };
 
   const renderTranslatorContent = () => (
-    <div className="w-full font-sans">
-      {/* Header: Back button & Language Selector */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 flex-wrap gap-2">
-        <div>
-          {onNavigateBack && (
-            <button 
-              type="button"
-              onClick={onNavigateBack}
-              className="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1 border-none bg-none cursor-pointer"
-            >
-              ← Quay lại Dashboard
-            </button>
-          )}
-        </div>
-        
-        {/* Language Switcher */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+    <div className="w-full font-sans hero-translator-wrapper animate-fadeIn max-w-3xl mx-auto">
+
+      {/* Top bar: back button (trái) + toggle chiều dịch dạng viên nang nhỏ (phải) */}
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+        {onNavigateBack ? (
           <button
             type="button"
-            onClick={() => {
-              setDirection('en-vi');
-              setQuery('');
-              setResult(null);
-              setAiAnalysis(null);
-            }}
-            className={`px-4 py-1.5 font-semibold rounded-lg shadow-sm text-sm border-none cursor-pointer transition ${
-              direction === 'en-vi'
-                ? 'bg-white text-blue-600 font-bold'
-                : 'text-slate-600 font-medium hover:text-slate-900 bg-none'
+            onClick={onNavigateBack}
+            className="text-xs font-semibold text-slate-500 hover:text-blue-700 border-none bg-transparent cursor-pointer transition-colors flex items-center gap-1"
+          >
+            ← Quay lại Dashboard
+          </button>
+        ) : <span />}
+
+        <div className="flex items-center bg-slate-100 p-1 rounded-full border border-slate-200/80 text-xs">
+          <button
+            type="button"
+            onClick={() => { setDirection('en-vi'); setQuery(''); setResult(null); setAiAnalysis(null); }}
+            className={`px-3.5 py-1.5 font-bold rounded-full border-none cursor-pointer transition-all flex items-center gap-1.5 ${
+              direction === 'en-vi' ? 'bg-white text-[#0F2B48] shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
             }`}
           >
-            Tiếng Anh (UK/US)
+            🇬🇧🇺🇸 Anh
           </button>
-
           <button
             type="button"
             title="Đổi chiều dịch"
             onClick={() => {
               const newDirection = direction === 'en-vi' ? 'vi-en' : 'en-vi';
-              const swappedQuery = result
-                ? (direction === 'en-vi' ? result.vietnamese : result.word)
-                : query;
+              const swappedQuery = result ? (direction === 'en-vi' ? result.vietnamese : result.word) : query;
               setDirection(newDirection);
               setQuery(swappedQuery || '');
               setResult(null);
               setAiAnalysis(null);
             }}
-            className="p-1.5 text-slate-500 hover:text-blue-600 rounded-lg border-none bg-none cursor-pointer text-base font-bold"
+            className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-[#0F2B48] rounded-full border-none bg-transparent cursor-pointer text-xs font-bold transition-all mx-0.5"
           >
             ⇄
           </button>
-
           <button
             type="button"
-            onClick={() => {
-              setDirection('vi-en');
-              setQuery('');
-              setResult(null);
-              setAiAnalysis(null);
-            }}
-            className={`px-4 py-1.5 font-semibold rounded-lg shadow-sm text-sm border-none cursor-pointer transition ${
-              direction === 'vi-en'
-                ? 'bg-white text-blue-600 font-bold'
-                : 'text-slate-600 font-medium hover:text-slate-900 bg-none'
+            onClick={() => { setDirection('vi-en'); setQuery(''); setResult(null); setAiAnalysis(null); }}
+            className={`px-3.5 py-1.5 font-bold rounded-full border-none cursor-pointer transition-all flex items-center gap-1.5 ${
+              direction === 'vi-en' ? 'bg-white text-[#0F2B48] shadow-sm' : 'text-slate-500 hover:text-slate-800 bg-transparent'
             }`}
           >
-            Tiếng Việt
+            🇻🇳 Việt
           </button>
         </div>
-
-        <div className="w-28 hidden sm:block"></div> {/* Spacer balance */}
       </div>
 
-      {/* Translation Main Grid */}
-      <form onSubmit={handleTranslate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left: Input Box */}
-        <div className="flex flex-col h-56 p-4 rounded-xl border border-slate-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 bg-white relative">
-          <textarea 
+      {/* Tiêu đề trung tâm - chỉ hiện to khi CHƯA có kết quả, để không rối khi đang xem bản dịch */}
+      {!result && !isLoading && (
+        <div className="text-center mb-7 animate-fadeIn">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0F2B48] tracking-tight margin-0">
+            Tra Từ & Dịch Nghĩa
+          </h2>
+          <p className="text-slate-500 text-sm mt-2">
+            Gõ 1 từ, 1 cụm từ, hoặc cả câu — hệ thống tự tra nghĩa, phiên âm US-UK và phân tích ngữ pháp
+          </p>
+        </div>
+      )}
+
+      {/* 🔍 THANH TÌM KIẾM TRUNG TÂM (Hero Command Bar) */}
+      <form onSubmit={handleTranslate} className="relative mb-2">
+        <div className="hero-search-bar flex items-center gap-3 bg-white rounded-full shadow-md hover:shadow-lg border-2 border-slate-200 focus-within:border-[#0F2B48] px-3 py-2 pl-5 transition-all">
+          <span className="text-lg text-slate-300 flex-shrink-0">🔍</span>
+          <input
             ref={inputRef}
-            placeholder={direction === 'en-vi' ? "Nhập văn bản tiếng Anh..." : "Nhập văn bản tiếng Việt..."} 
+            type="text"
+            placeholder={direction === 'en-vi' ? "Nhập từ, cụm từ hoặc câu tiếng Anh..." : "Nhập từ, cụm từ hoặc câu tiếng Việt..."}
             value={query}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (query.trim() && !isLoading) {
-                  handleTranslate(e);
-                }
-              }
-            }}
-            className="w-full h-full resize-none outline-none text-slate-800 placeholder-slate-400 text-base bg-transparent border-none p-0 margin-0"
+            className="flex-1 outline-none border-none bg-transparent text-slate-900 placeholder-slate-400 text-base sm:text-lg font-medium py-2"
           />
-
           {query && (
             <button
               type="button"
-              onClick={() => {
-                setQuery('');
-                setResult(null);
-                setAiAnalysis(null);
-              }}
-              className="absolute right-3 top-3 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs cursor-pointer border-none"
-              title="Xóa văn bản"
+              onClick={() => { setQuery(''); setResult(null); setAiAnalysis(null); }}
+              className="w-7 h-7 flex-shrink-0 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs border-none cursor-pointer transition-colors"
+              title="Xóa"
             >
               ✕
             </button>
           )}
-
-          {/* Autocomplete Suggestions */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="suggestions-dropdown absolute top-full left-0 right-0 z-50 bg-white rounded-xl shadow-lg mt-1 overflow-hidden border border-slate-100">
-              {suggestions.map((item, idx) => (
-                <div
-                  key={idx}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelectSuggestion(item);
-                  }}
-                  className="px-4 py-2 cursor-pointer text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-b border-slate-50 last:border-none"
-                >
-                  <span className="text-slate-300 text-xs">🔍</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
-            <div className="flex gap-2">
-              <button 
-                type="button"
-                onClick={startVoiceInput}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 border-none cursor-pointer transition ${
-                  isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                🎤 {isListening ? 'Đang nghe...' : 'Giọng nói'}
-              </button>
-
-              <button 
-                type="button"
-                onClick={async () => {
-                  try {
-                    const text = await navigator.clipboard.readText();
-                    if (text) {
-                      setQuery(text);
-                      handleTranslate(null, text);
-                    }
-                  } catch (e) {
-                    if (showToast) showToast("Không thể dán từ clipboard.", "info");
-                  }
-                }}
-                className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 border-none cursor-pointer transition"
-              >
-                📋 Dán
-              </button>
-            </div>
-
-            <button 
-              type="submit"
-              disabled={isLoading || !query.trim()}
-              className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm border-none cursor-pointer transition disabled:opacity-50 flex items-center gap-1"
-            >
-              {isLoading ? <span className="spinner" /> : <><span>Dịch Nghĩa</span> ✨</>}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={startVoiceInput}
+            className={`w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center border-none cursor-pointer transition-all ${
+              isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+            }`}
+            title={isListening ? "Đang lắng nghe..." : "Nhập bằng giọng nói"}
+          >
+            🎙️
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading || !query.trim()}
+            className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[#0F2B48] hover:bg-[#1A3D63] disabled:bg-slate-200 disabled:cursor-not-allowed text-white rounded-full border-none cursor-pointer transition-all shadow-sm"
+            title="Tra cứu"
+          >
+            {isLoading ? <span className="spinner" /> : <span>➔</span>}
+          </button>
         </div>
 
-        {/* Right: Output Box */}
-        <div className="flex flex-col h-56 p-4 rounded-xl border border-slate-200 bg-slate-50/50 justify-between">
-          <div className="h-full overflow-y-auto">
-            {isLoading ? (
-              <div className="py-8 text-center">
-                <span className="spinner" />
-                <p className="text-xs text-slate-400 mt-2">Đang xử lý bản dịch...</p>
-              </div>
-            ) : result ? (
-              <div className="animate-fadeIn">
-                <p className="text-xl font-bold text-slate-800 leading-relaxed margin-0">
-                  {direction === 'en-vi' ? result.vietnamese : result.word}
-                </p>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {result.partOfSpeech && (
-                    <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[11px] font-bold">
-                      {result.partOfSpeech}
-                    </span>
-                  )}
-                  {result.ipaUK && (
-                    <span className="text-xs font-mono text-slate-500">
-                      🇬🇧 {result.ipaUK}
-                    </span>
-                  )}
-                  {result.ipaUS && (
-                    <span className="text-xs font-mono text-slate-500">
-                      🇺🇸 {result.ipaUS}
-                    </span>
-                  )}
+        {/* Autocomplete Suggestions Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="suggestions-dropdown absolute top-full left-0 right-0 z-50 bg-white rounded-2xl shadow-xl mt-2 overflow-hidden border border-slate-200 animate-slideup">
+            <div className="px-4 py-2 bg-[#F3F5F7] border-b border-slate-200 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+              <span>📖 Gợi ý từ điển</span>
+              <span>Bấm chọn ↵</span>
+            </div>
+            {suggestions.map((item, idx) => (
+              <div
+                key={idx}
+                onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(item); }}
+                className="px-4 py-2.5 cursor-pointer text-sm text-slate-800 hover:bg-blue-50/80 hover:text-blue-900 flex items-center justify-between border-b border-slate-100 last:border-none transition-colors font-medium"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-blue-600 text-xs">📖</span>
+                  <span>{item}</span>
                 </div>
+                <span className="text-[10px] text-slate-400 font-mono">Chọn</span>
               </div>
-            ) : (
-              <div className="text-slate-400 text-base py-4">
-                Kết quả dịch sẽ xuất hiện ở đây...
-              </div>
-            )}
+            ))}
           </div>
-          
-          <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-2">
-            <span className="text-xs text-slate-400 font-medium">Bản dịch tự động</span>
-            
-            {result ? (
-              <div className="flex gap-2 items-center">
-                <button 
-                  type="button" 
-                  onClick={() => handleSpeak(result.word, 'US')} 
-                  className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg border-none bg-none cursor-pointer text-sm" 
-                  title="Phát âm US"
-                >
-                  🔊
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => handleCopy(direction === 'en-vi' ? result.vietnamese : result.word, 'Bản dịch')} 
-                  className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg border-none bg-none cursor-pointer text-sm" 
-                  title="Sao chép"
-                >
-                  📋
-                </button>
-                {isSaved ? (
-                  <span className="text-xs text-emerald-600 font-bold">✓ Đã lưu</span>
-                ) : (
-                  <button 
-                    type="button" 
-                    onClick={handleSaveWord} 
-                    className="text-xs font-bold text-blue-600 hover:underline border-none bg-none cursor-pointer"
+        )}
+      </form>
+
+      {/* 💡 Gợi ý nhỏ dưới thanh tìm kiếm khi trang còn trống */}
+      {!query && !result && !isLoading && (
+        <p className="text-center text-xs text-slate-400 mb-6">
+          Thử gõ <button type="button" onClick={() => { setQuery('amazing'); handleTranslate(null, 'amazing'); }} className="text-blue-600 font-semibold border-none bg-transparent cursor-pointer underline decoration-dotted">"amazing"</button> hoặc <button type="button" onClick={() => { setQuery('hit the books'); handleTranslate(null, 'hit the books'); }} className="text-blue-600 font-semibold border-none bg-transparent cursor-pointer underline decoration-dotted">"hit the books"</button> để bắt đầu
+        </p>
+      )}
+
+      {/* Loading state */}
+      {isLoading && (
+        <div className="py-16 text-center">
+          <span className="spinner-large" />
+          <p className="text-xs text-slate-500 font-medium mt-3">Đang tra cứu từ điển & ngữ pháp...</p>
+        </div>
+      )}
+
+      {/* 🎴 THẺ KẾT QUẢ NỔI (Result Hero Card) */}
+      {result && !isLoading && (
+        <div className="result-hero-card bg-white rounded-3xl shadow-md border border-slate-100 p-6 sm:p-8 animate-slideup mb-6">
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F2B48] leading-tight tracking-tight margin-0">
+                {direction === 'en-vi' ? result.word : result.vietnamese}
+              </h1>
+              <p className="text-slate-500 text-base font-medium mt-1">
+                {direction === 'en-vi' ? result.vietnamese : result.word}
+              </p>
+
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {result.partOfSpeech && (
+                  <span className="px-2.5 py-1 rounded-md bg-[#0F2B48] text-white text-xs font-bold font-mono">
+                    {result.partOfSpeech}
+                  </span>
+                )}
+                {result.ipaUK && (
+                  <button
+                    type="button"
+                    onClick={() => handleSpeak(result.word, 'UK')}
+                    className="px-2.5 py-1 rounded-md bg-white border border-slate-300 text-xs font-mono text-slate-800 hover:border-blue-500 cursor-pointer flex items-center gap-1.5 transition-all shadow-xs"
+                    title="Nghe giọng Anh BBC (UK)"
                   >
-                    ⭐ Lưu
+                    <span className="text-sm">🇬🇧</span>
+                    <span className="font-bold">{result.ipaUK}</span>
+                    <span className="text-xs text-blue-600">🔊</span>
+                  </button>
+                )}
+                {result.ipaUS && (
+                  <button
+                    type="button"
+                    onClick={() => handleSpeak(result.word, 'US')}
+                    className="px-2.5 py-1 rounded-md bg-white border border-slate-300 text-xs font-mono text-slate-800 hover:border-blue-500 cursor-pointer flex items-center gap-1.5 transition-all shadow-xs"
+                    title="Nghe giọng Mỹ (US)"
+                  >
+                    <span className="text-sm">🇺🇸</span>
+                    <span className="font-bold">{result.ipaUS}</span>
+                    <span className="text-xs text-blue-600">🔊</span>
+                  </button>
+                )}
+                {!result.ipaUK && !result.ipaUS && result.ipa && (
+                  <button
+                    type="button"
+                    onClick={() => handleSpeak(result.word, 'US')}
+                    className="px-2.5 py-1 rounded-md bg-white border border-slate-300 text-xs font-mono text-slate-800 hover:border-blue-500 cursor-pointer flex items-center gap-1.5 transition-all shadow-xs"
+                    title="Nghe phát âm"
+                  >
+                    <span className="font-bold">{result.ipa}</span>
+                    <span className="text-xs text-blue-600">🔊</span>
                   </button>
                 )}
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <button type="button" className="p-1.5 text-slate-300 rounded-lg border-none bg-none" title="Phát âm" disabled>🔊</button>
-                <button type="button" className="p-1.5 text-slate-300 rounded-lg border-none bg-none" title="Sao chép" disabled>📋</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </form>
+            </div>
 
-      {/* Dictionary & AI Inspection Details */}
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => handleSpeak(result.word, 'US')} 
+                className="px-3.5 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl border border-slate-200 cursor-pointer transition-all flex items-center gap-1.5" 
+                title="Phát âm giọng US"
+              >
+                <span>🔊 Nghe</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleCopy(direction === 'en-vi' ? result.vietnamese : result.word, 'Bản dịch')} 
+                className="px-3.5 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl border border-slate-200 cursor-pointer transition-all flex items-center gap-1.5" 
+                title="Sao chép"
+              >
+                <span>📋 Copy</span>
+              </button>
+              {isSaved ? (
+                <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200">
+                  ✓ Đã lưu
+                </span>
+              ) : (
+                <button 
+                  type="button" 
+                  onClick={handleSaveWord} 
+                  className="px-4 py-2 text-xs font-bold bg-[#0F2B48] hover:bg-[#1A3D63] text-white rounded-xl shadow-sm border-none cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <span>⭐ Lưu từ</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grammar Error Alert if any */}
+          {result.hasGrammarError && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-800 font-bold text-xs mb-1">
+                <span>⚠️ Phát hiện lỗi ngữ pháp:</span>
+              </div>
+              {result.correctedText && (
+                <p className="text-sm font-semibold text-emerald-800 margin-0 mb-1">
+                  Gợi ý sửa: <span className="underline">{result.correctedText}</span>
+                </p>
+              )}
+              {result.grammarErrorExplanation && (
+                <p className="text-xs text-slate-600 margin-0 whitespace-pre-line">
+                  {result.grammarErrorExplanation}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ⚠️ Auto-Correction Alert */}
+      {result && result.spellSuggestion && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-center justify-between flex-wrap gap-3 animate-slideup">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-600 font-bold text-base">💡</span>
+            <span className="text-xs sm:text-sm text-amber-950 font-medium">
+              Gợi ý từ Cambridge Dictionary: <strong className="text-[#0F2B48] text-base font-extrabold">{result.spellSuggestion}</strong>?
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery(result.spellSuggestion);
+              handleTranslate(null, result.spellSuggestion);
+            }}
+            className="px-3.5 py-1.5 text-xs font-bold bg-[#0F2B48] hover:bg-[#1A3D63] text-white rounded-lg border-none cursor-pointer transition-all shadow-sm"
+          >
+            Chuyển sang từ này ➔
+          </button>
+        </div>
+      )}
+
+      {/* 📘 Cambridge Lexicon & Grammar Inspector Panel */}
       {result && (
-        <div className="bg-white rounded-xl p-5 border border-slate-200 mt-4 animate-slideup">
-          <div className="flex gap-2 border-b border-slate-100 pb-3 mb-4 flex-wrap">
+        <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200 shadow-sm mt-6 animate-slideup">
+          
+          {/* Cambridge Tab Bar */}
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-4 mb-5 flex-wrap">
             <button
               type="button"
               onClick={() => setActiveResultTab('meanings')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'meanings' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                activeResultTab === 'meanings' 
+                  ? 'bg-[#0F2B48] text-white shadow-sm' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
             >
-              📖 Nghĩa & Từ loại
+              <span>📖 Cambridge Entry & Ví dụ</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveResultTab('conjugation')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'conjugation' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                activeResultTab === 'conjugation' 
+                  ? 'bg-[#0F2B48] text-white shadow-sm' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
             >
-              ⚡ Chia 12 Thì & Dạng từ
+              <span>⚡ 12 Thì Ngữ Pháp</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveResultTab('ai')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'ai' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                activeResultTab === 'ai' 
+                  ? 'bg-[#0F2B48] text-white shadow-sm' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
             >
-              ✨ Gia Sư AI Phân Tích
+              <span>✨ Phân Tích Gia Sư AI</span>
             </button>
           </div>
 
-          {/* Tab 1: Meanings */}
+          {/* Tab 1: Meanings & Examples */}
           {activeResultTab === 'meanings' && (
-            <div className="flex flex-col gap-3 text-sm text-slate-700">
+            <div className="flex flex-col gap-4 text-sm text-slate-800">
               {result.meaningsByPos && result.meaningsByPos.map((posGroup, idx) => (
-                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <span className="font-bold text-blue-600 text-xs uppercase block mb-1">{posGroup.label}:</span>
-                  <p className="text-slate-800 margin-0 font-medium">{posGroup.list.join(', ')}</p>
+                <div key={idx} className="bg-[#F8FAFC] p-4 rounded-xl border border-slate-200">
+                  <span className="font-mono font-bold text-blue-700 text-xs uppercase tracking-wider block mb-1">
+                    {posGroup.label}:
+                  </span>
+                  <p className="text-slate-900 margin-0 font-bold text-base">
+                    {posGroup.list.join(', ')}
+                  </p>
                 </div>
               ))}
 
               {result.example && (
-                <div className="p-3 bg-blue-50/50 rounded-lg border-l-4 border-blue-600">
-                  <span className="text-xs font-bold text-slate-500 block mb-1">VÍ DỤ TIẾNG ANH:</span>
-                  <p className="italic font-semibold text-slate-800 margin-0">"{result.example}"</p>
+                <div className="p-4 bg-blue-50/60 rounded-xl border-l-4 border-[#0F2B48]">
+                  <span className="text-xs font-mono font-bold text-slate-500 block mb-1">CÂU VÍ DỤ CHUẨN CAMBRIDGE:</span>
+                  <p className="italic font-bold text-slate-900 margin-0 text-base">"{result.example}"</p>
                   {result.translatedExample && (
-                    <p className="text-xs text-blue-600 font-bold mt-1 margin-0">➔ "{result.translatedExample}"</p>
+                    <p className="text-sm text-blue-800 font-bold mt-2 margin-0">➔ "{result.translatedExample}"</p>
                   )}
+                </div>
+              )}
+
+              {result.synonyms && result.synonyms.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-xs font-mono font-bold text-slate-400 block mb-2 uppercase">TỪ ĐỒNG NGHĨA (SYNONYMS):</span>
+                  <div className="flex flex-wrap gap-2">
+                    {result.synonyms.map((syn, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setQuery(syn.word);
+                          handleTranslate(null, syn.word);
+                        }}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-blue-50 hover:text-blue-800 hover:border-blue-300 text-slate-800 rounded-lg border border-slate-200 text-xs font-bold cursor-pointer transition-all flex items-center gap-1"
+                      >
+                        <span>{syn.word}</span>
+                        {syn.vietnamese && <span className="text-slate-400 text-xs font-normal">({syn.vietnamese})</span>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Tab 2: Conjugation */}
+          {/* Tab 2: Conjugation & 12 Tenses */}
           {activeResultTab === 'conjugation' && (
             <div className="text-sm">
               {(() => {
@@ -1002,18 +1111,18 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 }
 
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">HIỆN TẠI (PRESENT)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.present_simple}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border border-slate-200">
+                      <span className="font-mono font-bold text-blue-700 block mb-1 text-xs">HIỆN TẠI (PRESENT)</span>
+                      <p className="margin-0 font-mono text-slate-900 text-sm font-bold">{verbForms.present_simple}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">QUÁ KHỨ (PAST)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.past_simple}</p>
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border border-slate-200">
+                      <span className="font-mono font-bold text-amber-700 block mb-1 text-xs">QUÁ KHỨ (PAST)</span>
+                      <p className="margin-0 font-mono text-slate-900 text-sm font-bold">{verbForms.past_simple}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">TƯƠNG LAI (FUTURE)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.future_simple}</p>
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border border-slate-200">
+                      <span className="font-mono font-bold text-emerald-700 block mb-1 text-xs">TƯƠNG LAI (FUTURE)</span>
+                      <p className="margin-0 font-mono text-slate-900 text-sm font-bold">{verbForms.future_simple}</p>
                     </div>
                   </div>
                 );
@@ -1021,36 +1130,89 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             </div>
           )}
 
-          {/* Tab 3: AI Analysis */}
+          {/* Tab 3: AI Context Tutor */}
           {activeResultTab === 'ai' && (
             <div className="text-sm">
               {!aiAnalysis ? (
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition border-none cursor-pointer shadow-sm"
-                  onClick={handleAiAnalysis}
-                  disabled={isAiLoading}
-                >
-                  {isAiLoading ? <span className="spinner" /> : '✨ Kích hoạt Gia Sư AI Phân Tích Sắc Thái & Ví Dụ'}
-                </button>
+                <div className="text-center py-6 bg-[#F8FAFC] rounded-xl border border-slate-200 p-5">
+                  <p className="text-xs text-slate-600 font-medium mb-3">
+                    Bấm để Gia Sư AI phân tích sắc thái ngữ cảnh (Formal/Informal/Slang) và cụm từ đi kèm.
+                  </p>
+                  <button
+                    type="button"
+                    className="px-5 py-2.5 rounded-lg text-xs font-bold text-white bg-[#0F2B48] hover:bg-[#1A3D63] transition-all border-none cursor-pointer shadow-md"
+                    onClick={handleAiAnalysis}
+                    disabled={isAiLoading}
+                  >
+                    {isAiLoading ? <span className="spinner" /> : '✨ Kích Hoạt AI Phân Tích Ngữ Cảnh'}
+                  </button>
+                </div>
               ) : (
-                <div className="flex flex-col gap-3 text-xs">
+                <div className="flex flex-col gap-4 text-xs">
                   {aiAnalysis.nuances && (
-                    <div className="p-3 bg-slate-50 rounded-lg border-l-4 border-blue-600">
-                      <strong className="text-xs text-blue-600 block mb-1 font-bold">💡 SẮC THÁI NGỮ CẢNH:</strong>
-                      <p className="margin-0 text-slate-800 font-medium leading-relaxed">{aiAnalysis.nuances}</p>
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border-l-4 border-[#0F2B48]">
+                      <strong className="text-xs text-blue-700 font-mono block mb-1 uppercase">💡 SẮC THÁI NGỮ CẢNH AI:</strong>
+                      <p className="margin-0 text-slate-900 font-medium text-sm leading-relaxed">{aiAnalysis.nuances}</p>
                     </div>
                   )}
-                  {aiAnalysis.collocations && (
-                    <div className="p-3 bg-slate-50 rounded-lg border-l-4 border-blue-600">
-                      <strong className="text-xs text-blue-600 block mb-2 font-bold">🗣️ CỤM TỪ CỐ ĐỊNH (COLLOCATIONS):</strong>
-                      <div className="flex flex-col gap-1">
+                  {aiAnalysis.collocations && aiAnalysis.collocations.length > 0 && (
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border-l-4 border-[#0F2B48]">
+                      <strong className="text-xs text-blue-700 font-mono block mb-2 uppercase">🗣️ CỤM TỪ CỐ ĐỊNH (COLLOCATIONS):</strong>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {aiAnalysis.collocations.map((c, i) => (
-                          <div key={i} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100">
-                            <span className="font-bold text-slate-800">{c.phrase}</span>
-                            <span className="text-slate-500 font-medium">{c.vi}</span>
+                          <div key={i} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+                            <span className="font-bold text-slate-900 text-xs">{c.phrase}</span>
+                            <span className="text-slate-600 text-xs font-medium">{c.vi}</span>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  {aiAnalysis.real_examples && aiAnalysis.real_examples.length > 0 && (
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border-l-4 border-[#0F2B48]">
+                      <strong className="text-xs text-blue-700 font-mono block mb-2 uppercase">📚 CÂU VÍ DỤ THỰC TẾ:</strong>
+                      <div className="flex flex-col gap-2">
+                        {aiAnalysis.real_examples.map((ex, i) => (
+                          <div key={i} className="bg-white p-3 rounded-lg border border-slate-200">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="font-semibold text-slate-900 text-xs margin-0">"{ex.en}"</p>
+                              <button
+                                type="button"
+                                onClick={() => handleSpeak(ex.en, 'US')}
+                                className="text-blue-600 hover:text-blue-800 bg-transparent border-none cursor-pointer p-0 text-xs flex-shrink-0"
+                                title="Phát âm câu ví dụ"
+                              >
+                                🔊
+                              </button>
+                            </div>
+                            {ex.vi && <p className="text-slate-500 text-xs mt-1 margin-0">➔ {ex.vi}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {aiAnalysis.alternatives && (
+                    <div className="p-4 bg-[#F8FAFC] rounded-xl border-l-4 border-[#0F2B48]">
+                      <strong className="text-xs text-blue-700 font-mono block mb-2 uppercase">🔄 CÁC CÁCH DIỄN ĐẠT THAY THẾ:</strong>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {aiAnalysis.alternatives.formal && (
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <span className="text-[10px] font-bold text-blue-600 block uppercase">Trang trọng (Formal)</span>
+                            <span className="text-xs font-medium text-slate-800">{aiAnalysis.alternatives.formal}</span>
+                          </div>
+                        )}
+                        {aiAnalysis.alternatives.informal && (
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <span className="text-[10px] font-bold text-emerald-600 block uppercase">Thông dụng (Informal)</span>
+                            <span className="text-xs font-medium text-slate-800">{aiAnalysis.alternatives.informal}</span>
+                          </div>
+                        )}
+                        {aiAnalysis.alternatives.slang && (
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <span className="text-[10px] font-bold text-amber-600 block uppercase">Tiếng lóng (Slang)</span>
+                            <span className="text-xs font-medium text-slate-800">{aiAnalysis.alternatives.slang}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1061,12 +1223,12 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         </div>
       )}
 
-      {/* History Section */}
+      {/* 🕒 Search History Bar */}
       {searchHistory && searchHistory.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-slate-100">
+        <div className="mt-8 pt-5 border-t border-slate-200">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 margin-0">
-              🕒 Lịch sử tra cứu
+            <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider margin-0">
+              🕒 Lịch sử tra cứu gần đây
             </h3>
             <button 
               type="button"
@@ -1075,18 +1237,18 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 setSearchHistory([]);
                 if (showToast) showToast("Đã xóa toàn bộ lịch sử tra cứu!", "info");
               }}
-              className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 hover:underline border-none bg-none cursor-pointer"
+              className="text-xs text-red-500 hover:text-red-600 font-semibold border-none bg-transparent cursor-pointer"
             >
               🗑️ Xóa lịch sử
             </button>
           </div>
 
-          {/* Chips Grid */}
+          {/* History Chips */}
           <div className="flex flex-wrap gap-2">
             {searchHistory.map((item, index) => (
               <div 
                 key={index} 
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full text-xs text-slate-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#F3F5F7] hover:bg-white hover:shadow-xs rounded-lg text-xs text-slate-800 transition-all border border-slate-200"
               >
                 <button
                   type="button"
@@ -1096,9 +1258,10 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                       handleTranslate(null, item.word);
                     }
                   }}
-                  className="bg-none border-none p-0 cursor-pointer text-slate-700 hover:text-blue-600 font-normal text-xs"
+                  className="bg-transparent border-none p-0 cursor-pointer text-slate-800 hover:text-blue-900 font-semibold text-xs flex items-center gap-1"
                 >
-                  <span><strong>{item.word}</strong> {item.translation ? `→ ${item.translation}` : ''}</span>
+                  <span><strong>{item.word}</strong></span>
+                  {item.translation && <span className="text-slate-400 font-normal">→ {item.translation}</span>}
                 </button>
                 <button 
                   type="button"
@@ -1107,7 +1270,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                     e.stopPropagation();
                     deleteSingleHistoryItem(item.word);
                   }}
-                  className="text-slate-400 hover:text-slate-600 font-bold ml-1 border-none bg-none cursor-pointer text-xs p-0"
+                  className="text-slate-400 hover:text-slate-700 font-bold ml-1 border-none bg-transparent cursor-pointer text-xs p-0"
                 >
                   ✕
                 </button>
