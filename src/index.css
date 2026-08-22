@@ -340,6 +340,17 @@ button.is-disabled {
   .hero-banner { padding: var(--space-lg); border-radius: calc(var(--radius-card)); }
 }
 
+/* Small helpers for new Flashcards tweaks */
+.results-scroll { max-height: 250px; overflow-y: auto; }
+.text-error { color: var(--color-error); }
+.badge-pos { display: inline-block; padding: 6px 8px; border-radius: 999px; font-size: 0.7rem; }
+.icon-huge { font-size: 54px; }
+.score-percentage { font-family: var(--font-heading); }
+
+/* Minor layout normalization */
+.asymmetric-layout.max-w-5xl, .max-w-5xl { max-width: 1100px; margin: 0 auto; }
+
+
 
 /* Monospace & IPA */
 .font-mono, .stat-value-mono, .metric-number {

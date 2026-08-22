@@ -219,10 +219,11 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
       <div className="asymmetric-layout animate-slideup max-w-5xl mx-auto">
         {/* Back button top-left */}
         {onNavigateBack && (
-          <button 
-            className="btn-secondary text-xs mb-4" 
+          <button
+            type="button"
+            className="btn-secondary text-xs mb-4"
             onClick={onNavigateBack}
-            style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            aria-label="Quay lại Dashboard"
           >
             ← Quay lại Dashboard
           </button>
@@ -241,7 +242,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
         <div className="asymmetric-body-grid">
           {/* 📌 Left Narrow Vertical Stats Column */}
           <aside className="vertical-stats-sidebar">
-            <div className="stats-sidebar-card glass">
+            <div className="stats-sidebar-card card-surface">
               <h3 className="stats-sidebar-header">THỐNG KÊ FLASHCARDS</h3>
               
               <div className="vertical-stat-item notebook">
@@ -272,9 +273,9 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
           {/* 📚 Right Wide Main Workspace */}
           <main className="asymmetric-gallery-main">
-            <div className="quiz-card glass p-8 text-center bg-white rounded-xl">
-              <h2 className="text-2xl font-bold mb-2 color-text-dark" style={{ fontSize: '1.6rem', fontWeight: '800' }}>Cấu hình bài ôn tập</h2>
-              <p className="color-text-muted text-xs mb-6" style={{ fontSize: '13px', fontWeight: '400' }}>
+            <div className="quiz-card card-surface p-8 text-center">
+              <h2 className="text-2xl font-bold mb-2 color-text-dark topic-hero-title">Cấu hình bài ôn tập</h2>
+              <p className="color-text-muted text-xs mb-6 topic-hero-desc">
                 Chọn bộ từ vựng, hình thức thử thách và số lượng câu để bắt đầu.
               </p>
 
@@ -291,7 +292,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
               )}
 
               {canPlay ? (
-                <div className="quiz-settings-form text-left p-5 mb-6 bg-slate-50 rounded-lg">
+                <div className="quiz-settings-form panel-shell text-left p-5 mb-6">
                   <h3 className="text-xs font-mono font-bold mb-4 color-text-muted uppercase tracking-wider">CẤU HÌNH PHÒNG ĐẤU:</h3>
                   
                   {/* Mode Select */}
@@ -299,18 +300,21 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                     <label className="text-xs color-text-muted block mb-1 font-medium">Chế độ thử thách:</label>
                     <div className="quiz-modes-container flex gap-2">
                       <button 
+                        type="button"
                         className={`btn-secondary text-xs flex-1 ${quizMode === 'mixed' ? 'active' : ''}`}
                         onClick={() => setQuizMode('mixed')}
                       >
                         Hỗn hợp
                       </button>
                       <button 
+                        type="button"
                         className={`btn-secondary text-xs flex-1 ${quizMode === 'choice' ? 'active' : ''}`}
                         onClick={() => setQuizMode('choice')}
                       >
                         4 Đáp án
                       </button>
                       <button 
+                        type="button"
                         className={`btn-secondary text-xs flex-1 ${quizMode === 'spelling' ? 'active' : ''}`}
                         onClick={() => setQuizMode('spelling')}
                       >
@@ -353,7 +357,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
                       )}
                     </select>
                     {selectedDeckId !== 'all' && savedVocab.filter(item => item.deckId === selectedDeckId).length < 4 && (
-                      <small className="block mt-1 text-xs" style={{ color: 'var(--color-error)' }}>
+                      <small className="block mt-1 text-xs text-error">
                         Bộ từ này có ít hơn 4 từ. Hãy thêm thêm từ trước khi ôn tập!
                       </small>
                     )}
@@ -421,7 +425,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
         </div>
 
         {/* Question Card */}
-        <div className="quiz-card glass p-6 mb-6">
+        <div className="quiz-card card-surface p-6 mb-6">
           {/* Question Text */}
           <div className="question-prompt text-center mb-6">
             <span className="badge-pos mb-2" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-primary)', border: 'none' }}>
@@ -454,7 +458,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
             <div className="spelling-answer-container mb-6">
               <input
                 type="text"
-                className="translator-input w-full glass text-center font-bold"
+                className="translator-input w-full card-surface text-center font-bold"
                 style={{ fontSize: '18px', padding: '12px' }}
                 placeholder="Gõ từ tiếng Anh vào đây..."
                 value={spellingInput}
@@ -529,6 +533,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           <div className="action-area">
             {!checked ? (
               <button 
+                type="button"
                 className="btn-primary w-full justify-center py-3"
                 disabled={isSpellingQuestion ? !spellingInput.trim() : !selectedOption}
                 onClick={handleSubmitAnswer}
@@ -537,6 +542,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
               </button>
             ) : (
               <button 
+                type="button"
                 className="btn-primary w-full justify-center py-3"
                 onClick={handleNextQuestion}
               >
@@ -577,7 +583,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           {/* Detail Results Table */}
           <div className="results-summary-table text-left mb-8">
             <h3 className="text-sm font-semibold mb-3 color-text-main">CHI TIẾT PHÒNG ĐẤU:</h3>
-            <div className="glass p-3 rounded" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+            <div className="card-surface p-3 results-scroll">
               {resultsList.map((item, idx) => (
                 <div 
                   key={idx} 
@@ -605,10 +611,10 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           </div>
 
           <div className="flex gap-3">
-            <button className="btn-secondary flex-1 justify-center py-3" onClick={() => setGameState('settings')}>
+            <button type="button" className="btn-secondary flex-1 justify-center py-3" onClick={() => setGameState('settings')}>
               🔄 Luyện lại
             </button>
-            <button className="btn-primary flex-1 justify-center py-3" onClick={onNavigateBack}>
+            <button type="button" className="btn-primary flex-1 justify-center py-3" onClick={onNavigateBack}>
               Quay về trang chủ
             </button>
           </div>
