@@ -793,6 +793,220 @@
   font-size: 0.72rem;
 }
 
+.translator-insight-panel {
+  margin-top: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,249,255,0.96) 100%);
+  border: 1px solid rgba(22, 63, 118, 0.08);
+  border-radius: 20px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.translator-tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px 16px;
+  border-bottom: 1px solid rgba(22, 63, 118, 0.08);
+  background: rgba(248, 251, 255, 0.9);
+}
+
+.translator-tab {
+  border: none;
+  background: rgba(22, 63, 118, 0.06);
+  color: var(--color-text-main);
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.translator-tab.active {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(22, 63, 118, 0.18);
+}
+
+.translator-detail-stack,
+.translator-ai-wrap,
+.translator-conjugation-wrap {
+  padding: 14px;
+}
+
+.translator-detail-card,
+.translator-ai-card,
+.translator-conjugation-item {
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(22, 63, 118, 0.08);
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.translator-detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.translator-detail-card {
+  padding: 14px 16px;
+}
+
+.translator-detail-label {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.translator-detail-card p {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.translator-example-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(220, 233, 255, 0.38) 0%, rgba(245,249,255,0.9) 100%);
+  border: 1px solid rgba(22, 63, 118, 0.08);
+}
+
+.translator-example-card > span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.translator-example-en,
+.translator-example-vi {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.translator-example-en {
+  color: var(--color-text-dark);
+  font-style: italic;
+  font-weight: 700;
+}
+
+.translator-example-vi {
+  margin-top: 8px;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.translator-conjugation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.translator-conjugation-item {
+  padding: 14px 12px;
+}
+
+.translator-conjugation-item span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.translator-conjugation-item p {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.translator-ai-trigger {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(22, 63, 118, 0.18);
+}
+
+.translator-ai-trigger:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.translator-ai-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.translator-ai-card {
+  padding: 14px 16px;
+}
+
+.translator-ai-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.translator-ai-card p {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.translator-collocation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.translator-collocation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(243,247,255,0.9);
+  border: 1px solid rgba(22, 63, 118, 0.08);
+}
+
+.translator-collocation-item span {
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.translator-collocation-item small {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
 @media (max-width: 860px) {
   .translator-topbar {
     flex-wrap: wrap;

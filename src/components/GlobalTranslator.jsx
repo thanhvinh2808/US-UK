@@ -912,56 +912,54 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
       {/* Dictionary & AI Inspection Details */}
       {result && (
-        <div className="bg-white rounded-xl p-5 border border-slate-200 mt-4 animate-slideup">
-          <div className="flex gap-2 border-b border-slate-100 pb-3 mb-4 flex-wrap">
+        <div className="translator-insight-panel animate-slideup">
+          <div className="translator-tabbar">
             <button
               type="button"
               onClick={() => setActiveResultTab('meanings')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'meanings' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`translator-tab ${activeResultTab === 'meanings' ? 'active' : ''}`}
             >
               📖 Nghĩa & Từ loại
             </button>
             <button
               type="button"
               onClick={() => setActiveResultTab('conjugation')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'conjugation' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`translator-tab ${activeResultTab === 'conjugation' ? 'active' : ''}`}
             >
               ⚡ Chia 12 Thì & Dạng từ
             </button>
             <button
               type="button"
               onClick={() => setActiveResultTab('ai')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border-none ${activeResultTab === 'ai' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`translator-tab ${activeResultTab === 'ai' ? 'active' : ''}`}
             >
               ✨ Gia Sư AI Phân Tích
             </button>
           </div>
 
-          {/* Tab 1: Meanings */}
           {activeResultTab === 'meanings' && (
-            <div className="flex flex-col gap-3 text-sm text-slate-700">
+            <div className="translator-detail-stack">
               {result.meaningsByPos && result.meaningsByPos.map((posGroup, idx) => (
-                <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                  <span className="font-bold text-blue-600 text-xs uppercase block mb-1">{posGroup.label}:</span>
-                  <p className="text-slate-800 margin-0 font-medium">{posGroup.list.join(', ')}</p>
+                <div key={idx} className="translator-detail-card">
+                  <span className="translator-detail-label">{posGroup.label}:</span>
+                  <p>{posGroup.list.join(', ')}</p>
                 </div>
               ))}
 
               {result.example && (
-                <div className="p-3 bg-blue-50/50 rounded-lg border-l-4 border-blue-600">
-                  <span className="text-xs font-bold text-slate-500 block mb-1">VÍ DỤ TIẾNG ANH:</span>
-                  <p className="italic font-semibold text-slate-800 margin-0">"{result.example}"</p>
+                <div className="translator-example-card">
+                  <span>VÍ DỤ TIẾNG ANH:</span>
+                  <p className="translator-example-en">"{result.example}"</p>
                   {result.translatedExample && (
-                    <p className="text-xs text-blue-600 font-bold mt-1 margin-0">➔ "{result.translatedExample}"</p>
+                    <p className="translator-example-vi">➔ "{result.translatedExample}"</p>
                   )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Tab 2: Conjugation */}
           {activeResultTab === 'conjugation' && (
-            <div className="text-sm">
+            <div className="translator-conjugation-wrap">
               {(() => {
                 const targetWord = (result.word || '').trim().toLowerCase().replace(/^(a|an|the|to)\s+/i, '');
                 const conjugated = conjugateWithCompromise(targetWord);
@@ -984,18 +982,18 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 }
 
                 return (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">HIỆN TẠI (PRESENT)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.present_simple}</p>
+                  <div className="translator-conjugation-grid">
+                    <div className="translator-conjugation-item">
+                      <span>HIỆN TẠI (PRESENT)</span>
+                      <p>{verbForms.present_simple}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">QUÁ KHỨ (PAST)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.past_simple}</p>
+                    <div className="translator-conjugation-item">
+                      <span>QUÁ KHỨ (PAST)</span>
+                      <p>{verbForms.past_simple}</p>
                     </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <span className="font-bold text-blue-600 block mb-1">TƯƠNG LAI (FUTURE)</span>
-                      <p className="margin-0 font-mono text-slate-800">{verbForms.future_simple}</p>
+                    <div className="translator-conjugation-item">
+                      <span>TƯƠNG LAI (FUTURE)</span>
+                      <p>{verbForms.future_simple}</p>
                     </div>
                   </div>
                 );
@@ -1003,34 +1001,33 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             </div>
           )}
 
-          {/* Tab 3: AI Analysis */}
           {activeResultTab === 'ai' && (
-            <div className="text-sm">
+            <div className="translator-ai-wrap">
               {!aiAnalysis ? (
                 <button
                   type="button"
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition border-none cursor-pointer shadow-sm"
+                  className="translator-ai-trigger"
                   onClick={handleAiAnalysis}
                   disabled={isAiLoading}
                 >
                   {isAiLoading ? <span className="spinner" /> : '✨ Kích hoạt Gia Sư AI Phân Tích Sắc Thái & Ví Dụ'}
                 </button>
               ) : (
-                <div className="flex flex-col gap-3 text-xs">
+                <div className="translator-ai-stack">
                   {aiAnalysis.nuances && (
-                    <div className="p-3 bg-slate-50 rounded-lg border-l-4 border-blue-600">
-                      <strong className="text-xs text-blue-600 block mb-1 font-bold">💡 SẮC THÁI NGỮ CẢNH:</strong>
-                      <p className="margin-0 text-slate-800 font-medium leading-relaxed">{aiAnalysis.nuances}</p>
+                    <div className="translator-ai-card">
+                      <strong>💡 SẮC THÁI NGỮ CẢNH:</strong>
+                      <p>{aiAnalysis.nuances}</p>
                     </div>
                   )}
                   {aiAnalysis.collocations && (
-                    <div className="p-3 bg-slate-50 rounded-lg border-l-4 border-blue-600">
-                      <strong className="text-xs text-blue-600 block mb-2 font-bold">🗣️ CỤM TỪ CỐ ĐỊNH (COLLOCATIONS):</strong>
-                      <div className="flex flex-col gap-1">
+                    <div className="translator-ai-card">
+                      <strong>🗣️ CỤM TỪ CỐ ĐỊNH (COLLOCATIONS):</strong>
+                      <div className="translator-collocation-list">
                         {aiAnalysis.collocations.map((c, i) => (
-                          <div key={i} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100">
-                            <span className="font-bold text-slate-800">{c.phrase}</span>
-                            <span className="text-slate-500 font-medium">{c.vi}</span>
+                          <div key={i} className="translator-collocation-item">
+                            <span>{c.phrase}</span>
+                            <small>{c.vi}</small>
                           </div>
                         ))}
                       </div>
