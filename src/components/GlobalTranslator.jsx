@@ -677,23 +677,21 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
   };
 
   const renderTranslatorContent = () => (
-    <div className="w-full font-sans">
-      {/* Header: Back button & Language Selector */}
-      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 flex-wrap gap-2">
-        <div>
+    <div className="translator-shell">
+      <div className="translator-topbar">
+        <div className="translator-back-wrap">
           {onNavigateBack && (
-            <button 
+            <button
               type="button"
               onClick={onNavigateBack}
-              className="text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1 border-none bg-none cursor-pointer"
+              className="translator-back-btn"
             >
               ← Quay lại Dashboard
             </button>
           )}
         </div>
-        
-        {/* Language Switcher */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+
+        <div className="translator-language-switch" aria-label="Chọn chiều dịch">
           <button
             type="button"
             onClick={() => {
@@ -702,11 +700,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               setResult(null);
               setAiAnalysis(null);
             }}
-            className={`px-4 py-1.5 font-semibold rounded-lg shadow-sm text-sm border-none cursor-pointer transition ${
-              direction === 'en-vi'
-                ? 'bg-white text-blue-600 font-bold'
-                : 'text-slate-600 font-medium hover:text-slate-900 bg-none'
-            }`}
+            className={`translator-language-option ${direction === 'en-vi' ? 'active' : ''}`}
           >
             Tiếng Anh (UK/US)
           </button>
@@ -716,15 +710,13 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             title="Đổi chiều dịch"
             onClick={() => {
               const newDirection = direction === 'en-vi' ? 'vi-en' : 'en-vi';
-              const swappedQuery = result
-                ? (direction === 'en-vi' ? result.vietnamese : result.word)
-                : query;
+              const swappedQuery = result ? (direction === 'en-vi' ? result.vietnamese : result.word) : query;
               setDirection(newDirection);
               setQuery(swappedQuery || '');
               setResult(null);
               setAiAnalysis(null);
             }}
-            className="p-1.5 text-slate-500 hover:text-blue-600 rounded-lg border-none bg-none cursor-pointer text-base font-bold"
+            className="translator-swap-btn"
           >
             ⇄
           </button>
@@ -737,88 +729,86 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               setResult(null);
               setAiAnalysis(null);
             }}
-            className={`px-4 py-1.5 font-semibold rounded-lg shadow-sm text-sm border-none cursor-pointer transition ${
-              direction === 'vi-en'
-                ? 'bg-white text-blue-600 font-bold'
-                : 'text-slate-600 font-medium hover:text-slate-900 bg-none'
-            }`}
+            className={`translator-language-option ${direction === 'vi-en' ? 'active' : ''}`}
           >
             Tiếng Việt
           </button>
         </div>
 
-        <div className="w-28 hidden sm:block"></div> {/* Spacer balance */}
+        <div className="translator-spacer" />
       </div>
 
-      {/* Translation Main Grid */}
-      <form onSubmit={handleTranslate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left: Input Box */}
-        <div className="flex flex-col h-56 p-4 rounded-xl border border-slate-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 bg-white relative">
-          <textarea 
-            ref={inputRef}
-            placeholder={direction === 'en-vi' ? "Nhập văn bản tiếng Anh..." : "Nhập văn bản tiếng Việt..."} 
-            value={query}
-            onChange={handleInputChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (query.trim() && !isLoading) {
-                  handleTranslate(e);
+      <form onSubmit={handleTranslate} className="translator-panel-grid">
+        <div className="translator-pane translator-input-pane">
+          <div className="translator-pane-header">
+            <span>Nhập văn bản</span>
+            <span className="translator-badge">{direction === 'en-vi' ? 'EN → VI' : 'VI → EN'}</span>
+          </div>
+
+          <div className="translator-field-wrap">
+            <textarea
+              ref={inputRef}
+              placeholder={direction === 'en-vi' ? 'Nhập văn bản tiếng Anh...' : 'Nhập văn bản tiếng Việt...'}
+              value={query}
+              onChange={handleInputChange}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (query.trim() && !isLoading) {
+                    handleTranslate(e);
+                  }
                 }
-              }
-            }}
-            className="w-full h-full resize-none outline-none text-slate-800 placeholder-slate-400 text-base bg-transparent border-none p-0 margin-0"
-          />
-
-          {query && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery('');
-                setResult(null);
-                setAiAnalysis(null);
               }}
-              className="absolute right-3 top-3 w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs cursor-pointer border-none"
-              title="Xóa văn bản"
-            >
-              ✕
-            </button>
-          )}
+              className="translator-textarea"
+            />
 
-          {/* Autocomplete Suggestions */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="suggestions-dropdown absolute top-full left-0 right-0 z-50 bg-white rounded-xl shadow-lg mt-1 overflow-hidden border border-slate-100">
-              {suggestions.map((item, idx) => (
-                <div
-                  key={idx}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelectSuggestion(item);
-                  }}
-                  className="px-4 py-2 cursor-pointer text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-b border-slate-50 last:border-none"
-                >
-                  <span className="text-slate-300 text-xs">🔍</span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
-            <div className="flex gap-2">
-              <button 
+            {query && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setResult(null);
+                  setAiAnalysis(null);
+                }}
+                className="translator-clear-btn"
+                title="Xóa văn bản"
+              >
+                ✕
+              </button>
+            )}
+
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="translator-suggestions">
+                {suggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectSuggestion(item);
+                    }}
+                    className="translator-suggestion-item"
+                  >
+                    <span>🔍</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="translator-action-bar">
+            <div className="translator-left-actions">
+              <button
                 type="button"
                 onClick={startVoiceInput}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 border-none cursor-pointer transition ${
-                  isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
+                className={`translator-action-chip ${isListening ? 'active' : ''}`}
               >
                 🎤 {isListening ? 'Đang nghe...' : 'Giọng nói'}
               </button>
 
-              <button 
+              <button
                 type="button"
                 onClick={async () => {
                   try {
@@ -828,100 +818,92 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                       handleTranslate(null, text);
                     }
                   } catch (e) {
-                    if (showToast) showToast("Không thể dán từ clipboard.", "info");
+                    if (showToast) showToast('Không thể dán từ clipboard.', 'info');
                   }
                 }}
-                className="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 border-none cursor-pointer transition"
+                className="translator-action-chip"
               >
                 📋 Dán
               </button>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={isLoading || !query.trim()}
-              className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm border-none cursor-pointer transition disabled:opacity-50 flex items-center gap-1"
+              className="translator-primary-btn"
             >
-              {isLoading ? <span className="spinner" /> : <><span>Dịch Nghĩa</span> ✨</>}
+              {isLoading ? <span className="spinner" /> : <><span>Dịch nghĩa</span> ✨</>}
             </button>
           </div>
         </div>
 
-        {/* Right: Output Box */}
-        <div className="flex flex-col h-56 p-4 rounded-xl border border-slate-200 bg-slate-50/50 justify-between">
-          <div className="h-full overflow-y-auto">
+        <div className="translator-pane translator-output-pane">
+          <div className="translator-pane-header">
+            <span>Kết quả</span>
+            <span className="translator-badge subtle">AI</span>
+          </div>
+
+          <div className="translator-output-body">
             {isLoading ? (
-              <div className="py-8 text-center">
+              <div className="translator-empty-state centered">
                 <span className="spinner" />
-                <p className="text-xs text-slate-400 mt-2">Đang xử lý bản dịch...</p>
+                <p>Đang xử lý bản dịch...</p>
               </div>
             ) : result ? (
-              <div className="animate-fadeIn">
-                <p className="text-xl font-bold text-slate-800 leading-relaxed margin-0">
+              <div className="translator-result-card animate-fadeIn">
+                <p className="translator-result-word">
                   {direction === 'en-vi' ? result.vietnamese : result.word}
                 </p>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {result.partOfSpeech && (
-                    <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[11px] font-bold">
-                      {result.partOfSpeech}
-                    </span>
-                  )}
-                  {result.ipaUK && (
-                    <span className="text-xs font-mono text-slate-500">
-                      🇬🇧 {result.ipaUK}
-                    </span>
-                  )}
-                  {result.ipaUS && (
-                    <span className="text-xs font-mono text-slate-500">
-                      🇺🇸 {result.ipaUS}
-                    </span>
-                  )}
+                <div className="translator-meta-row">
+                  {result.partOfSpeech && <span className="translator-tag">{result.partOfSpeech}</span>}
+                  {result.ipaUK && <span className="translator-ipa">🇬🇧 {result.ipaUK}</span>}
+                  {result.ipaUS && <span className="translator-ipa">🇺🇸 {result.ipaUS}</span>}
                 </div>
               </div>
             ) : (
-              <div className="text-slate-400 text-base py-4">
+              <div className="translator-empty-state">
                 Kết quả dịch sẽ xuất hiện ở đây...
               </div>
             )}
           </div>
-          
-          <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-2">
-            <span className="text-xs text-slate-400 font-medium">Bản dịch tự động</span>
-            
+
+          <div className="translator-footer-row">
+            <span className="translator-microcopy">Bản dịch tự động</span>
+
             {result ? (
-              <div className="flex gap-2 items-center">
-                <button 
-                  type="button" 
-                  onClick={() => handleSpeak(result.word, 'US')} 
-                  className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg border-none bg-none cursor-pointer text-sm" 
+              <div className="translator-tools">
+                <button
+                  type="button"
+                  onClick={() => handleSpeak(result.word, 'US')}
+                  className="translator-tool-btn"
                   title="Phát âm US"
                 >
                   🔊
                 </button>
-                <button 
-                  type="button" 
-                  onClick={() => handleCopy(direction === 'en-vi' ? result.vietnamese : result.word, 'Bản dịch')} 
-                  className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg border-none bg-none cursor-pointer text-sm" 
+                <button
+                  type="button"
+                  onClick={() => handleCopy(direction === 'en-vi' ? result.vietnamese : result.word, 'Bản dịch')}
+                  className="translator-tool-btn"
                   title="Sao chép"
                 >
                   📋
                 </button>
                 {isSaved ? (
-                  <span className="text-xs text-emerald-600 font-bold">✓ Đã lưu</span>
+                  <span className="translator-saved-badge">✓ Đã lưu</span>
                 ) : (
-                  <button 
-                    type="button" 
-                    onClick={handleSaveWord} 
-                    className="text-xs font-bold text-blue-600 hover:underline border-none bg-none cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={handleSaveWord}
+                    className="translator-save-btn"
                   >
                     ⭐ Lưu
                   </button>
                 )}
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button type="button" className="p-1.5 text-slate-300 rounded-lg border-none bg-none" title="Phát âm" disabled>🔊</button>
-                <button type="button" className="p-1.5 text-slate-300 rounded-lg border-none bg-none" title="Sao chép" disabled>📋</button>
+              <div className="translator-tools muted">
+                <button type="button" className="translator-tool-btn" title="Phát âm" disabled>🔊</button>
+                <button type="button" className="translator-tool-btn" title="Sao chép" disabled>📋</button>
               </div>
             )}
           </div>
