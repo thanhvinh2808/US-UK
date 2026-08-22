@@ -1,0 +1,37 @@
+#!/bin/sh
+# commit-msg hook to encourage Vietnamese commit messages.
+# Behavior: if the commit message doesn't contain common Vietnamese keywords,
+# prompt the user to confirm they want to continue. Exit non-zero to abort.
+
+MSG_FILE="$1"
+MSG=$(cat "$MSG_FILE")
+
+# Keywords commonly used in Vietnamese commit messages (case-insensitive)
+VKW="Giao diện|Giao diện:|Thêm|Sửa|Xóa|Cập nhật|Hoàn thiện|Hoàn thành|Cải thiện|Chỉnh|Tinh chỉnh|Tối ưu|Migrate|Fix|Cập nhật|Cấu hình|Xử lý|Refactor|style:|feat:|fix:"
+
+# Check for keywords
+echo "$MSG" | grep -E -i "$VKW" >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+  exit 0
+fi
+
+# If no keyword found, prompt user to confirm (makes it explicit)
+# This is interactive; if running in non-interactive environment, abort to be safe.
+if [ -t 0 ]; then
+  echo "\n[git hook] Commit message có vẻ không bằng tiếng Việt rõ ràng."
+  echo "Nội dung commit:\n---\n$MSG\n---"
+  echo "Bạn có muốn tiếp tục với message này không? (y/N)"
+  read ans
+  case "$ans" in
+    y|Y)
+      exit 0
+      ;;
+    *)
+      echo "Hủy commit. Vui lòng sửa commit message bằng tiếng Việt (có thể thêm từ như 'Thêm', 'Sửa', 'Giao diện', v.v.)."
+      exit 1
+      ;;
+  esac
+else
+  echo "[git hook] Abort: commit message không chứa dấu hiệu tiếng Việt và không thể tương tác để xác nhận."
+  exit 1
+fi
