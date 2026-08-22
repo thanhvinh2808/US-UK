@@ -1111,19 +1111,21 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
   return (
     <>
       <button 
-        className="floating-translate-btn glass-glow"
-        onClick={() => setIsOpen(true)}
-        title="Tra từ / dịch nhanh toàn cục"
-      >
-        📖
-      </button>
+              type="button"
+              className="floating-translate-btn glass-glow"
+              onClick={() => setIsOpen(true)}
+              title="Tra từ / dịch nhanh toàn cục"
+              aria-label="Mở trình tra cứu nhanh"
+            >
+              📖
+            </button>
 
       {isOpen && (
         <div className="modal-overlay" onClick={() => setIsOpen(false)}>
-          <div className="modal-content translator-modal glass-glow" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', borderRadius: '24px' }}>
-            <div className="modal-header" style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800' }}>🔍 Tra Từ & Dịch Nghĩa</h3>
-              <button className="close-btn" onClick={() => setIsOpen(false)}>✕</button>
+          <div className="modal-content translator-modal card-surface" onClick={(e) => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <h3 className="modal-title">🔍 Tra Từ & Dịch Nghĩa</h3>
+                        <button type="button" className="close-btn" onClick={() => setIsOpen(false)} aria-label="Đóng">✕</button>
             </div>
             {renderTranslatorContent()}
           </div>
