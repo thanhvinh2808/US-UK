@@ -21,6 +21,8 @@ export default function GlobalTranslator({ onSavedVocabChange, showToast, isPage
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [activeResultTab, setActiveResultTab] = useState('meanings');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const historyMenuRef = useRef(null);
   const recognitionRef = useRef(null);
 
   const startVoiceInput = () => {
@@ -293,10 +295,21 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsOpen(false);
+        setIsHistoryOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleHistoryOutsideClick = (e) => {
+      if (historyMenuRef.current && !historyMenuRef.current.contains(e.target)) {
+        setIsHistoryOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleHistoryOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleHistoryOutsideClick);
   }, []);
 
   const handleSaveWord = () => {
@@ -742,8 +755,137 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
           </button>
         </div>
 
-        <div className="translator-spacer" />
+        <div className="translator-history-menu-wrap" ref={historyMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+            className={`translator-history-toggle-btn ${isHistoryOpen ? 'active' : ''}`}
+            title="Xem lịch sử tra cứu"
+          >
+            🕒 <span className="history-btn-text">Lịch sử</span>
+            {searchHistory && searchHistory.length > 0 && (
+              <span className="history-counter">{searchHistory.length}</span>
+            )}
+          </button>
+
+          {isHistoryOpen && (
+            <div className="translator-history-dropdown animate-popover">
+              <div className="history-dropdown-header">
+                <div className="history-dropdown-title-group">
+                  <span>🕒 Lịch sử tra cứu</span>
+                  <span className="history-count-badge">{searchHistory.length}</span>
+                </div>
+                <div className="history-header-actions">
+                  {searchHistory.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem("eng_app_search_history");
+                        setSearchHistory([]);
+                        if (showToast) showToast("Đã xóa toàn bộ lịch sử!", "info");
+                      }}
+                      className="history-clear-all-btn"
+                      title="Xóa toàn bộ lịch sử"
+                    >
+                      🗑️ Xóa hết
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOpen(false)}
+                    className="history-dropdown-close-btn"
+                    title="Đóng"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div className="history-dropdown-list">
+                {searchHistory.length === 0 ? (
+                  <div className="history-empty-text">Chưa có lịch sử tra cứu nào</div>
+                ) : (
+                  searchHistory.map((item, idx) => (
+                    <div key={idx} className="history-dropdown-item">
+                      <div
+                        className="history-item-content"
+                        onClick={() => {
+                          setQuery(item.word);
+                          handleTranslate(null, item.word);
+                          setIsHistoryOpen(false);
+                        }}
+                      >
+                        <span className="history-item-word">{item.word}</span>
+                        {item.translation && (
+                          <span className="history-item-trans">→ {item.translation}</span>
+                        )}
+                      </div>
+                      <div className="history-item-actions">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speak(item.word, 'US');
+                          }}
+                          className="history-item-btn audio"
+                          title="Nghe phát âm"
+                        >
+                          🔊
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSingleHistoryItem(item.word);
+                          }}
+                          className="history-item-btn delete"
+                          title="Xóa mục này"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Quick History Pills Bar */}
+      {searchHistory && searchHistory.length > 0 && (
+        <div className="translator-quick-history-bar">
+          <span className="quick-history-label">🕒 Gần đây:</span>
+          <div className="quick-history-scroll-track">
+            {searchHistory.slice(0, 10).map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  if (item && item.word) {
+                    setQuery(item.word);
+                    handleTranslate(null, item.word);
+                  }
+                }}
+                className="quick-history-chip"
+                title={`Tra lại: ${item.word}`}
+              >
+                <span className="chip-word">{item.word}</span>
+                {item.translation && <span className="chip-trans">→ {item.translation}</span>}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+            className="quick-history-all-btn"
+            title="Xem & Quản lý tất cả lịch sử"
+          >
+            Tất cả ({searchHistory.length})
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleTranslate} className="translator-panel-grid">
         <div className="translator-pane translator-input-pane">
@@ -1203,62 +1345,6 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* History Section */}
-      {searchHistory && searchHistory.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 margin-0">
-              🕒 Lịch sử tra cứu
-            </h3>
-            <button 
-              type="button"
-              onClick={() => {
-                localStorage.removeItem("eng_app_search_history");
-                setSearchHistory([]);
-                if (showToast) showToast("Đã xóa toàn bộ lịch sử tra cứu!", "info");
-              }}
-              className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 hover:underline border-none bg-none cursor-pointer"
-            >
-              🗑️ Xóa lịch sử
-            </button>
-          </div>
-
-          {/* Chips Grid */}
-          <div className="flex flex-wrap gap-2">
-            {searchHistory.map((item, index) => (
-              <div 
-                key={index} 
-                className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200/80 rounded-full text-xs text-slate-700 transition-colors"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (item && item.word) {
-                      setQuery(item.word);
-                      handleTranslate(null, item.word);
-                    }
-                  }}
-                  className="bg-none border-none p-0 cursor-pointer text-slate-700 hover:text-blue-600 font-normal text-xs"
-                >
-                  <span><strong>{item.word}</strong> {item.translation ? `→ ${item.translation}` : ''}</span>
-                </button>
-                <button 
-                  type="button"
-                  title="Xóa mục này"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteSingleHistoryItem(item.word);
-                  }}
-                  className="text-slate-400 hover:text-slate-600 font-bold ml-1 border-none bg-none cursor-pointer text-xs p-0"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>
