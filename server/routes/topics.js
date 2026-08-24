@@ -1,69 +1,22 @@
 import express from 'express';
-import Topic from '../models/Topic.js';
+import { topicController } from '../controllers/topicController.js';
 import adminAuth from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
 // GET all topics
-router.get('/', async (req, res) => {
-  try {
-    const topics = await Topic.find().sort({ createdAt: 1 });
-    res.json(topics);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.get('/', topicController.getTopics);
 
-// GET single topic by slugId or Mongo _id
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    let topic = await Topic.findOne({ slugId: id });
-    if (!topic && id.match(/^[0-9a-fA-F]{24}$/)) {
-      topic = await Topic.findById(id);
-    }
-    if (!topic) return res.status(404).json({ message: 'Topic not found' });
-    res.json(topic);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// GET single topic by ID or slugId
+router.get('/:id', topicController.getTopicById);
 
-// POST create topic
-router.post('/', adminAuth, async (req, res) => {
-  try {
-    const newTopic = new Topic(req.body);
-    const saved = await newTopic.save();
-    res.status(201).json(saved);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// POST create new topic (Protected with admin key)
+router.post('/', adminAuth, topicController.createTopic);
 
-// PUT update topic (theo slugId hoặc Mongo _id)
-router.put('/:id', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };
-    const updated = await Topic.findOneAndUpdate(query, req.body, { new: true, runValidators: true });
-    if (!updated) return res.status(404).json({ message: 'Topic not found' });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// PUT update existing topic (Protected with admin key)
+router.put('/:id', adminAuth, topicController.updateTopic);
 
-// DELETE topic (theo slugId hoặc Mongo _id)
-router.delete('/:id', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slugId: id };
-    const deleted = await Topic.findOneAndDelete(query);
-    if (!deleted) return res.status(404).json({ message: 'Topic not found' });
-    res.json({ message: 'Topic deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// DELETE topic by ID or slugId (Protected with admin key)
+router.delete('/:id', adminAuth, topicController.deleteTopic);
 
 export default router;
