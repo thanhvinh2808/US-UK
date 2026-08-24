@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage/
 
 # Editor directories and files
 .vscode/*
@@ -23,8 +24,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Scratch directories
+# Scratch & Superpowers directories
 /scratch
+.superpowers/
 
 # Environment & Server
 server/node_modules

@@ -1,22 +1,24 @@
 import express from 'express';
 import { topicController } from '../controllers/topicController.js';
-import adminAuth from '../middleware/adminAuth.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/requireRole.js';
+import { publicRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// GET all topics
-router.get('/', topicController.getTopics);
+// GET all topics (Public, rate limited)
+router.get('/', publicRateLimiter, topicController.getTopics);
 
-// GET single topic by ID or slugId
-router.get('/:id', topicController.getTopicById);
+// GET single topic by ID or slugId (Public, rate limited)
+router.get('/:id', publicRateLimiter, topicController.getTopicById);
 
-// POST create new topic (Protected with admin key)
-router.post('/', adminAuth, topicController.createTopic);
+// POST create new topic (Protected: admin role required)
+router.post('/', authenticate, requireRole('admin'), topicController.createTopic);
 
-// PUT update existing topic (Protected with admin key)
-router.put('/:id', adminAuth, topicController.updateTopic);
+// PUT update existing topic (Protected: admin role required)
+router.put('/:id', authenticate, requireRole('admin'), topicController.updateTopic);
 
-// DELETE topic by ID or slugId (Protected with admin key)
-router.delete('/:id', adminAuth, topicController.deleteTopic);
+// DELETE topic by ID or slugId (Protected: admin role required)
+router.delete('/:id', authenticate, requireRole('admin'), topicController.deleteTopic);
 
 export default router;
