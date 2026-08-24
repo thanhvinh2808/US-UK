@@ -1,0 +1,63 @@
+import { calculateSM2 } from './sm2.js';
+import { userStorage, defaultStats } from './userStorage.js';
+import { vocabStorage } from './vocabStorage.js';
+import { deckStorage } from './deckStorage.js';
+import { topicStorage } from './topicStorage.js';
+import { progressStorage } from './progressStorage.js';
+import { mistakeStorage } from './mistakeStorage.js';
+
+export {
+  calculateSM2,
+  userStorage,
+  defaultStats,
+  vocabStorage,
+  deckStorage,
+  topicStorage,
+  progressStorage,
+  mistakeStorage
+};
+
+/**
+ * Unified, backward-compatible Storage Facade.
+ * Combines all modularized storage operations into a single API.
+ */
+export const storage = {
+  // User & Activity methods
+  getDeviceId: userStorage.getDeviceId,
+  getUserStats: userStorage.getUserStats,
+  updateUserStats: userStorage.updateUserStats,
+  recordActivity: userStorage.recordActivity,
+  incrementActivity: userStorage.incrementActivity,
+
+  // Vocabulary & Word progress (SM-2)
+  getSavedVocab: vocabStorage.getSavedVocab,
+  saveWord: vocabStorage.saveWord,
+  deleteWord: vocabStorage.deleteWord,
+  updateWordProgress: vocabStorage.updateWordProgress,
+  resetWord: vocabStorage.resetWord,
+  assignWordToDeck: vocabStorage.assignWordToDeck,
+
+  // Custom Decks
+  getCustomDecks: deckStorage.getCustomDecks,
+  saveCustomDeck: deckStorage.saveCustomDeck,
+  deleteCustomDeck: deckStorage.deleteCustomDeck,
+
+  // Topics & Progress
+  getTopicProgress: progressStorage.getTopicProgress,
+  updateTopicProgress: progressStorage.updateTopicProgress,
+  getCustomTopics: topicStorage.getCustomTopics,
+  saveCustomTopic: topicStorage.saveCustomTopic,
+  deleteCustomTopic: topicStorage.deleteCustomTopic,
+  getPendingTopics: topicStorage.getPendingTopics,
+  savePendingTopic: topicStorage.savePendingTopic,
+  deletePendingTopic: topicStorage.deletePendingTopic,
+
+  // Mistake Bank & Weaknesses
+  saveMistake: mistakeStorage.saveMistake,
+  getMistakes: mistakeStorage.getMistakes,
+  deleteMistake: mistakeStorage.deleteMistake,
+  clearMistakes: mistakeStorage.clearMistakes,
+  getWeaknessStats: mistakeStorage.getWeaknessStats
+};
+
+export default storage;

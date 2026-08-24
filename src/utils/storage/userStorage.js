@@ -1,0 +1,166 @@
+const KEY_STATS = "eng_app_user_stats";
+
+export const defaultStats = {
+  streak: 0,
+  points: 0,
+  level: "A1",
+  lastActive: null,
+  completedModules: 0,
+  activityHistory: {} // "YYYY-MM-DD" -> count
+};
+
+export const userStorage = {
+  getDeviceId: () => {
+    try {
+      if (typeof localStorage === 'undefined') return "dev_guest";
+      let id = localStorage.getItem("eng_app_device_id");
+      if (!id) {
+        id = "dev_" + (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now());
+        localStorage.setItem("eng_app_device_id", id);
+      }
+      return id;
+    } catch (e) {
+      return "dev_guest";
+    }
+  },
+
+  getUserStats: () => {
+    try {
+      if (typeof localStorage === 'undefined') return { ...defaultStats };
+      const data = localStorage.getItem(KEY_STATS);
+      let stats = data ? JSON.parse(data) : { ...defaultStats };
+
+      // Ensure activityHistory exists
+      if (!stats.activityHistory) {
+        stats.activityHistory = {};
+      }
+
+      // Automatic streak validation/update
+      const now = new Date();
+      if (stats.lastActive) {
+        const lastActiveDate = new Date(stats.lastActive);
+
+        // Calculate difference in days
+        const diffTime = Math.abs(now.setHours(0, 0, 0, 0) - lastActiveDate.setHours(0, 0, 0, 0));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 1) {
+          // Reset streak if more than 1 day missed and save immediately
+          stats.streak = 0;
+          localStorage.setItem(KEY_STATS, JSON.stringify(stats));
+        }
+      }
+
+      return stats;
+    } catch (e) {
+      console.error("Error getting user stats", e);
+      return { ...defaultStats };
+    }
+  },
+
+  updateUserStats: (updates) => {
+    try {
+      const current = userStorage.getUserStats();
+      const updated = {
+        ...current,
+        ...updates
+      };
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEY_STATS, JSON.stringify(updated));
+      }
+      return updated;
+    } catch (e) {
+      console.error("Error updating user stats", e);
+      return { ...defaultStats };
+    }
+  },
+
+  recordActivity: () => {
+    try {
+      const stats = userStorage.getUserStats();
+      const now = new Date();
+      const todayString = now.toDateString();
+      const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+      let updatedStats = { ...stats };
+      if (!updatedStats.activityHistory) {
+        updatedStats.activityHistory = {};
+      }
+
+      if (!stats.lastActive) {
+        updatedStats.streak = 1;
+      } else {
+        const lastActiveDate = new Date(stats.lastActive);
+        const lastActiveString = lastActiveDate.toDateString();
+
+        if (lastActiveString !== todayString) {
+          const diffTime = Math.abs(now.setHours(0, 0, 0, 0) - lastActiveDate.setHours(0, 0, 0, 0));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            updatedStats.streak += 1;
+          } else if (diffDays > 1) {
+            updatedStats.streak = 1;
+          }
+        }
+      }
+
+      // Initialize today's count to 0 if not present
+      if (updatedStats.activityHistory[dateKey] === undefined) {
+        updatedStats.activityHistory[dateKey] = 0;
+      }
+
+      updatedStats.lastActive = Date.now();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+      }
+      return updatedStats;
+    } catch (e) {
+      console.error("Error recording user activity", e);
+      return { ...defaultStats };
+    }
+  },
+
+  incrementActivity: (amount = 1) => {
+    try {
+      const stats = userStorage.getUserStats();
+      const now = new Date();
+      const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+      const todayString = now.toDateString();
+
+      let updatedStats = { ...stats };
+      if (!updatedStats.activityHistory) {
+        updatedStats.activityHistory = {};
+      }
+
+      if (!stats.lastActive) {
+        updatedStats.streak = 1;
+      } else {
+        const lastActiveDate = new Date(stats.lastActive);
+        const lastActiveString = lastActiveDate.toDateString();
+
+        if (lastActiveString !== todayString) {
+          const diffTime = Math.abs(new Date().setHours(0, 0, 0, 0) - new Date(stats.lastActive).setHours(0, 0, 0, 0));
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays === 1) {
+            updatedStats.streak = (stats.streak || 0) + 1;
+          } else if (diffDays > 1) {
+            updatedStats.streak = 1;
+          }
+        }
+      }
+
+      updatedStats.activityHistory[dateKey] = (updatedStats.activityHistory[dateKey] || 0) + amount;
+      updatedStats.lastActive = Date.now();
+
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+      }
+      return updatedStats;
+    } catch (e) {
+      console.error("Error incrementing user activity", e);
+      return null;
+    }
+  }
+};
