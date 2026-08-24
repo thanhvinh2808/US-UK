@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, speak, speakCompare } from '../utils/sounds';
-import { conjugateWithCompromise, getSForm, getPastForm, getIngForm } from '../utils/helpers/conjugationEngine';
+import { playSound, speak } from '../utils/sounds';
+import { conjugateWithCompromise, get12Tenses, getVerbBilingualExamples } from '../utils/helpers/conjugationEngine';
 import { checkLocalGrammarErrors, checkGrammarOnline } from '../utils/helpers/grammarChecker';
+import InteractiveSentence from './InteractiveSentence';
 
 export default function GlobalTranslator({ onSavedVocabChange, showToast, isPageMode = false, onNavigateBack }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -638,6 +639,10 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         setIsSaved(true);
       }
 
+      const targetVerbCandidate = isSourceEn ? activeQueryHeadword : translationResult;
+      const tenses12 = get12Tenses(targetVerbCandidate);
+      const bilingualExamples = getVerbBilingualExamples(targetVerbCandidate, isSourceEn ? translationResult : queryToUse.trim());
+
       setResult({
         word: displayWord,
         originalQuery: queryToUse.trim(),
@@ -649,6 +654,8 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
         vietnamese: isSourceEn ? translationResult : queryToUse.trim(),
         partOfSpeech: finalPartOfSpeech,
         forms: localGrammar ? localGrammar.forms : null,
+        tenses12: tenses12,
+        bilingualExamples: bilingualExamples,
         example: dictInfo.example || '',
         translatedExample: translatedExample,
         hasGrammarError: localCheck.hasError,
@@ -851,9 +858,31 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               </div>
             ) : result ? (
               <div className="translator-result-card animate-fadeIn">
-                <p className="translator-result-word">
-                  {direction === 'en-vi' ? result.vietnamese : result.word}
-                </p>
+                <div className="translator-result-word">
+                  {direction === 'en-vi' ? (
+                    <span>{result.vietnamese}</span>
+                  ) : (
+                    <InteractiveSentence
+                      text={result.word}
+                      isEnglish={true}
+                      onWordClick={(w) => { setQuery(w); handleTranslate(null, w); }}
+                      showToast={showToast}
+                    />
+                  )}
+                </div>
+
+                {direction === 'en-vi' && result.word && (
+                  <div className="mt-2 text-xs text-slate-500 font-medium">
+                    <span className="text-slate-400 mr-1">Câu gốc (chạm/rê chuột tra từ):</span>
+                    <InteractiveSentence
+                      text={result.originalQuery || result.word}
+                      isEnglish={true}
+                      onWordClick={(w) => { setQuery(w); handleTranslate(null, w); }}
+                      showToast={showToast}
+                    />
+                  </div>
+                )}
+
                 <div className="translator-meta-row">
                   {result.partOfSpeech && <span className="translator-tag">{result.partOfSpeech}</span>}
                   {result.ipaUK && <span className="translator-ipa">🇬🇧 {result.ipaUK}</span>}
@@ -948,11 +977,40 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
 
               {result.example && (
                 <div className="translator-example-card">
-                  <span>VÍ DỤ TIẾNG ANH:</span>
+                  <span>VÍ DỤ TIẾNG ANH (DICTIONARY):</span>
                   <p className="translator-example-en">"{result.example}"</p>
                   {result.translatedExample && (
                     <p className="translator-example-vi">➔ "{result.translatedExample}"</p>
                   )}
+                </div>
+              )}
+
+              {result.bilingualExamples && result.bilingualExamples.length > 0 && (
+                <div className="bilingual-examples-section">
+                  <div className="bilingual-examples-title">🌟 2 Câu ví dụ minh họa song ngữ:</div>
+                  {result.bilingualExamples.map((ex, i) => (
+                    <div key={i} className="bilingual-example-item">
+                      <div className="bilingual-example-header">
+                        <div className="bilingual-example-en">
+                          <InteractiveSentence
+                            text={ex.en}
+                            isEnglish={true}
+                            onWordClick={(w) => { setQuery(w); handleTranslate(null, w); }}
+                            showToast={showToast}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => speak(ex.en, 'US')}
+                          className="bilingual-audio-btn"
+                          title="Phát âm câu"
+                        >
+                          🔊 Nghe câu
+                        </button>
+                      </div>
+                      <div className="bilingual-example-vi">➔ {ex.vi}</div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -962,39 +1020,147 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
             <div className="translator-conjugation-wrap">
               {(() => {
                 const targetWord = (result.word || '').trim().toLowerCase().replace(/^(a|an|the|to)\s+/i, '');
-                const conjugated = conjugateWithCompromise(targetWord);
-                let verbForms = conjugated.forms;
-                if (!verbForms || !verbForms.present_continuous || verbForms.past_simple === 'N/A') {
-                  const base = targetWord;
-                  const s_form = getSForm(base);
-                  const v2 = getPastForm(base);
-                  const v3 = v2;
-                  const ing_form = getIngForm(base);
-                  verbForms = {
-                    present_simple: `${base} / ${s_form}`,
-                    present_continuous: `am / is / are ${ing_form}`,
-                    present_perfect: `have / has ${v3}`,
-                    past_simple: v2,
-                    past_continuous: `was / were ${ing_form}`,
-                    past_perfect: `had ${v3}`,
-                    future_simple: `will ${base}`
-                  };
+                const tensesData = result.tenses12 || get12Tenses(targetWord);
+                const examplesData = result.bilingualExamples || getVerbBilingualExamples(targetWord, result.vietnamese);
+
+                if (!tensesData) {
+                  return <div className="p-4 text-slate-500 text-center">Không tìm thấy thông tin chia thì cho từ này.</div>;
                 }
 
+                if (tensesData.isModal) {
+                  return (
+                    <div className="flex flex-col gap-4">
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-medium">
+                        📌 <strong>Động từ khuyết thiếu (Modal Verb):</strong> {tensesData.modalNote || "Không có đầy đủ 12 thì như động từ thông thường."}
+                      </div>
+                      <div className="translator-conjugation-grid">
+                        <div className="tense-group-column">
+                          <div className="tense-group-header present">🟢 Hiện tại (Present)</div>
+                          <div className="tense-subcard">
+                            <div className="tense-name-row">
+                              <span className="tense-name-en">Present Simple</span>
+                              <span className="tense-name-vi">Hiện tại đơn</span>
+                            </div>
+                            <span className="tense-formula-row">S + modal</span>
+                            <div className="tense-form-badge">{tensesData.present.simple.form}</div>
+                          </div>
+                        </div>
+                        <div className="tense-group-column">
+                          <div className="tense-group-header past">🔵 Quá khứ (Past)</div>
+                          <div className="tense-subcard">
+                            <div className="tense-name-row">
+                              <span className="tense-name-en">Past Simple</span>
+                              <span className="tense-name-vi">Quá khứ đơn</span>
+                            </div>
+                            <span className="tense-formula-row">S + modal (past)</span>
+                            <div className="tense-form-badge">{tensesData.past.simple.form}</div>
+                          </div>
+                        </div>
+                        <div className="tense-group-column">
+                          <div className="tense-group-header future">🟣 Tương lai (Future)</div>
+                          <div className="tense-subcard">
+                            <div className="tense-name-row">
+                              <span className="tense-name-en">Future Simple</span>
+                              <span className="tense-name-vi">Tương lai đơn</span>
+                            </div>
+                            <span className="tense-formula-row">S + will + modal</span>
+                            <div className="tense-form-badge">{tensesData.future.simple.form}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {examplesData && examplesData.length > 0 && (
+                        <div className="bilingual-examples-section">
+                          <div className="bilingual-examples-title">🌟 2 Câu ví dụ minh họa song ngữ:</div>
+                          {examplesData.map((ex, i) => (
+                            <div key={i} className="bilingual-example-item">
+                              <div className="bilingual-example-header">
+                                <div className="bilingual-example-en">
+                                  <InteractiveSentence
+                                    text={ex.en}
+                                    isEnglish={true}
+                                    onWordClick={(w) => { setQuery(w); handleTranslate(null, w); }}
+                                    showToast={showToast}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => speak(ex.en, 'US')}
+                                  className="bilingual-audio-btn"
+                                  title="Phát âm câu"
+                                >
+                                  🔊 Nghe câu
+                                </button>
+                              </div>
+                              <div className="bilingual-example-vi">➔ {ex.vi}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                const tenseGroups = [
+                  { key: 'present', label: '🟢 Hiện tại (Present)', class: 'present', data: tensesData.present },
+                  { key: 'past', label: '🔵 Quá khứ (Past)', class: 'past', data: tensesData.past },
+                  { key: 'future', label: '🟣 Tương lai (Future)', class: 'future', data: tensesData.future }
+                ];
+
                 return (
-                  <div className="translator-conjugation-grid">
-                    <div className="translator-conjugation-item">
-                      <span>HIỆN TẠI (PRESENT)</span>
-                      <p>{verbForms.present_simple}</p>
+                  <div className="flex flex-col gap-4">
+                    <div className="translator-conjugation-grid">
+                      {tenseGroups.map((group) => (
+                        <div key={group.key} className="tense-group-column">
+                          <div className={`tense-group-header ${group.class}`}>{group.label}</div>
+                          <div className="flex flex-col gap-2">
+                            {['simple', 'continuous', 'perfect', 'perfect_continuous'].map((tKey) => {
+                              const tenseItem = group.data[tKey];
+                              if (!tenseItem) return null;
+                              return (
+                                <div key={tKey} className="tense-subcard">
+                                  <div className="tense-name-row">
+                                    <span className="tense-name-en">{tenseItem.nameEn}</span>
+                                    <span className="tense-name-vi">{tenseItem.nameVi}</span>
+                                  </div>
+                                  <span className="tense-formula-row">{tenseItem.formula}</span>
+                                  <div className="tense-form-badge">{tenseItem.form}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="translator-conjugation-item">
-                      <span>QUÁ KHỨ (PAST)</span>
-                      <p>{verbForms.past_simple}</p>
-                    </div>
-                    <div className="translator-conjugation-item">
-                      <span>TƯƠNG LAI (FUTURE)</span>
-                      <p>{verbForms.future_simple}</p>
-                    </div>
+
+                    {examplesData && examplesData.length > 0 && (
+                      <div className="bilingual-examples-section">
+                        <div className="bilingual-examples-title">🌟 2 Câu ví dụ minh họa song ngữ:</div>
+                        {examplesData.map((ex, i) => (
+                          <div key={i} className="bilingual-example-item">
+                            <div className="bilingual-example-header">
+                              <div className="bilingual-example-en">
+                                <InteractiveSentence
+                                  text={ex.en}
+                                  isEnglish={true}
+                                  onWordClick={(w) => { setQuery(w); handleTranslate(null, w); }}
+                                  showToast={showToast}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => speak(ex.en, 'US')}
+                                className="bilingual-audio-btn"
+                                title="Phát âm câu"
+                              >
+                                🔊 Nghe câu
+                              </button>
+                            </div>
+                            <div className="bilingual-example-vi">➔ {ex.vi}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
