@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 // Chuyển đổi bài học từ định dạng local (localStorage) sang đúng schema MongoDB Topic
 // bên server (id -> slugId, topic -> topicCategory, các trường còn lại giữ nguyên tên).
@@ -287,10 +288,8 @@ function generateDynamicMockLesson(englishTopic, vietnameseTopic, tense, level) 
   };
 }
 
-export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
-  // Auth state (sessionStorage based)
-  const [adminKey, setAdminKey] = useState(() => sessionStorage.getItem('admin_secret_key') || '');
-  const [isAuthenticated, setIsAuthenticated] = useState(() => !!sessionStorage.getItem('admin_secret_key'));
+export default function AdminPanel({ onNavigateBack, onTopicsListChange, onOpenAuthModal }) {
+  const { user, isAdmin, isAuthenticated } = useAuth();
 
   // Generation parameters
   const [form, setForm] = useState({ topicName: '', tense: 'Present Simple', level: 'A2' });
@@ -317,9 +316,9 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     let success = 0;
     let failed = 0;
 
-    // Đẩy tuần tự (không dùng Promise.all) để tránh làm quá tải server nếu danh sách dài
+    // Đẩy tuần tự để đảm bảo kiểm soát luồng
     for (const topic of customTopics) {
-      const result = await api.createTopic(toCloudTopicPayload(topic), adminKey);
+      const result = await api.createTopic(toCloudTopicPayload(topic));
       if (result) success++;
       else failed++;
     }
@@ -429,7 +428,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     onTopicsListChange();
 
     // Đồng bộ lên MongoDB Cloud
-    const cloudResult = await api.createTopic(toCloudTopicPayload(generatedData), adminKey);
+    const cloudResult = await api.createTopic(toCloudTopicPayload(generatedData));
     if (cloudResult) {
       alert("🎉 Đã DUYỆT, công khai cho học viên, và đồng bộ lên MongoDB Cloud thành công!");
     } else {
@@ -474,7 +473,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
     setCustomTopics(storage.getCustomTopics());
     onTopicsListChange();
 
-    const cloudResult = await api.createTopic(toCloudTopicPayload(topicObj), adminKey);
+    const cloudResult = await api.createTopic(toCloudTopicPayload(topicObj));
     if (cloudResult) {
       alert(`Đã duyệt và đồng bộ Cloud thành công cho bài học "${topicObj.title}"!`);
     } else {
@@ -494,18 +493,13 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
       const updated = storage.deleteCustomTopic(topicId);
       setCustomTopics(updated);
       onTopicsListChange();
-      await api.deleteTopic(topicId, adminKey);
+      await api.deleteTopic(topicId);
       alert("Đã xóa bài học!");
     }
   };
 
-  const handleLogoutAdmin = () => {
-    sessionStorage.removeItem('admin_secret_key');
-    setAdminKey('');
-    setIsAuthenticated(false);
-  };
-
-  if (!isAuthenticated) {
+  // JWT RBAC Access Guard: Only allow users with role === 'admin'
+  if (!isAdmin) {
     return (
       <div className="admin-panel-screen animate-slideup">
         {onNavigateBack && (
@@ -517,29 +511,43 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
             ← Quay lại Dashboard
           </button>
         )}
-        <div className="glass p-8 rounded-xl max-w-md mx-auto mt-12 text-center" style={{ background: 'var(--bg-card)', boxShadow: 'var(--shadow-subtle)' }}>
-          <div className="text-4xl mb-3">🔒</div>
-          <h2 className="text-xl font-bold mb-2">Xác thực Quản trị viên</h2>
-          <p className="color-text-muted text-xs mb-6">Vui lòng nhập Admin Secret Key để truy cập và quản lý bài học.</p>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (adminKey.trim()) {
-              sessionStorage.setItem('admin_secret_key', adminKey.trim());
-              setIsAuthenticated(true);
-            }
-          }} className="flex flex-col gap-4">
-            <input 
-              type="password"
-              placeholder="Nhập Secret Admin Key..."
-              className="search-input glass w-full"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="btn-primary w-full justify-center py-2.5">
-              Đăng nhập Admin
-            </button>
-          </form>
+        <div className="glass p-8 rounded-2xl max-w-md mx-auto mt-12 text-center" style={{ background: 'var(--bg-card)', boxShadow: 'var(--shadow-subtle)' }}>
+          <div className="text-4xl mb-3">🛡️</div>
+          <h2 className="text-xl font-bold mb-2">Quyền truy cập bị giới hạn</h2>
+          {isAuthenticated ? (
+            <div className="space-y-4">
+              <p className="color-text-muted text-xs">
+                Tài khoản hiện tại <strong>{user?.username}</strong> có vai trò <strong>{user?.role || 'user'}</strong>. Chức năng Quản trị hệ thống yêu cầu tài khoản có quyền <strong>Admin</strong>.
+              </p>
+              <div className="p-3 bg-amber-50 rounded-xl text-xs text-amber-800 border border-amber-200">
+                🔒 Vui lòng đăng nhập với tài khoản Quản trị viên để tạo và quản trị bài học.
+              </div>
+              {onOpenAuthModal && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal('login')}
+                  className="btn-primary w-full justify-center py-2.5"
+                >
+                  Đăng nhập tài khoản khác
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="color-text-muted text-xs">
+                Bạn chưa đăng nhập. Vui lòng đăng nhập bằng tài khoản Quản trị viên (Admin) để truy cập cổng quản trị.
+              </p>
+              {onOpenAuthModal && (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal('login')}
+                  className="btn-primary w-full justify-center py-2.5"
+                >
+                  Đăng nhập Quản trị viên
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -547,7 +555,7 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
 
   return (
     <div className="admin-panel-screen animate-slideup">
-      {/* Back button top-left & Logout */}
+      {/* Back button top-left */}
       <div className="flex justify-between items-center mb-4">
         {onNavigateBack ? (
           <button 
@@ -558,18 +566,15 @@ export default function AdminPanel({ onNavigateBack, onTopicsListChange }) {
             ← Quay lại Dashboard
           </button>
         ) : <div />}
-        <button
-          className="btn-secondary text-xs"
-          onClick={handleLogoutAdmin}
-          style={{ padding: '8px 16px', borderRadius: '8px', color: 'var(--color-error)' }}
-        >
-          🔒 Đăng xuất Admin
-        </button>
+        <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <span>🛡️ Admin: <strong>{user?.username}</strong></span>
+          <span className="text-[10px] bg-emerald-200/70 text-emerald-900 px-1.5 py-0.5 rounded font-mono">JWT RBAC</span>
+        </div>
       </div>
 
       {/* Header */}
       <div className="screen-header mb-8 glass p-6 rounded-xl block" style={{ background: 'var(--bg-card)', border: 'none', boxShadow: 'var(--shadow-subtle)' }}>
-        <span className="badge-level font-bold mb-2 inline-block">Admin</span>
+        <span className="badge-level font-bold mb-2 inline-block">Admin Portal</span>
         <h1 className="text-2xl font-bold color-text-dark margin-0" style={{ fontSize: '1.85rem', fontWeight: '800' }}>Antigravity AI Portal</h1>
         <p className="color-text-muted text-xs mt-2" style={{ fontSize: '13px', fontWeight: '400' }}>Quản trị và sinh chủ đề bài học tự động với Gia sư AI</p>
       </div>

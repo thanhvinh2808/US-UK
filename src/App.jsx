@@ -21,6 +21,9 @@ import IdiomsHandbook from './components/IdiomsHandbook';
 import MiniGames from './components/MiniGames';
 import Alphabet from './components/Alphabet';
 import MistakeBank from './components/MistakeBank';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AuthModal from './components/AuthModal';
+import UserProfileMenu from './components/UserProfileMenu';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -81,7 +84,16 @@ const navMenuItems = [
   { id: 'admin', label: 'Quản trị hệ thống', iconType: 'admin' },
 ];
 
-function App() {
+function AppContent() {
+  const { user, isAuthenticated, isAdmin, loading } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
+
+  const openAuthModal = (mode = 'login') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   const [activeScreen, setActiveScreen] = useState('dashboard');
   const [selectedTopic, setSelectedTopic] = useState(null);
   
@@ -344,15 +356,63 @@ function App() {
 
           {/* User Actions & Stats */}
           <div className="qz-user-actions">
-            <button className="qz-create-btn" onClick={() => handleNavigateWithClose('admin')}>
-              + Tạo bài
-            </button>
+            {isAdmin ? (
+              <button className="qz-create-btn" onClick={() => handleNavigateWithClose('admin')}>
+                + Tạo bài
+              </button>
+            ) : (
+              <button 
+                className="qz-create-btn" 
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    openAuthModal('login');
+                  } else {
+                    showToast('Chức năng Tạo bài dành riêng cho Quản trị viên (Admin)', 'info');
+                  }
+                }}
+              >
+                + Tạo bài
+              </button>
+            )}
             <div className="qz-stat-pill streak" title="Streak ngày">
               🔥 {stats.streak}d
             </div>
             <div className="qz-stat-pill xp" title="Điểm XP">
               ⭐ {stats.points} XP
             </div>
+
+            {/* Auth State: User Profile or Login Button */}
+            {isAuthenticated ? (
+              <UserProfileMenu
+                onNavigate={handleNavigateWithClose}
+                showToast={showToast}
+                voiceAccent={voiceAccent}
+                onToggleVoiceAccent={toggleVoiceAccent}
+              />
+            ) : (
+              <button
+                type="button"
+                className="qz-auth-btn"
+                onClick={() => openAuthModal('login')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                  color: '#ffffff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>👤 Đăng nhập</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -384,6 +444,7 @@ function App() {
             <AdminPanel 
               onNavigateBack={handleBackToDashboard}
               onTopicsListChange={refreshTopicsList}
+              onOpenAuthModal={openAuthModal}
             />
           )}
 
@@ -619,8 +680,25 @@ function App() {
           onClose={() => setToast(null)} 
         />
       )}
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onSuccess={() => {
+          refreshState();
+        }}
+        showToast={showToast}
+      />
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
