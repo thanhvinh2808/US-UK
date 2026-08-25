@@ -24,6 +24,11 @@ import MistakeBank from './components/MistakeBank';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import UserProfileMenu from './components/UserProfileMenu';
+import SyncStatus from './components/SyncStatus';
+import AccountSettings from './components/AccountSettings';
+import SessionManager from './components/SessionManager';
+import DataManagement from './components/DataManagement';
+import { checkLegacyDataExists, runLegacyMigration } from './utils/data/legacyMigration';
 import './App.css';
 
 const LEVEL_VALUES = {
@@ -88,6 +93,9 @@ function AppContent() {
   const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [isSessionManagerOpen, setIsSessionManagerOpen] = useState(false);
+  const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
 
   const openAuthModal = (mode = 'login') => {
     setAuthModalMode(mode);
@@ -109,6 +117,19 @@ function AppContent() {
   const showToast = (message, type = 'info') => {
     setToast({ message, type, id: Date.now() });
   };
+
+  // Safe automatic legacy storage migration on first mount
+  useEffect(() => {
+    if (checkLegacyDataExists()) {
+      const res = runLegacyMigration();
+      if (res.migrated && res.itemsMigrated > 0) {
+        setStats(storage.getUserStats());
+        setProgress(storage.getTopicProgress());
+        setSavedVocabCount(storage.getSavedVocab().length);
+        showToast(`Đã chuyển đổi an toàn ${res.itemsMigrated} mục dữ liệu cũ sang hệ thống V2!`, 'success');
+      }
+    }
+  }, []);
 
   // Keyboard shortcut Ctrl + K / Cmd + K for AI Lexicon Studio
   useEffect(() => {
@@ -381,6 +402,9 @@ function AppContent() {
               ⭐ {stats.points} XP
             </div>
 
+            {/* Online / Offline / Sync Status Badge */}
+            <SyncStatus />
+
             {/* Auth State: User Profile or Login Button */}
             {isAuthenticated ? (
               <UserProfileMenu
@@ -388,6 +412,9 @@ function AppContent() {
                 showToast={showToast}
                 voiceAccent={voiceAccent}
                 onToggleVoiceAccent={toggleVoiceAccent}
+                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+                onOpenSessionManager={() => setIsSessionManagerOpen(true)}
+                onOpenDataManagement={() => setIsDataManagementOpen(true)}
               />
             ) : (
               <button
@@ -690,6 +717,27 @@ function AppContent() {
           refreshState();
         }}
         showToast={showToast}
+      />
+
+      {/* Account Settings Modal */}
+      <AccountSettings
+        isOpen={isAccountSettingsOpen}
+        onClose={() => setIsAccountSettingsOpen(false)}
+      />
+
+      {/* Session Manager Modal */}
+      <SessionManager
+        isOpen={isSessionManagerOpen}
+        onClose={() => setIsSessionManagerOpen(false)}
+      />
+
+      {/* Data Backup & Restore Modal */}
+      <DataManagement
+        isOpen={isDataManagementOpen}
+        onClose={() => {
+          setIsDataManagementOpen(false);
+          refreshState();
+        }}
       />
     </div>
   );

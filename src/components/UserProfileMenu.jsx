@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-export default function UserProfileMenu({ onNavigate, showToast, voiceAccent, onToggleVoiceAccent }) {
+export default function UserProfileMenu({
+  onNavigate,
+  showToast,
+  voiceAccent,
+  onToggleVoiceAccent,
+  onOpenAccountSettings,
+  onOpenSessionManager,
+  onOpenDataManagement
+}) {
   const { user, role, isAdmin, logout, logoutAll } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -61,6 +69,8 @@ export default function UserProfileMenu({ onNavigate, showToast, voiceAccent, on
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
         className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/80 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
         title="Tài khoản cá nhân"
       >
@@ -125,12 +135,54 @@ export default function UserProfileMenu({ onNavigate, showToast, voiceAccent, on
                 }}
               >
                 <span className="flex items-center gap-2">
-                  <span>📻 Giọng phát âm:</span>
+                  <span>📻 Giọng đọc:</span>
                   <span className="font-bold text-indigo-600">
-                    {voiceAccent === 'UK' ? '🇬🇧 Giọng Anh (en-GB)' : '🇺🇸 Giọng Mỹ (en-US)'}
+                    {voiceAccent === 'UK' ? '🇬🇧 UK (Anh)' : '🇺🇸 US (Mỹ)'}
                   </span>
                 </span>
                 <span className="text-[10px] text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded">Đổi</span>
+              </button>
+            )}
+
+            {onOpenAccountSettings && (
+              <button
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenAccountSettings();
+                }}
+              >
+                <span>⚙️</span>
+                <span>Cài đặt tài khoản</span>
+              </button>
+            )}
+
+            {onOpenSessionManager && (
+              <button
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenSessionManager();
+                }}
+              >
+                <span>📱</span>
+                <span>Quản lý phiên đăng nhập</span>
+              </button>
+            )}
+
+            {onOpenDataManagement && (
+              <button
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenDataManagement();
+                }}
+              >
+                <span>💾</span>
+                <span>Sao lưu & Quản lý dữ liệu</span>
               </button>
             )}
 
@@ -143,7 +195,7 @@ export default function UserProfileMenu({ onNavigate, showToast, voiceAccent, on
                   onNavigate('admin');
                 }}
               >
-                <span>⚙️</span>
+                <span>🛡️</span>
                 <span>Vào trang Quản trị hệ thống</span>
               </button>
             )}
