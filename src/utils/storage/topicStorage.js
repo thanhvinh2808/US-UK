@@ -20,17 +20,22 @@ export const topicStorage = {
         }
       }
 
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error('Error reading custom topics', e);
+      console.warn('Recovered from corrupted custom topics JSON:', e.message);
       return [];
     }
   },
 
   saveCustomTopic: (topicObj) => {
     try {
+      if (!topicObj || typeof topicObj !== 'object' || !topicObj.id) {
+        return topicStorage.getCustomTopics();
+      }
       const list = topicStorage.getCustomTopics();
-      const filtered = list.filter(t => t.id !== topicObj.id);
+      const filtered = list.filter(t => t && t.id !== topicObj.id);
       const updated = [...filtered, topicObj];
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_CUSTOM_TOPICS);
@@ -45,8 +50,9 @@ export const topicStorage = {
 
   deleteCustomTopic: (topicId) => {
     try {
+      if (!topicId) return topicStorage.getCustomTopics();
       const list = topicStorage.getCustomTopics();
-      const updated = list.filter(t => t.id !== topicId);
+      const updated = list.filter(t => t && t.id !== topicId);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_CUSTOM_TOPICS);
         localStorage.setItem(key, JSON.stringify(updated));
@@ -72,17 +78,22 @@ export const topicStorage = {
         }
       }
 
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error('Error reading pending topics', e);
+      console.warn('Recovered from corrupted pending topics JSON:', e.message);
       return [];
     }
   },
 
   savePendingTopic: (topicObj) => {
     try {
+      if (!topicObj || typeof topicObj !== 'object' || !topicObj.id) {
+        return topicStorage.getPendingTopics();
+      }
       const list = topicStorage.getPendingTopics();
-      const filtered = list.filter(t => t.id !== topicObj.id);
+      const filtered = list.filter(t => t && t.id !== topicObj.id);
       const updated = [...filtered, topicObj];
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_PENDING_TOPICS);
@@ -97,8 +108,9 @@ export const topicStorage = {
 
   deletePendingTopic: (topicId) => {
     try {
+      if (!topicId) return topicStorage.getPendingTopics();
       const list = topicStorage.getPendingTopics();
-      const updated = list.filter(t => t.id !== topicId);
+      const updated = list.filter(t => t && t.id !== topicId);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_PENDING_TOPICS);
         localStorage.setItem(key, JSON.stringify(updated));

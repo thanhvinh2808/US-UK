@@ -19,15 +19,18 @@ export const progressStorage = {
         }
       }
 
-      return data ? JSON.parse(data) : {};
+      if (!data) return {};
+      const parsed = JSON.parse(data);
+      return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
     } catch (e) {
-      console.error('Error getting topic progress', e);
+      console.warn('Recovered from corrupted topic progress JSON:', e.message);
       return {};
     }
   },
 
   updateTopicProgress: (topicId, moduleKey, score) => {
     try {
+      if (!topicId || !moduleKey) return progressStorage.getTopicProgress();
       const progress = progressStorage.getTopicProgress();
       const topicProg = progress[topicId] || {
         is_reading_completed: false,

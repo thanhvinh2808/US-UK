@@ -3,7 +3,6 @@ import { exportDataToFile } from '../utils/data/dataExport';
 import { validateImportData, executeDataImport } from '../utils/data/dataImport';
 import { vocabStorage } from '../utils/storage/vocabStorage';
 import { mistakeStorage } from '../utils/storage/mistakeStorage';
-import { deckStorage } from '../utils/storage/deckStorage';
 import { progressStorage } from '../utils/storage/progressStorage';
 import { isUserScope } from '../utils/storage/storageScope';
 import { flushOutboxQueue } from '../utils/storage/syncEngine';

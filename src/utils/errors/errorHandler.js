@@ -86,7 +86,7 @@ export const getErrorMessage = (err, status = null) => {
 export const sanitizeText = (text) => {
   if (typeof text !== 'string') return '';
   return text
-    .replace(/(Bearer\s+)[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/gi, '$1[REDACTED]')
+    .replace(/Bearer\s+[A-Za-z0-9-_.]+/gi, 'Bearer [REDACTED]')
     .replace(/(password|secret|key|token)["']?\s*[:=]\s*["'][^"']+["']/gi, '$1="[REDACTED]"');
 };
 

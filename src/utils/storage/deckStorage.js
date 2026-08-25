@@ -19,17 +19,22 @@ export const deckStorage = {
         }
       }
 
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error('Error reading custom decks', e);
+      console.warn('Recovered from corrupted custom decks JSON:', e.message);
       return [];
     }
   },
 
   saveCustomDeck: (deckObj) => {
     try {
+      if (!deckObj || typeof deckObj !== 'object' || !deckObj.id) {
+        return deckStorage.getCustomDecks();
+      }
       const list = deckStorage.getCustomDecks();
-      const filtered = list.filter(d => d.id !== deckObj.id);
+      const filtered = list.filter(d => d && d.id !== deckObj.id);
       const updated = [...filtered, deckObj];
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_CUSTOM_DECKS);
@@ -44,8 +49,9 @@ export const deckStorage = {
 
   deleteCustomDeck: (deckId) => {
     try {
+      if (!deckId) return deckStorage.getCustomDecks();
       const list = deckStorage.getCustomDecks();
-      const updated = list.filter(d => d.id !== deckId);
+      const updated = list.filter(d => d && d.id !== deckId);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_CUSTOM_DECKS);
         localStorage.setItem(key, JSON.stringify(updated));
@@ -54,7 +60,7 @@ export const deckStorage = {
       // Clear deck field from words in this deck
       const vocab = vocabStorage.getSavedVocab();
       const updatedVocab = vocab.map(item => {
-        if (item.deckId === deckId) {
+        if (item && item.deckId === deckId) {
           const { deckId: _, deckName: __, ...rest } = item;
           return rest;
         }

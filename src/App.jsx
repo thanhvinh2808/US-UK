@@ -28,6 +28,11 @@ import SyncStatus from './components/SyncStatus';
 import AccountSettings from './components/AccountSettings';
 import SessionManager from './components/SessionManager';
 import DataManagement from './components/DataManagement';
+import ErrorBoundary from './components/ErrorBoundary';
+import LandingPage from './components/public/LandingPage';
+import NewsHub from './components/public/NewsHub';
+import ArticleDetail from './components/public/ArticleDetail';
+import AppSidebar from './components/AppSidebar';
 import { checkLegacyDataExists, runLegacyMigration } from './utils/data/legacyMigration';
 import './App.css';
 
@@ -90,7 +95,7 @@ const navMenuItems = [
 ];
 
 function AppContent() {
-  const { user, isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
@@ -102,7 +107,27 @@ function AppContent() {
     setIsAuthModalOpen(true);
   };
 
-  const [activeScreen, setActiveScreen] = useState('dashboard');
+  // Default activeScreen: check URL hash / path or default to 'landing' for guest/public entry
+  const [activeScreen, setActiveScreen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace(/^#\/?/, '');
+      if (hash === 'app' || hash === 'dashboard') return 'dashboard';
+      if (hash === 'news') return 'news';
+      if (hash.startsWith('article/')) return 'article_detail';
+      if (hash === 'flashcards') return 'flashcards';
+      if (hash === 'notebook') return 'notebook';
+      if (hash === 'mistakes' || hash === 'mistake_bank') return 'mistake_bank';
+      if (hash === 'translator') return 'translator';
+      if (hash === 'tenses_handbook') return 'tenses_handbook';
+      if (hash === 'idioms_handbook') return 'idioms_handbook';
+      if (hash === 'minimal_pairs') return 'minimal_pairs';
+      if (hash === 'mini_games') return 'mini_games';
+      if (hash === 'alphabet') return 'alphabet';
+      if (window.location.pathname.startsWith('/app')) return 'dashboard';
+    }
+    return 'landing';
+  });
+  const [selectedArticleSlug, setSelectedArticleSlug] = useState('ielts-reading-spaced-repetition');
   const [selectedTopic, setSelectedTopic] = useState(null);
   
   const [stats, setStats] = useState(() => storage.getUserStats());
@@ -110,13 +135,34 @@ function AppContent() {
   const [savedVocabCount, setSavedVocabCount] = useState(() => storage.getSavedVocab().length);
   const [topicsList, setTopicsList] = useState(() => sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
   const [voiceAccent, setVoiceAccent] = useState(() => localStorage.getItem('eng_app_voice_accent') || 'US');
-  const [designTheme, setDesignTheme] = useState(() => localStorage.getItem('eng_app_design_theme') || 'modern');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'info') => {
     setToast({ message, type, id: Date.now() });
   };
+
+  // Synchronize activeScreen with browser hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '');
+      if (hash === 'landing' || hash === '') {
+        setActiveScreen('landing');
+      } else if (hash === 'app' || hash === 'dashboard') {
+        setActiveScreen('dashboard');
+      } else if (hash === 'news') {
+        setActiveScreen('news');
+      } else if (hash.startsWith('article/')) {
+        const slug = hash.replace('article/', '');
+        if (slug) setSelectedArticleSlug(slug);
+        setActiveScreen('article_detail');
+      } else if (hash) {
+        setActiveScreen(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Safe automatic legacy storage migration on first mount
   useEffect(() => {
@@ -176,14 +222,10 @@ function AppContent() {
     fetchRealTopics();
   }, []);
 
-  const theme = 'light';
-
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', designTheme);
     document.documentElement.setAttribute('data-accent', voiceAccent);
-    localStorage.setItem('eng_app_theme', 'light');
-    localStorage.setItem('eng_app_design_theme', designTheme);
-  }, [voiceAccent, designTheme]);
+    localStorage.setItem('eng_app_voice_accent', voiceAccent);
+  }, [voiceAccent]);
 
   const toggleVoiceAccent = () => {
     const newAccent = voiceAccent === 'US' ? 'UK' : 'US';
@@ -198,555 +240,566 @@ function AppContent() {
     setSavedVocabCount(storage.getSavedVocab().length);
   };
 
-  const refreshTopicsList = () => {
-    setTopicsList(sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
-    refreshState();
-  };
-
   const handleSelectTopic = (topic) => {
     setSelectedTopic(topic);
     setActiveScreen('topic_detail');
-    setIsMobileMenuOpen(false);
   };
 
-  const handleSelectModule = (moduleKey) => {
-    setActiveScreen(moduleKey);
-    setIsMobileMenuOpen(false);
-  };
-
-  const handleNavigate = (screenKey) => {
-    setActiveScreen(screenKey);
-    setIsMobileMenuOpen(false);
+  const handleSelectModule = (moduleId) => {
+    setActiveScreen(moduleId);
   };
 
   const handleBackToDashboard = () => {
-    refreshState();
-    setActiveScreen('dashboard');
-    setIsMobileMenuOpen(false);
+    setSelectedTopic(null);
+    handleNavigate('dashboard');
   };
 
   const handleBackToTopicDetail = () => {
-    refreshState();
     setActiveScreen('topic_detail');
-    setIsMobileMenuOpen(false);
   };
 
-  const calculateLevel = (points) => {
-    if (points >= 1000) return 'B2';
-    if (points >= 500) return 'B1';
-    if (points >= 150) return 'A2';
-    return 'A1';
-  };
-
-  useEffect(() => {
-    const expectedLevel = calculateLevel(stats.points);
-    if (expectedLevel !== stats.level) {
-      storage.updateUserStats({ level: expectedLevel });
-      setStats(prev => ({ ...prev, level: expectedLevel }));
+  const handleNavigate = (screenId) => {
+    setSelectedTopic(null);
+    setActiveScreen(screenId);
+    if (typeof window !== 'undefined') {
+      if (screenId === 'landing') {
+        window.location.hash = '';
+      } else if (screenId === 'dashboard') {
+        window.location.hash = 'app';
+      } else if (screenId === 'news') {
+        window.location.hash = 'news';
+      } else if (screenId === 'article_detail') {
+        window.location.hash = `article/${selectedArticleSlug}`;
+      } else {
+        window.location.hash = screenId;
+      }
     }
-  }, [stats.points]);
-
-  const [isExploreOpen, setIsExploreOpen] = useState(false);
-
-  const handleNavigateWithClose = (screenKey) => {
-    setActiveScreen(screenKey);
-    setIsMobileMenuOpen(false);
-    setIsExploreOpen(false);
   };
+
+  const handleNavigateWithClose = (screenId) => {
+    handleNavigate(screenId);
+    setIsMobileMenuOpen(false);
+  };
+
+  const refreshTopicsList = () => {
+    setTopicsList(sortTopicsByLevel([...contentBank, ...storage.getCustomTopics()]));
+  };
+
+  // Is current screen in Public Marketing mode?
+  const isPublicScreen = activeScreen === 'landing' || activeScreen === 'news' || activeScreen === 'article_detail';
 
   return (
-    <div className={`quizlet-app-layout accent-${voiceAccent.toLowerCase()}`}>
-      {/* 📻 US-UK Dual Tone Header */}
-      <header className="qz-header">
-        <div className="qz-header-container">
-          {/* Logo */}
-          <div className="qz-brand" onClick={() => handleNavigateWithClose('dashboard')}>
-            <div className="qz-logo-badge-dual">
-              <span className="brand-uk">UK</span>
-              <span className="brand-divider">/</span>
-              <span className="brand-us">US</span>
-            </div>
-            <div className="qz-brand-text">
-              <span className="qz-brand-title">Antigravity English</span>
-            </div>
-          </div>
-
-          {/* 📻 COMPACT ANALOG RADIO DIAL SWITCHER (US ⇄ UK) */}
-          <div 
-            className="radio-dial-widget" 
-            onClick={toggleVoiceAccent}
-            title={`Kênh phát âm: ${voiceAccent === 'UK' ? '🇬🇧 Oxford BBC (98.5 MHz)' : '🇺🇸 Voice US (104.2 MHz)'} - Nhấp để xoay núm vặn`}
-          >
-            <div className={`radio-dial-knob-wrapper ${voiceAccent.toLowerCase()}`}>
-              <div className="radio-knob-outer">
-                <div className="radio-knob-line"></div>
-              </div>
-            </div>
-            <span className={`channel-pill ${voiceAccent.toLowerCase()} active`}>
-              {voiceAccent === 'UK' ? '🇬🇧 UK' : '🇺🇸 US'}
-            </span>
-          </div>
-
-          <div className="design-theme-switcher" aria-label="Chọn giao diện">
-            {[
-              { key: 'modern', label: 'Modern' },
-              { key: 'minimal', label: 'Minimal' },
-              { key: 'glass', label: 'Glass' }
-            ].map(option => (
-              <button
-                key={option.key}
-                type="button"
-                className={`design-theme-option ${designTheme === option.key ? 'active' : ''}`}
-                onClick={() => setDesignTheme(option.key)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Clean Navigation Links */}
-          <nav className="qz-nav-links">
-            <button 
-              className={`qz-nav-link ${activeScreen === 'dashboard' ? 'active' : ''}`}
-              onClick={() => handleNavigateWithClose('dashboard')}
-            >
-              Trang chủ
-            </button>
-            <button 
-              className={`qz-nav-link ${activeScreen === 'flashcards' ? 'active' : ''}`}
-              onClick={() => handleNavigateWithClose('flashcards')}
-            >
-              Flashcards
-            </button>
-
-            {/* 🎯 Dropdown Option Select Menu */}
-            <div className="qz-dropdown-wrapper">
-              <button 
-                className="qz-nav-link dropdown-trigger"
-                onClick={() => setIsExploreOpen(!isExploreOpen)}
-              >
-                Chủ đề & Chức năng ▾
-              </button>
-
-              {isExploreOpen && (
-                <div className="qz-dropdown-menu">
-                  <div className="qz-dropdown-label">🎓 TÀI LIỆU HỌC TẬP</div>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('dashboard')}>
-                    🏠 Trang chủ Dashboard
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('flashcards')}>
-                    ⚡ Ôn tập Flashcards (Leitner)
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('notebook')}>
-                    📙 Sổ tay từ vựng ({savedVocabCount})
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mistake_bank')}>
-                    📌 Ngân hàng câu sai
-                  </button>
-
-                  <div className="qz-dropdown-label mt-2">🤖 CÔNG CỤ AI</div>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('translator')}>
-                    🔍 Tra từ & Dịch AI Gemini [Ctrl+K]
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('minimal_pairs')}>
-                    🎙️ Luyện phát âm Minimal Pairs
-                  </button>
-
-                  <div className="qz-dropdown-label mt-2">📘 NGỮ PHÁP & CỤM TỪ</div>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('tenses_handbook')}>
-                    📖 12 Thì Tiếng Anh
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('idioms_handbook')}>
-                    💡 Idioms & Cụm từ thông dụng
-                  </button>
-
-                  <div className="qz-dropdown-label mt-2">🎮 KHÁC</div>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mini_games')}>
-                    🕹️ Playzone Mini Games
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('alphabet')}>
-                    🔤 Bảng chữ cái US-UK
-                  </button>
-                  <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('admin')}>
-                    ⚙️ Quản trị hệ thống
-                  </button>
-                </div>
-              )}
-            </div>
-          </nav>
-
-          {/* User Actions & Stats */}
-          <div className="qz-user-actions">
-            {isAdmin ? (
-              <button className="qz-create-btn" onClick={() => handleNavigateWithClose('admin')}>
-                + Tạo bài
-              </button>
-            ) : (
-              <button 
-                className="qz-create-btn" 
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    openAuthModal('login');
-                  } else {
-                    showToast('Chức năng Tạo bài dành riêng cho Quản trị viên (Admin)', 'info');
-                  }
-                }}
-              >
-                + Tạo bài
-              </button>
-            )}
-            <div className="qz-stat-pill streak" title="Streak ngày">
-              🔥 {stats.streak}d
-            </div>
-            <div className="qz-stat-pill xp" title="Điểm XP">
-              ⭐ {stats.points} XP
-            </div>
-
-            {/* Online / Offline / Sync Status Badge */}
-            <SyncStatus />
-
-            {/* Auth State: User Profile or Login Button */}
-            {isAuthenticated ? (
-              <UserProfileMenu
-                onNavigate={handleNavigateWithClose}
-                showToast={showToast}
-                voiceAccent={voiceAccent}
-                onToggleVoiceAccent={toggleVoiceAccent}
-                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-                onOpenSessionManager={() => setIsSessionManagerOpen(true)}
-                onOpenDataManagement={() => setIsDataManagementOpen(true)}
-              />
-            ) : (
-              <button
-                type="button"
-                className="qz-auth-btn"
-                onClick={() => openAuthModal('login')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
-                  color: '#ffffff',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <span>👤 Đăng nhập</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* ⚪ Main Content Area */}
-      <main className="quizlet-workspace">
-        <div className="quizlet-spacious-container">
-          {activeScreen === 'dashboard' && (
-            <Dashboard 
-              stats={stats}
-              progress={progress}
-              savedVocabCount={savedVocabCount}
-              onSelectTopic={handleSelectTopic}
-              onNavigate={handleNavigateWithClose}
-              topics={topicsList}
-            />
-          )}
-
-          {activeScreen === 'translator' && (
-            <GlobalTranslator 
-              isPageMode={true}
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'admin' && (
-            <AdminPanel 
-              onNavigateBack={handleBackToDashboard}
-              onTopicsListChange={refreshTopicsList}
-              onOpenAuthModal={openAuthModal}
-            />
-          )}
-
-          {activeScreen === 'topic_detail' && (
-            selectedTopic ? (
-              <TopicDetail 
-                topic={selectedTopic}
-                progress={progress}
-                onSelectModule={handleSelectModule}
-                onNavigateBack={handleBackToDashboard}
-              />
-            ) : (
-              <Dashboard 
-                topicsList={topicsList}
-                progress={progress}
-                savedVocabCount={savedVocabCount}
-                onSelectTopic={handleSelectTopic}
-                onOpenGlobalTranslator={() => setActiveScreen('translator')}
-                onOpenNotebook={() => setActiveScreen('notebook')}
-                onOpenFlashcards={() => setActiveScreen('flashcards')}
-                onOpenMinimalPairs={() => setActiveScreen('minimal_pairs')}
-                onOpenTensesHandbook={() => setActiveScreen('tenses_handbook')}
-                onOpenIdiomsHandbook={() => setActiveScreen('idioms_handbook')}
-                onOpenMiniGames={() => setActiveScreen('mini_games')}
-                onOpenAlphabet={() => setActiveScreen('alphabet')}
-              />
-            )
-          )}
-
-          {activeScreen === 'reader' && (
-            (selectedTopic || topicsList[0]) ? (
-              <VocabReader 
-                topic={selectedTopic || topicsList[0]}
-                onSavedVocabChange={refreshState}
-                onComplete={refreshState}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'dictation' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Dictation 
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'pronunciation' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Pronunciation 
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'grammar' && (
-            (selectedTopic || topicsList[0]) ? (
-              <GrammarLab
-                topic={selectedTopic || topicsList[0]}
-                onComplete={refreshState}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'writing' && (
-            (selectedTopic || topicsList[0]) ? (
-              <Writing
-                topic={selectedTopic || topicsList[0]}
-                onNavigateBack={handleBackToTopicDetail}
-                showToast={showToast}
-              />
-            ) : null
-          )}
-
-          {activeScreen === 'flashcards' && (
-            <Flashcards 
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'notebook' && (
-            <VocabNotebook 
-              onNavigateBack={handleBackToDashboard}
-              onSavedVocabChange={refreshState}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'alphabet' && (
-            <Alphabet 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'tenses_handbook' && (
-            <TensesHandbook 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'minimal_pairs' && (
-            <MinimalPairs 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'shadowing' && selectedTopic && (
-            <Shadowing 
-              topic={selectedTopic}
-              onNavigateBack={handleBackToTopicDetail}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'idioms_handbook' && (
-            <IdiomsHandbook 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-
-          {activeScreen === 'mini_games' && (
-            <MiniGames 
-              onNavigateBack={handleBackToDashboard}
-              showToast={showToast}
-            />
-          )}
-
-          {activeScreen === 'mistake_bank' && (
-            <MistakeBank 
-              onNavigateBack={handleBackToDashboard}
-            />
-          )}
-        </div>
-      </main>
-
-      {/* 📱 Mobile Bottom Sheet Modal Menu */}
-      {isMobileMenuOpen && (
-        <div className="mobile-sheet-overlay" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="mobile-sheet-content glass animate-slideup" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-sheet-handle-bar" />
-            <div className="mobile-sheet-header">
-              <h3 className="mobile-sheet-title">Dịch vụ & Chức năng</h3>
-              <button className="mobile-sheet-close" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
-            </div>
-
-            <div className="mobile-sheet-grid">
-              {navMenuItems.map((item) => (
-                <button
-                  key={item.id}
-                  className={`mobile-grid-card ${activeScreen === item.id ? 'active' : ''}`}
-                  onClick={() => handleNavigate(item.id)}
-                >
-                  <span className="mobile-card-icon">
-                    <NavSvgIcon iconType={item.iconType} />
-                  </span>
-                  <span className="mobile-card-label">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 📱 Native Mobile Bottom Navigation Bar */}
-      <nav className="mobile-bottom-bar glass">
-        <button 
-          className={`mobile-bottom-item ${activeScreen === 'dashboard' ? 'active' : ''}`}
-          onClick={() => handleNavigate('dashboard')}
-        >
-          <span className="bottom-item-icon">
-            <NavSvgIcon iconType="home" />
-          </span>
-          <span className="bottom-item-text">Trang chủ</span>
-        </button>
-
-        <button 
-          className={`mobile-bottom-item ${activeScreen === 'translator' ? 'active' : ''}`}
-          onClick={() => handleNavigate('translator')}
-        >
-          <span className="bottom-item-icon">
-            <NavSvgIcon iconType="search" />
-          </span>
-          <span className="bottom-item-text">Tra từ AI</span>
-        </button>
-
-        <button 
-          className={`mobile-bottom-item ${activeScreen === 'notebook' ? 'active' : ''}`}
-          onClick={() => handleNavigate('notebook')}
-        >
-          <span className="bottom-item-icon">
-            <NavSvgIcon iconType="notebook" />
-          </span>
-          <span className="bottom-item-text">Sổ tay</span>
-        </button>
-
-        <button 
-          className={`mobile-bottom-item ${activeScreen === 'flashcards' ? 'active' : ''}`}
-          onClick={() => handleNavigate('flashcards')}
-        >
-          <span className="bottom-item-icon">
-            <NavSvgIcon iconType="flashcards" />
-          </span>
-          <span className="bottom-item-text">Flashcards</span>
-        </button>
-
-        <button 
-          className={`mobile-bottom-item ${isMobileMenuOpen ? 'active' : ''}`}
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          <span className="bottom-item-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          </span>
-          <span className="bottom-item-text">Menu</span>
-        </button>
-      </nav>
-
-      {/* Toast Notification Container */}
-      {toast && (
-        <Toast 
-          key={toast.id} 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
+    <div className="quizlet-app">
+      {/* 🚀 Render Public Marketing Website Pages if in Public Mode */}
+      {activeScreen === 'landing' && (
+        <LandingPage
+          onNavigate={handleNavigateWithClose}
+          onOpenAuth={openAuthModal}
+          voiceAccent={voiceAccent}
+          onToggleVoiceAccent={toggleVoiceAccent}
         />
       )}
 
-      {/* Authentication Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialMode={authModalMode}
-        onSuccess={() => {
-          refreshState();
-        }}
-        showToast={showToast}
-      />
+      {activeScreen === 'news' && (
+        <NewsHub
+          onNavigate={handleNavigateWithClose}
+          onOpenAuth={openAuthModal}
+          onSelectArticle={(slug) => {
+            setSelectedArticleSlug(slug);
+            setActiveScreen('article_detail');
+          }}
+          voiceAccent={voiceAccent}
+          onToggleVoiceAccent={toggleVoiceAccent}
+        />
+      )}
 
-      {/* Account Settings Modal */}
-      <AccountSettings
-        isOpen={isAccountSettingsOpen}
-        onClose={() => setIsAccountSettingsOpen(false)}
-      />
+      {activeScreen === 'article_detail' && (
+        <ArticleDetail
+          slug={selectedArticleSlug}
+          onNavigate={handleNavigateWithClose}
+          onOpenAuth={openAuthModal}
+          onSelectArticle={(slug) => {
+            setSelectedArticleSlug(slug);
+            setActiveScreen('article_detail');
+          }}
+          showToast={showToast}
+          voiceAccent={voiceAccent}
+          onToggleVoiceAccent={toggleVoiceAccent}
+        />
+      )}
 
-      {/* Session Manager Modal */}
-      <SessionManager
-        isOpen={isSessionManagerOpen}
-        onClose={() => setIsSessionManagerOpen(false)}
-      />
+      {/* 🏛️ Render Authenticated Learning Workspace Layout when in App Mode */}
+      {!isPublicScreen && (
+        <>
+          {/* Top Modern Header */}
+          <header className="qz-header-fixed">
+            <div className="qz-header-container">
+              {/* Brand Logo & Wordmark */}
+              <div 
+                className="qz-brand cursor-pointer select-none" 
+                onClick={() => handleNavigateWithClose('dashboard')}
+                title="Về Trang chủ Workspace"
+              >
+                <div className="qz-logo-badge font-black">
+                  V
+                </div>
+                <div className="flex flex-col">
+                  <span className="qz-logo-text">V-English</span>
+                  <span className="text-[9px] font-semibold text-indigo-500 uppercase tracking-widest hidden sm:inline -mt-1">
+                    v2.0 Workspace
+                  </span>
+                </div>
+              </div>
 
-      {/* Data Backup & Restore Modal */}
-      <DataManagement
-        isOpen={isDataManagementOpen}
-        onClose={() => {
-          setIsDataManagementOpen(false);
-          refreshState();
-        }}
-      />
+              {/* Analog Radio Dual-Dial Voice Knob */}
+              <div className="qz-voice-tuner" onClick={toggleVoiceAccent} title="Nhấn để chuyển giọng Anh / Mỹ">
+                <div className={`qz-tuner-knob ${voiceAccent === 'UK' ? 'pos-uk' : 'pos-us'}`}>
+                  <div className="qz-knob-notch" />
+                </div>
+                <div className="qz-tuner-display">
+                  <span className={`qz-tuner-freq ${voiceAccent === 'US' ? 'active-us' : ''}`}>98.6 US</span>
+                  <span className="qz-tuner-sep">|</span>
+                  <span className={`qz-tuner-freq ${voiceAccent === 'UK' ? 'active-uk' : ''}`}>104.2 UK</span>
+                </div>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="qz-nav-links">
+                <button
+                  className={`qz-nav-item ${activeScreen === 'dashboard' ? 'active' : ''}`}
+                  onClick={() => handleNavigateWithClose('dashboard')}
+                >
+                  Trang chủ
+                </button>
+                <button
+                  className={`qz-nav-item ${activeScreen === 'flashcards' ? 'active' : ''}`}
+                  onClick={() => handleNavigateWithClose('flashcards')}
+                >
+                  Flashcards
+                </button>
+                <button
+                  className={`qz-nav-item ${activeScreen === 'notebook' ? 'active' : ''}`}
+                  onClick={() => handleNavigateWithClose('notebook')}
+                >
+                  Sổ tay
+                </button>
+                <button
+                  className="qz-nav-item"
+                  onClick={() => handleNavigateWithClose('news')}
+                >
+                  Tin tức & Mẹo
+                </button>
+
+                {/* Explore Dropdown */}
+                <div className="qz-nav-dropdown-wrapper">
+                  <button className="qz-nav-item qz-dropdown-trigger">
+                    Chức năng ▾
+                  </button>
+                  <div className="qz-dropdown-menu">
+                    <div className="qz-dropdown-label">⚡ HỌC TẬP & TỪ VỰNG</div>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('dashboard')}>
+                      📚 Thư viện chủ đề
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('flashcards')}>
+                      ⚡ Flashcards Spaced Repetition
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('notebook')}>
+                      📙 Sổ tay từ vựng
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mistake_bank')}>
+                      📌 Ngân hàng câu sai
+                    </button>
+
+                    <div className="qz-dropdown-label mt-2">🎙️ PHÁT ÂM & AI</div>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('translator')}>
+                      🔍 Tra từ AI [Ctrl+K]
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('minimal_pairs')}>
+                      🎙️ Luyện phát âm Minimal Pairs
+                    </button>
+
+                    <div className="qz-dropdown-label mt-2">📘 NGỮ PHÁP & CỤM TỪ</div>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('tenses_handbook')}>
+                      📖 12 Thì Tiếng Anh
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('idioms_handbook')}>
+                      💡 Idioms & Cụm từ thông dụng
+                    </button>
+
+                    <div className="qz-dropdown-label mt-2">🎮 KHÁC</div>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('landing')}>
+                      ✨ Trang giới thiệu Public
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mini_games')}>
+                      🕹️ Playzone Mini Games
+                    </button>
+                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('alphabet')}>
+                      🔤 Bảng chữ cái US-UK
+                    </button>
+                    {isAdmin && (
+                      <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('admin')}>
+                        ⚙️ Quản trị hệ thống
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </nav>
+
+              {/* User Actions & Stats */}
+              <div className="qz-user-actions">
+                <div className="qz-stat-pill streak" title="Streak ngày">
+                  🔥 {stats.streak}d
+                </div>
+                <div className="qz-stat-pill xp" title="Điểm XP">
+                  ⭐ {stats.points} XP
+                </div>
+
+                {/* Online / Offline / Sync Status Badge */}
+                <SyncStatus />
+
+                {/* Auth State: User Profile or Login Button */}
+                {isAuthenticated ? (
+                  <UserProfileMenu
+                    onNavigate={handleNavigateWithClose}
+                    showToast={showToast}
+                    voiceAccent={voiceAccent}
+                    onToggleVoiceAccent={toggleVoiceAccent}
+                    onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+                    onOpenSessionManager={() => setIsSessionManagerOpen(true)}
+                    onOpenDataManagement={() => setIsDataManagementOpen(true)}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="qz-auth-btn"
+                    onClick={() => openAuthModal('login')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                      color: '#ffffff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span>👤 Đăng nhập</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* 🏛️ Main Content Workspace Layout with Responsive 2-Column Grid */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-8 items-start">
+              {/* Left Column: Dedicated App Sidebar (Sticky on Desktop) */}
+              <aside className="hidden lg:block sticky top-24">
+                <AppSidebar
+                  activeScreen={activeScreen}
+                  onNavigate={handleNavigateWithClose}
+                  isAdmin={isAdmin}
+                  stats={stats}
+                />
+              </aside>
+
+              {/* Right Column: App Screen Content */}
+              <main className="min-w-0 w-full">
+                {activeScreen === 'dashboard' && (
+                  <Dashboard 
+                    stats={stats}
+                    progress={progress}
+                    savedVocabCount={savedVocabCount}
+                    onSelectTopic={handleSelectTopic}
+                    onNavigate={handleNavigateWithClose}
+                    topics={topicsList}
+                  />
+                )}
+
+                {activeScreen === 'translator' && (
+                  <GlobalTranslator 
+                    isPageMode={true}
+                    onNavigateBack={handleBackToDashboard}
+                    onSavedVocabChange={refreshState}
+                    showToast={showToast}
+                  />
+                )}
+
+                {activeScreen === 'admin' && (
+                  <AdminPanel 
+                    onNavigateBack={handleBackToDashboard}
+                    onTopicsListChange={refreshTopicsList}
+                    onOpenAuthModal={openAuthModal}
+                  />
+                )}
+
+                {activeScreen === 'topic_detail' && (
+                  selectedTopic ? (
+                    <TopicDetail 
+                      topic={selectedTopic}
+                      progress={progress}
+                      onSelectModule={handleSelectModule}
+                      onNavigateBack={handleBackToDashboard}
+                    />
+                  ) : (
+                    <Dashboard 
+                      topicsList={topicsList}
+                      progress={progress}
+                      savedVocabCount={savedVocabCount}
+                      onSelectTopic={handleSelectTopic}
+                      onNavigate={handleNavigateWithClose}
+                    />
+                  )
+                )}
+
+                {activeScreen === 'vocab_reader' && (
+                  (selectedTopic || topicsList[0]) ? (
+                    <VocabReader 
+                      topic={selectedTopic || topicsList[0]}
+                      onSavedVocabChange={refreshState}
+                      onComplete={refreshState}
+                      onNavigateBack={handleBackToTopicDetail}
+                      showToast={showToast}
+                    />
+                  ) : null
+                )}
+
+                {activeScreen === 'dictation' && (
+                  (selectedTopic || topicsList[0]) ? (
+                    <Dictation 
+                      topic={selectedTopic || topicsList[0]}
+                      onNavigateBack={handleBackToTopicDetail}
+                      showToast={showToast}
+                    />
+                  ) : null
+                )}
+
+                {activeScreen === 'pronunciation' && (
+                  (selectedTopic || topicsList[0]) ? (
+                    <Pronunciation 
+                      topic={selectedTopic || topicsList[0]}
+                      onNavigateBack={handleBackToTopicDetail}
+                      showToast={showToast}
+                    />
+                  ) : null
+                )}
+
+                {activeScreen === 'grammar' && (
+                  (selectedTopic || topicsList[0]) ? (
+                    <GrammarLab
+                      topic={selectedTopic || topicsList[0]}
+                      onComplete={refreshState}
+                      onNavigateBack={handleBackToTopicDetail}
+                      showToast={showToast}
+                    />
+                  ) : null
+                )}
+
+                {activeScreen === 'writing' && (
+                  (selectedTopic || topicsList[0]) ? (
+                    <Writing
+                      topic={selectedTopic || topicsList[0]}
+                      onNavigateBack={handleBackToTopicDetail}
+                      showToast={showToast}
+                    />
+                  ) : null
+                )}
+
+                {activeScreen === 'flashcards' && (
+                  <Flashcards 
+                    onNavigateBack={handleBackToDashboard}
+                    onSavedVocabChange={refreshState}
+                    showToast={showToast}
+                  />
+                )}
+
+                {activeScreen === 'notebook' && (
+                  <VocabNotebook 
+                    onNavigateBack={handleBackToDashboard}
+                    onSavedVocabChange={refreshState}
+                    showToast={showToast}
+                  />
+                )}
+
+                {activeScreen === 'alphabet' && (
+                  <Alphabet 
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+
+                {activeScreen === 'tenses_handbook' && (
+                  <TensesHandbook 
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+
+                {activeScreen === 'minimal_pairs' && (
+                  <MinimalPairs 
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+
+                {activeScreen === 'shadowing' && selectedTopic && (
+                  <Shadowing 
+                    topic={selectedTopic}
+                    onNavigateBack={handleBackToTopicDetail}
+                    showToast={showToast}
+                  />
+                )}
+
+                {activeScreen === 'idioms_handbook' && (
+                  <IdiomsHandbook 
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+
+                {activeScreen === 'mini_games' && (
+                  <MiniGames 
+                    onNavigateBack={handleBackToDashboard}
+                    showToast={showToast}
+                  />
+                )}
+
+                {activeScreen === 'mistake_bank' && (
+                  <MistakeBank 
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+              </main>
+            </div>
+          </div>
+
+          {/* 📱 Mobile Bottom Sheet Modal Menu */}
+          {isMobileMenuOpen && (
+            <div className="mobile-sheet-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+              <div className="mobile-sheet-content glass animate-slideup" onClick={(e) => e.stopPropagation()}>
+                <div className="mobile-sheet-handle-bar" />
+                <div className="mobile-sheet-header">
+                  <h3 className="mobile-sheet-title">Dịch vụ & Chức năng</h3>
+                  <button className="mobile-sheet-close" onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+                </div>
+
+                <div className="mobile-sheet-grid">
+                  {navMenuItems.map((item) => (
+                    <button
+                      key={item.id}
+                      className={`mobile-grid-card ${activeScreen === item.id ? 'active' : ''}`}
+                      onClick={() => handleNavigateWithClose(item.id)}
+                    >
+                      <span className="mobile-card-icon">
+                        <NavSvgIcon iconType={item.iconType} />
+                      </span>
+                      <span className="mobile-card-label">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 📱 Native Mobile Bottom Navigation Bar */}
+          <nav className="mobile-bottom-bar glass">
+            <button
+              className={`mobile-tab-btn ${activeScreen === 'dashboard' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('dashboard')}
+            >
+              <NavSvgIcon iconType="home" />
+              <span>Trang chủ</span>
+            </button>
+
+            <button
+              className={`mobile-tab-btn ${activeScreen === 'translator' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('translator')}
+            >
+              <NavSvgIcon iconType="search" />
+              <span>Tra từ</span>
+            </button>
+
+            <button
+              className={`mobile-tab-btn ${activeScreen === 'flashcards' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('flashcards')}
+            >
+              <NavSvgIcon iconType="flashcards" />
+              <span>Flashcards</span>
+            </button>
+
+            <button
+              className={`mobile-tab-btn ${activeScreen === 'notebook' ? 'active' : ''}`}
+              onClick={() => handleNavigateWithClose('notebook')}
+            >
+              <NavSvgIcon iconType="notebook" />
+              <span>Sổ tay</span>
+            </button>
+
+            <button
+              className="mobile-tab-btn"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Menu</span>
+            </button>
+          </nav>
+        </>
+      )}
+
+      {/* Global Modals */}
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          initialMode={authModalMode}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSuccess={() => handleNavigate('dashboard')}
+          showToast={showToast}
+        />
+      )}
+
+      {isAccountSettingsOpen && (
+        <AccountSettings
+          isOpen={isAccountSettingsOpen}
+          onClose={() => setIsAccountSettingsOpen(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {isSessionManagerOpen && (
+        <SessionManager
+          isOpen={isSessionManagerOpen}
+          onClose={() => setIsSessionManagerOpen(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {isDataManagementOpen && (
+        <DataManagement
+          isOpen={isDataManagementOpen}
+          onClose={() => setIsDataManagementOpen(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

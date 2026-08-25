@@ -17,11 +17,26 @@ export default function Toast({ message, type = 'info', onClose }) {
   }, []);
 
   return (
-    <div className={`toast toast-${type} glass-glow`}>
-      {type === 'error' && '⚠️ '}
-      {type === 'success' && '✅ '}
-      {type === 'info' && 'ℹ️ '}
-      {message}
+    <div className="toast-container" role="status" aria-live="polite">
+      <div className={`toast toast-${type}`}>
+        <span className="text-base">
+          {type === 'error' && '⚠️'}
+          {type === 'success' && '✅'}
+          {type === 'warning' && '⚡'}
+          {type === 'info' && 'ℹ️'}
+        </span>
+        <span className="flex-1">{message}</span>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng thông báo"
+            className="ml-2 text-slate-400 hover:text-slate-700 text-xs font-bold p-0.5"
+          >
+            ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -22,6 +22,10 @@ import {
   hydrateFromServer,
   onSyncComplete
 } from './syncEngine.js';
+import {
+  broadcastTabMessage,
+  subscribeTabMessages
+} from './multiTabSync.js';
 
 export {
   calculateSM2,
@@ -44,7 +48,9 @@ export {
   clearOutboxQueue,
   flushOutboxQueue,
   hydrateFromServer,
-  onSyncComplete
+  onSyncComplete,
+  broadcastTabMessage,
+  subscribeTabMessages
 };
 
 /**
@@ -68,6 +74,10 @@ export const storage = {
   flushOutboxQueue,
   hydrateFromServer,
   onSyncComplete,
+
+  // Multi-Tab Sync
+  broadcastTabMessage,
+  subscribeTabMessages,
 
   // User & Activity methods
   getDeviceId: userStorage.getDeviceId,

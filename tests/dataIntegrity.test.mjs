@@ -138,6 +138,4 @@ test('7. Legacy Storage Migration: migrates legacy data to scoped namespace and 
 });
 
 console.log(`\n================ DATA INTEGRITY TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) {
-  process.exit(1);
-}
+process.exit(failed > 0 ? 1 : 0);

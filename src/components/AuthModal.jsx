@@ -161,15 +161,24 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isSubmitting) onClose();
+      }}
+    >
       <div 
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Tabs */}
         <div className="flex border-b border-slate-100 bg-slate-50/70">
           <button
             type="button"
+            id="auth-modal-title"
             className={`flex-1 py-4 text-sm font-semibold transition-all ${
               mode === 'login'
                 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600 shadow-sm'

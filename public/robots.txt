@@ -1,0 +1,8 @@
+# Robots.txt for V-English Platform
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+
+# Sitemaps
+Sitemap: https://v-english.app/sitemap.xml

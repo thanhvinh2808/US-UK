@@ -18,7 +18,17 @@ export default function MistakeBank({ onNavigateBack }) {
   const [filterModule, setFilterModule] = useState('all');
   const [revealedId, setRevealedId] = useState(null);
 
-  const weaknessStats = useMemo(() => storage.getWeaknessStats(), [mistakes]);
+  const weaknessStats = useMemo(() => {
+    const counts = {};
+    mistakes.forEach(m => {
+      if (m && m.skill) {
+        counts[m.skill] = (counts[m.skill] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([skill, count]) => ({ skill, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [mistakes]);
 
   const moduleCounts = useMemo(() => {
     const counts = {};

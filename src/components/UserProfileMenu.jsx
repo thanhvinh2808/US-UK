@@ -10,27 +10,37 @@ export default function UserProfileMenu({
   onOpenSessionManager,
   onOpenDataManagement
 }) {
-  const { user, role, isAdmin, logout, logoutAll } = useAuth();
+  const { user, isAdmin, logout, logoutAll } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const menuRef = useRef(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
       setIsOpen(false);
+      if (onNavigate) onNavigate('landing');
       if (showToast) {
         showToast('Đã đăng xuất thành công 👋', 'info');
       }
@@ -49,6 +59,7 @@ export default function UserProfileMenu({
     try {
       await logoutAll();
       setIsOpen(false);
+      if (onNavigate) onNavigate('landing');
       if (showToast) {
         showToast('Đã thu hồi và đăng xuất tất cả thiết bị thành công 🔒', 'info');
       }

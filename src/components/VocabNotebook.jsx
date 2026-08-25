@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { storage } from '../utils/storage';
-import { speak, speakCompare, playSound, vibrate } from '../utils/sounds';
+import { speak, speakCompare } from '../utils/sounds';
 
 export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, showToast }) {
   const [vocabList, setVocabList] = useState(() => storage.getSavedVocab());
@@ -79,7 +79,10 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
     if (showToast) showToast(`Đã xếp từ vào bộ "${deckName || 'Mặc định'}"`, 'success');
   };
 
+  const [sortBy, setSortBy] = useState('default'); // default, forgotten, alpha, recent
+
   // Filter & Search Logic
+  const now = Date.now();
   const getFilteredVocab = () => {
     let list = [...vocabList];
 
@@ -88,15 +91,17 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       list = list.filter(item => item.deckId === selectedDeckFilter);
     }
 
-    // Filter by Status / Worst words
-    if (filterStatus === 'mastered') {
-      list = list.filter(item => item.status === 'mastered');
+    // Filter by Status / Worst words / Due
+    if (filterStatus === 'due') {
+      list = list.filter(item => !item.nextReviewDate || new Date(item.nextReviewDate).getTime() <= now);
+    } else if (filterStatus === 'mastered') {
+      list = list.filter(item => item.status === 'mastered' || (item.repetitions || 0) >= 3);
     } else if (filterStatus === 'learning') {
-      list = list.filter(item => item.status === 'learning');
+      list = list.filter(item => item.status === 'learning' || (item.repetitions || 0) < 3);
     } else if (filterStatus === 'worst') {
       // Get top 10 words user forgot most (lowGradeCount > 0)
       list = list
-        .filter(item => item.lowGradeCount > 0)
+        .filter(item => (item.lowGradeCount || 0) > 0)
         .sort((a, b) => (b.lowGradeCount || 0) - (a.lowGradeCount || 0))
         .slice(0, 10);
     }
@@ -110,12 +115,22 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
       );
     }
 
+    // Sort
+    if (sortBy === 'forgotten') {
+      list.sort((a, b) => (b.lowGradeCount || 0) - (a.lowGradeCount || 0));
+    } else if (sortBy === 'alpha') {
+      list.sort((a, b) => (a.word || '').localeCompare(b.word || ''));
+    } else if (sortBy === 'recent') {
+      list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+    }
+
     return list;
   };
 
   const filteredVocab = getFilteredVocab();
-  const masteredCount = vocabList.filter(item => item.status === 'mastered').length;
-  const learningCount = vocabList.filter(item => item.status === 'learning').length;
+  const masteredCount = vocabList.filter(item => item.status === 'mastered' || (item.repetitions || 0) >= 3).length;
+  const learningCount = vocabList.filter(item => item.status === 'learning' || (item.repetitions || 0) < 3).length;
+  const dueCount = vocabList.filter(item => !item.nextReviewDate || new Date(item.nextReviewDate).getTime() <= now).length;
 
   return (
     <div className="notebook-screen animate-slideup max-w-6xl mx-auto">
@@ -254,12 +269,19 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           <button 
             className={`gallery-filter-pill ${filterStatus === 'all' ? 'active' : ''}`}
             onClick={() => setFilterStatus('all')}
           >
             Tất cả ({vocabList.length})
+          </button>
+          <button 
+            className={`gallery-filter-pill ${filterStatus === 'due' ? 'active' : ''}`}
+            onClick={() => setFilterStatus('due')}
+            style={filterStatus === 'due' ? { background: '#F59E0B', color: '#fff' } : {}}
+          >
+            ⚡ Đến hạn ({dueCount})
           </button>
           <button 
             className={`gallery-filter-pill ${filterStatus === 'learning' ? 'active' : ''}`}
@@ -279,6 +301,18 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
           >
             Top 10 hay quên
           </button>
+
+          {/* Sắp xếp thông minh */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="search-input text-xs py-1.5 px-3 rounded-lg border border-slate-200 bg-slate-50 font-semibold text-slate-700"
+          >
+            <option value="default">Sắp xếp: Mặc định</option>
+            <option value="forgotten">Sắp xếp: Số lần quên (Nhiều → Ít)</option>
+            <option value="alpha">Sắp xếp: Bảng chữ cái (A-Z)</option>
+            <option value="recent">Sắp xếp: Mới lưu gần đây</option>
+          </select>
         </div>
       </div>
 

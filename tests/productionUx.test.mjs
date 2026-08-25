@@ -71,6 +71,4 @@ test('7. Error Sanitizer: redacts passwords and secrets from error strings', () 
 });
 
 console.log(`\n================ PRODUCTION UX TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) {
-  process.exit(1);
-}
+process.exit(failed > 0 ? 1 : 0);

@@ -1,11 +1,12 @@
 /**
- * Offline Outbox & Sync Engine
+ * Production-Hardened Offline Outbox & Sync Engine
  * Manages reliable, offline-first queueing, background synchronization,
- * Last-Write-Wins (LWW) conflict resolution, and server progress hydration.
+ * Last-Write-Wins (LWW) conflict resolution, multi-tab broadcast, and defensive recovery.
  */
 
 import { getScopedKey, isUserScope, getCurrentUserId, onStorageScopeChange } from './storageScope.js';
 import { api } from '../../services/api.js';
+import { broadcastTabMessage } from './multiTabSync.js';
 
 const KEY_OUTBOX = 'outbox_queue';
 const MAX_RETRY_COUNT = 5;
@@ -21,16 +22,18 @@ export const _resetSyncingState = () => {
 };
 
 /**
- * Get the current scoped outbox queue from localStorage
+ * Get the current scoped outbox queue from localStorage with defensive parsing
  */
 export const getOutboxQueue = (userId = undefined) => {
   try {
     if (typeof localStorage === 'undefined') return [];
     const key = getScopedKey(KEY_OUTBOX, userId);
     const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
-    console.error('Error reading outbox queue:', err);
+    console.warn('Recovered from corrupted outbox queue JSON:', err.message);
     return [];
   }
 };
@@ -42,7 +45,8 @@ export const saveOutboxQueue = (queue, userId = undefined) => {
   try {
     if (typeof localStorage === 'undefined') return;
     const key = getScopedKey(KEY_OUTBOX, userId);
-    localStorage.setItem(key, JSON.stringify(queue));
+    const safeQueue = Array.isArray(queue) ? queue : [];
+    localStorage.setItem(key, JSON.stringify(safeQueue));
   } catch (err) {
     console.error('Error saving outbox queue:', err);
   }
@@ -70,7 +74,9 @@ export const enqueueReviewAction = ({ setId, cardId, isCorrect, grade, sm2Result
       sm2Result
     },
     createdAt: timestamp,
-    retryCount: 0
+    retryCount: 0,
+    lastAttemptAt: null,
+    status: 'pending'
   };
 
   let updatedQueue;
@@ -130,11 +136,12 @@ export const flushOutboxQueue = async () => {
   let failedCount = 0;
 
   try {
-    // Process items in current queue snapshot
     const queueCopy = [...queue];
     for (const item of queueCopy) {
-      // Re-check scope in case user logged out during loop
-      if (getCurrentUserId() !== userId) break;
+      // Re-check scope in case user logged out or switched account during loop
+      if (getCurrentUserId() !== userId) {
+        break;
+      }
 
       if (item.type === 'CARD_REVIEW') {
         const { setId, cardId, isCorrect, grade } = item.payload;
@@ -149,6 +156,9 @@ export const flushOutboxQueue = async () => {
             // Handled failure (e.g. 500 server error / offline)
             failedCount++;
             item.retryCount = (item.retryCount || 0) + 1;
+            item.lastAttemptAt = Date.now();
+            item.status = 'failed_retryable';
+
             if (item.retryCount >= MAX_RETRY_COUNT) {
               removeActionFromQueue(item.id, userId);
             } else {
@@ -156,6 +166,8 @@ export const flushOutboxQueue = async () => {
               const idx = currentPersistent.findIndex(q => q.id === item.id);
               if (idx !== -1) {
                 currentPersistent[idx].retryCount = item.retryCount;
+                currentPersistent[idx].lastAttemptAt = item.lastAttemptAt;
+                currentPersistent[idx].status = item.status;
                 saveOutboxQueue(currentPersistent, userId);
               }
             }
@@ -163,6 +175,9 @@ export const flushOutboxQueue = async () => {
         } catch (err) {
           failedCount++;
           item.retryCount = (item.retryCount || 0) + 1;
+          item.lastAttemptAt = Date.now();
+          item.status = 'failed_retryable';
+
           if (item.retryCount >= MAX_RETRY_COUNT) {
             removeActionFromQueue(item.id, userId);
           } else {
@@ -170,6 +185,8 @@ export const flushOutboxQueue = async () => {
             const idx = currentPersistent.findIndex(q => q.id === item.id);
             if (idx !== -1) {
               currentPersistent[idx].retryCount = item.retryCount;
+              currentPersistent[idx].lastAttemptAt = item.lastAttemptAt;
+              currentPersistent[idx].status = item.status;
               saveOutboxQueue(currentPersistent, userId);
             }
           }
@@ -180,7 +197,10 @@ export const flushOutboxQueue = async () => {
       }
     }
 
-    notifySyncListeners({ syncedCount, failedCount, remaining: getOutboxQueue(userId).length });
+    const remaining = getOutboxQueue(userId).length;
+    notifySyncListeners({ syncedCount, failedCount, remaining });
+    broadcastTabMessage('SYNC_COMPLETED', { userId, syncedCount, remaining });
+
     return { status: 'completed', syncedCount, failedCount };
   } finally {
     isSyncing = false;

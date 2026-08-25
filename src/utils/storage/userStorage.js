@@ -43,10 +43,20 @@ export const userStorage = {
         }
       }
 
-      let stats = data ? JSON.parse(data) : { ...defaultStats };
+      let stats = { ...defaultStats };
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            stats = { ...defaultStats, ...parsed };
+          }
+        } catch (e) {
+          console.warn('Recovered from corrupted user stats JSON:', e.message);
+        }
+      }
 
       // Ensure activityHistory exists
-      if (!stats.activityHistory) {
+      if (!stats.activityHistory || typeof stats.activityHistory !== 'object') {
         stats.activityHistory = {};
       }
 
@@ -54,13 +64,10 @@ export const userStorage = {
       const now = new Date();
       if (stats.lastActive) {
         const lastActiveDate = new Date(stats.lastActive);
-
-        // Calculate difference in days
         const diffTime = Math.abs(now.setHours(0, 0, 0, 0) - lastActiveDate.setHours(0, 0, 0, 0));
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays > 1) {
-          // Reset streak if more than 1 day missed and save immediately
           stats.streak = 0;
           localStorage.setItem(key, JSON.stringify(stats));
         }
@@ -76,9 +83,10 @@ export const userStorage = {
   updateUserStats: (updates) => {
     try {
       const current = userStorage.getUserStats();
+      const safeUpdates = (updates && typeof updates === 'object') ? updates : {};
       const updated = {
         ...current,
-        ...updates
+        ...safeUpdates
       };
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_STATS);
@@ -99,7 +107,7 @@ export const userStorage = {
       const dateKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
       let updatedStats = { ...stats };
-      if (!updatedStats.activityHistory) {
+      if (!updatedStats.activityHistory || typeof updatedStats.activityHistory !== 'object') {
         updatedStats.activityHistory = {};
       }
 
@@ -121,7 +129,6 @@ export const userStorage = {
         }
       }
 
-      // Initialize today's count to 0 if not present
       if (updatedStats.activityHistory[dateKey] === undefined) {
         updatedStats.activityHistory[dateKey] = 0;
       }
@@ -146,7 +153,7 @@ export const userStorage = {
       const todayString = now.toDateString();
 
       let updatedStats = { ...stats };
-      if (!updatedStats.activityHistory) {
+      if (!updatedStats.activityHistory || typeof updatedStats.activityHistory !== 'object') {
         updatedStats.activityHistory = {};
       }
 

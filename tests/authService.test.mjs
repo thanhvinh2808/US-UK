@@ -420,7 +420,7 @@ async function runAllTests() {
   });
 
   console.log(`\n================ AUTH SERVICE TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-  if (failed > 0) process.exit(1);
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 runAllTests();

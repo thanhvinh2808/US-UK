@@ -230,4 +230,4 @@ test('rateLimiter - Exceeding max requests returns 429 RATE_LIMIT_EXCEEDED with 
 });
 
 console.log(`\n================ MIDDLEWARE TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) process.exit(1);
+process.exit(failed > 0 ? 1 : 0);

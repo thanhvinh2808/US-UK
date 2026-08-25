@@ -78,6 +78,4 @@ test('4. Security: client-side profile cannot alter authoritative role property'
 });
 
 console.log(`\n================ ACCOUNT MANAGEMENT TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) {
-  process.exit(1);
-}
+process.exit(failed > 0 ? 1 : 0);

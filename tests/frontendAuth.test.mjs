@@ -352,6 +352,4 @@ await testAsync('14. Verification: x-admin-key header is completely removed from
 globalThis.fetch = originalFetch;
 
 console.log(`\n================ FRONTEND AUTH TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) {
-  process.exit(1);
-}
+process.exit(failed > 0 ? 1 : 0);

@@ -5,11 +5,9 @@ const LEGACY_KEY_MISTAKES = 'eng_app_mistake_bank';
 const MAX_MISTAKES_STORED = 500;
 
 export const mistakeStorage = {
-  /**
-   * Lưu 1 câu làm sai vào ngân hàng câu sai (User-Scoped).
-   */
   saveMistake: (mistake) => {
     try {
+      if (!mistake || typeof mistake !== 'object') return mistakeStorage.getMistakes();
       const list = mistakeStorage.getMistakes();
       const entry = {
         id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -21,7 +19,6 @@ export const mistakeStorage = {
         correctAnswer: mistake.correctAnswer || '',
         topicId: mistake.topicId || null,
       };
-      // Thêm vào đầu danh sách, giới hạn kích thước tối đa
       const updated = [entry, ...list].slice(0, MAX_MISTAKES_STORED);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_MISTAKES);
@@ -48,21 +45,24 @@ export const mistakeStorage = {
         }
       }
 
-      const list = data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      const list = Array.isArray(parsed) ? parsed : [];
       if (moduleFilter) {
-        return list.filter(m => m.module === moduleFilter);
+        return list.filter(m => m && m.module === moduleFilter);
       }
       return list;
     } catch (e) {
-      console.error('Error reading mistake bank', e);
+      console.warn('Recovered from corrupted mistake bank JSON:', e.message);
       return [];
     }
   },
 
   deleteMistake: (id) => {
     try {
+      if (!id) return mistakeStorage.getMistakes();
       const list = mistakeStorage.getMistakes();
-      const updated = list.filter(m => m.id !== id);
+      const updated = list.filter(m => m && m.id !== id);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_MISTAKES);
         localStorage.setItem(key, JSON.stringify(updated));
@@ -84,7 +84,7 @@ export const mistakeStorage = {
         return [];
       }
       const list = mistakeStorage.getMistakes();
-      const updated = list.filter(m => m.module !== moduleFilter);
+      const updated = list.filter(m => m && m.module !== moduleFilter);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(key, JSON.stringify(updated));
       }
@@ -95,15 +95,14 @@ export const mistakeStorage = {
     }
   },
 
-  /**
-   * Tổng hợp thống kê điểm yếu theo từng kỹ năng
-   */
   getWeaknessStats: () => {
     try {
       const list = mistakeStorage.getMistakes();
       const counts = {};
       list.forEach(m => {
-        counts[m.skill] = (counts[m.skill] || 0) + 1;
+        if (m && m.skill) {
+          counts[m.skill] = (counts[m.skill] || 0) + 1;
+        }
       });
       return Object.entries(counts)
         .map(([skill, count]) => ({ skill, count }))

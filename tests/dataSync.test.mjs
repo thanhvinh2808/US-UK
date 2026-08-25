@@ -465,6 +465,4 @@ test('14. Vocab & Grammar regression: topic progress, mistakes, custom decks fun
 globalThis.fetch = originalFetch;
 
 console.log(`\n================ DATA SYNC TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) {
-  process.exit(1);
-}
+process.exit(failed > 0 ? 1 : 0);

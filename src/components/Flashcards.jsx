@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../utils/storage';
-import { playSound, vibrate, speak } from '../utils/sounds';
+import { playSound, vibrate } from '../utils/sounds';
 import { api } from '../services/api';
 import confetti from 'canvas-confetti';
 
@@ -192,15 +192,31 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
     }
   };
 
-  // Keyboard shortcut to submit or skip to next question
+  // Keyboard shortcut to select options (1-4), submit (Enter), or advance to next question
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (gameState !== 'playing') return;
+
+      const activeTag = document.activeElement?.tagName;
+      const isEditable = document.activeElement?.isContentEditable;
+      const isTypingInField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag) || isEditable;
+
+      // Don't trigger 1-4 shortcut if typing in any text input
+      if (isTypingInField && !isSpellingQuestion) return;
+      if (isSpellingQuestion && isTypingInField && e.key !== 'Enter') return;
+
+      if (!checked && !isSpellingQuestion && !isTypingInField) {
+        if (e.key === '1' && currentOptions[0]) handleSelectOption(currentOptions[0]);
+        if (e.key === '2' && currentOptions[1]) handleSelectOption(currentOptions[1]);
+        if (e.key === '3' && currentOptions[2]) handleSelectOption(currentOptions[2]);
+        if (e.key === '4' && currentOptions[3]) handleSelectOption(currentOptions[3]);
+      }
+
       if (e.key === 'Enter') {
         if (!checked) {
           if (isSpellingQuestion && spellingInput.trim()) {
             handleSubmitAnswer();
-          } else if (!isSpellingQuestion && selectedOption) {
+          } else if (!isSpellingQuestion && selectedOption && !isTypingInField) {
             handleSubmitAnswer();
           }
         } else {
@@ -210,7 +226,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, checked, selectedOption, spellingInput, isSpellingQuestion]);
+  }, [gameState, checked, selectedOption, spellingInput, isSpellingQuestion, currentOptions]);
 
   // 1. Settings screen
   if (gameState === 'settings') {

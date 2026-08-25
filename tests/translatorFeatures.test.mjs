@@ -81,4 +81,4 @@ test("E2E - Tokenizer handles words and contractions", () => {
 });
 
 console.log(`\n================ E2E SUMMARY: ${passed} PASSED, ${failed} FAILED ================`);
-if (failed > 0) process.exit(1);
+process.exit(failed > 0 ? 1 : 0);
