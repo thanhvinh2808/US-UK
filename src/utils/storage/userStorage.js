@@ -1,9 +1,13 @@
-const KEY_STATS = "eng_app_user_stats";
+import { getScopedKey, isUserScope } from './storageScope.js';
+
+const BASE_KEY_STATS = 'user_stats';
+const BASE_KEY_DEVICE = 'device_id';
+const LEGACY_KEY_STATS = 'eng_app_user_stats';
 
 export const defaultStats = {
   streak: 0,
   points: 0,
-  level: "A1",
+  level: 'A1',
   lastActive: null,
   completedModules: 0,
   activityHistory: {} // "YYYY-MM-DD" -> count
@@ -12,22 +16,33 @@ export const defaultStats = {
 export const userStorage = {
   getDeviceId: () => {
     try {
-      if (typeof localStorage === 'undefined') return "dev_guest";
-      let id = localStorage.getItem("eng_app_device_id");
+      if (typeof localStorage === 'undefined') return 'dev_guest';
+      const key = getScopedKey(BASE_KEY_DEVICE);
+      let id = localStorage.getItem(key);
       if (!id) {
-        id = "dev_" + (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now());
-        localStorage.setItem("eng_app_device_id", id);
+        id = 'dev_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now());
+        localStorage.setItem(key, id);
       }
       return id;
     } catch (e) {
-      return "dev_guest";
+      return 'dev_guest';
     }
   },
 
   getUserStats: () => {
     try {
       if (typeof localStorage === 'undefined') return { ...defaultStats };
-      const data = localStorage.getItem(KEY_STATS);
+      const key = getScopedKey(BASE_KEY_STATS);
+      let data = localStorage.getItem(key);
+
+      // Controlled fallback: If guest has no data yet, check legacy un-scoped key
+      if (!data && !isUserScope()) {
+        const legacyData = localStorage.getItem(LEGACY_KEY_STATS);
+        if (legacyData) {
+          data = legacyData;
+        }
+      }
+
       let stats = data ? JSON.parse(data) : { ...defaultStats };
 
       // Ensure activityHistory exists
@@ -47,13 +62,13 @@ export const userStorage = {
         if (diffDays > 1) {
           // Reset streak if more than 1 day missed and save immediately
           stats.streak = 0;
-          localStorage.setItem(KEY_STATS, JSON.stringify(stats));
+          localStorage.setItem(key, JSON.stringify(stats));
         }
       }
 
       return stats;
     } catch (e) {
-      console.error("Error getting user stats", e);
+      console.error('Error getting user stats', e);
       return { ...defaultStats };
     }
   },
@@ -66,11 +81,12 @@ export const userStorage = {
         ...updates
       };
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_STATS, JSON.stringify(updated));
+        const key = getScopedKey(BASE_KEY_STATS);
+        localStorage.setItem(key, JSON.stringify(updated));
       }
       return updated;
     } catch (e) {
-      console.error("Error updating user stats", e);
+      console.error('Error updating user stats', e);
       return { ...defaultStats };
     }
   },
@@ -112,11 +128,12 @@ export const userStorage = {
 
       updatedStats.lastActive = Date.now();
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+        const key = getScopedKey(BASE_KEY_STATS);
+        localStorage.setItem(key, JSON.stringify(updatedStats));
       }
       return updatedStats;
     } catch (e) {
-      console.error("Error recording user activity", e);
+      console.error('Error recording user activity', e);
       return { ...defaultStats };
     }
   },
@@ -155,12 +172,15 @@ export const userStorage = {
       updatedStats.lastActive = Date.now();
 
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_STATS, JSON.stringify(updatedStats));
+        const key = getScopedKey(BASE_KEY_STATS);
+        localStorage.setItem(key, JSON.stringify(updatedStats));
       }
       return updatedStats;
     } catch (e) {
-      console.error("Error incrementing user activity", e);
+      console.error('Error incrementing user activity', e);
       return null;
     }
   }
 };
+
+export default userStorage;

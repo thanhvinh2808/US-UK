@@ -5,6 +5,23 @@ import { deckStorage } from './deckStorage.js';
 import { topicStorage } from './topicStorage.js';
 import { progressStorage } from './progressStorage.js';
 import { mistakeStorage } from './mistakeStorage.js';
+import {
+  setStorageScope,
+  getCurrentUserId,
+  getCurrentScope,
+  isUserScope,
+  getScopedKey,
+  onStorageScopeChange
+} from './storageScope.js';
+import {
+  getOutboxQueue,
+  enqueueReviewAction,
+  removeActionFromQueue,
+  clearOutboxQueue,
+  flushOutboxQueue,
+  hydrateFromServer,
+  onSyncComplete
+} from './syncEngine.js';
 
 export {
   calculateSM2,
@@ -14,7 +31,20 @@ export {
   deckStorage,
   topicStorage,
   progressStorage,
-  mistakeStorage
+  mistakeStorage,
+  setStorageScope,
+  getCurrentUserId,
+  getCurrentScope,
+  isUserScope,
+  getScopedKey,
+  onStorageScopeChange,
+  getOutboxQueue,
+  enqueueReviewAction,
+  removeActionFromQueue,
+  clearOutboxQueue,
+  flushOutboxQueue,
+  hydrateFromServer,
+  onSyncComplete
 };
 
 /**
@@ -22,6 +52,23 @@ export {
  * Combines all modularized storage operations into a single API.
  */
 export const storage = {
+  // Storage Scoping & Session Isolation
+  setStorageScope,
+  getCurrentUserId,
+  getCurrentScope,
+  isUserScope,
+  getScopedKey,
+  onStorageScopeChange,
+
+  // Offline Outbox & Sync
+  getOutboxQueue,
+  enqueueReviewAction,
+  removeActionFromQueue,
+  clearOutboxQueue,
+  flushOutboxQueue,
+  hydrateFromServer,
+  onSyncComplete,
+
   // User & Activity methods
   getDeviceId: userStorage.getDeviceId,
   getUserStats: userStorage.getUserStats,
@@ -31,6 +78,7 @@ export const storage = {
 
   // Vocabulary & Word progress (SM-2)
   getSavedVocab: vocabStorage.getSavedVocab,
+  setSavedVocabDirect: vocabStorage.setSavedVocabDirect,
   saveWord: vocabStorage.saveWord,
   deleteWord: vocabStorage.deleteWord,
   updateWordProgress: vocabStorage.updateWordProgress,

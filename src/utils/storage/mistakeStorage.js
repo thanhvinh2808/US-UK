@@ -1,16 +1,12 @@
-const KEY_MISTAKES = "eng_app_mistake_bank";
+import { getScopedKey, isUserScope } from './storageScope.js';
+
+const BASE_KEY_MISTAKES = 'mistake_bank';
+const LEGACY_KEY_MISTAKES = 'eng_app_mistake_bank';
 const MAX_MISTAKES_STORED = 500;
 
 export const mistakeStorage = {
   /**
-   * Lưu 1 câu làm sai vào ngân hàng.
-   * @param {Object} mistake
-   * @param {string} mistake.module    - khoá định danh module, vd: 'grammar', 'minimal_pairs', 'flashcards'
-   * @param {string} mistake.skill     - tên kỹ năng hiển thị tiếng Việt, vd: 'Ngữ pháp', 'Phát âm'
-   * @param {string} mistake.question  - câu hỏi / nội dung đề bài
-   * @param {string} [mistake.userAnswer]    - câu trả lời của người dùng (nếu có)
-   * @param {string} [mistake.correctAnswer] - đáp án đúng (nếu có)
-   * @param {string} [mistake.topicId]       - id bài học liên quan (nếu có)
+   * Lưu 1 câu làm sai vào ngân hàng câu sai (User-Scoped).
    */
   saveMistake: (mistake) => {
     try {
@@ -25,29 +21,40 @@ export const mistakeStorage = {
         correctAnswer: mistake.correctAnswer || '',
         topicId: mistake.topicId || null,
       };
-      // Thêm vào đầu danh sách (mới nhất lên trước), giới hạn kích thước để tránh phình to
+      // Thêm vào đầu danh sách, giới hạn kích thước tối đa
       const updated = [entry, ...list].slice(0, MAX_MISTAKES_STORED);
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_MISTAKES, JSON.stringify(updated));
+        const key = getScopedKey(BASE_KEY_MISTAKES);
+        localStorage.setItem(key, JSON.stringify(updated));
       }
       return updated;
     } catch (e) {
-      console.error("Error saving mistake", e);
+      console.error('Error saving mistake', e);
       return [];
     }
   },
 
-  getMistakes: (moduleFilter = null) => {
+  getMistakes: (moduleFilter = null, explicitUserId = undefined) => {
     try {
       if (typeof localStorage === 'undefined') return [];
-      const data = localStorage.getItem(KEY_MISTAKES);
+      const key = getScopedKey(BASE_KEY_MISTAKES, explicitUserId);
+      let data = localStorage.getItem(key);
+
+      // Controlled fallback: If guest has no data yet, check legacy un-scoped key
+      if (!data && !isUserScope() && explicitUserId === undefined) {
+        const legacyData = localStorage.getItem(LEGACY_KEY_MISTAKES);
+        if (legacyData) {
+          data = legacyData;
+        }
+      }
+
       const list = data ? JSON.parse(data) : [];
       if (moduleFilter) {
         return list.filter(m => m.module === moduleFilter);
       }
       return list;
     } catch (e) {
-      console.error("Error reading mistake bank", e);
+      console.error('Error reading mistake bank', e);
       return [];
     }
   },
@@ -57,38 +64,39 @@ export const mistakeStorage = {
       const list = mistakeStorage.getMistakes();
       const updated = list.filter(m => m.id !== id);
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_MISTAKES, JSON.stringify(updated));
+        const key = getScopedKey(BASE_KEY_MISTAKES);
+        localStorage.setItem(key, JSON.stringify(updated));
       }
       return updated;
     } catch (e) {
-      console.error("Error deleting mistake", e);
+      console.error('Error deleting mistake', e);
       return [];
     }
   },
 
   clearMistakes: (moduleFilter = null) => {
     try {
+      const key = getScopedKey(BASE_KEY_MISTAKES);
       if (!moduleFilter) {
         if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(KEY_MISTAKES, JSON.stringify([]));
+          localStorage.setItem(key, JSON.stringify([]));
         }
         return [];
       }
       const list = mistakeStorage.getMistakes();
       const updated = list.filter(m => m.module !== moduleFilter);
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_MISTAKES, JSON.stringify(updated));
+        localStorage.setItem(key, JSON.stringify(updated));
       }
       return updated;
     } catch (e) {
-      console.error("Error clearing mistake bank", e);
+      console.error('Error clearing mistake bank', e);
       return [];
     }
   },
 
   /**
-   * Tổng hợp thống kê điểm yếu: đếm số câu sai theo từng kỹ năng (skill),
-   * sắp xếp giảm dần — kỹ năng nào sai nhiều nhất đứng đầu.
+   * Tổng hợp thống kê điểm yếu theo từng kỹ năng
    */
   getWeaknessStats: () => {
     try {
@@ -101,8 +109,10 @@ export const mistakeStorage = {
         .map(([skill, count]) => ({ skill, count }))
         .sort((a, b) => b.count - a.count);
     } catch (e) {
-      console.error("Error computing weakness stats", e);
+      console.error('Error computing weakness stats', e);
       return [];
     }
   }
 };
+
+export default mistakeStorage;

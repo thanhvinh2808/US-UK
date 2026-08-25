@@ -432,11 +432,26 @@ export const api = {
   // ================= PROGRESS & SM-2 =================
 
   // Submit card review (Protected: server automatically binds to req.user.id)
-  async submitCardReview(userId, setId, cardId, isCorrect, grade) {
+  async submitCardReview(arg1, arg2, arg3, arg4, arg5) {
+    let setId, cardId, isCorrect, grade;
+    if (arg5 !== undefined) {
+      // Called with legacy (userId, setId, cardId, isCorrect, grade)
+      setId = arg2;
+      cardId = arg3;
+      isCorrect = arg4;
+      grade = arg5;
+    } else {
+      // Called with (setId, cardId, isCorrect, grade)
+      setId = arg1;
+      cardId = arg2;
+      isCorrect = arg3;
+      grade = arg4;
+    }
+
     try {
       const res = await requestWithAuth(`${API_BASE}/progress/review`, {
         method: 'POST',
-        body: JSON.stringify({ setId, cardId, isCorrect, grade })
+        body: JSON.stringify({ setId: setId || 'vocab_notebook', cardId, isCorrect: Boolean(isCorrect), grade: Number(grade) })
       });
       if (!res.ok) return null;
       return await res.json();

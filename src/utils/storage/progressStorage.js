@@ -1,15 +1,27 @@
 import { userStorage } from './userStorage.js';
+import { getScopedKey, isUserScope } from './storageScope.js';
 
-const KEY_TOPIC_PROGRESS = "eng_app_topic_progress";
+const BASE_KEY_TOPIC_PROGRESS = 'topic_progress';
+const LEGACY_KEY_TOPIC_PROGRESS = 'eng_app_topic_progress';
 
 export const progressStorage = {
-  getTopicProgress: () => {
+  getTopicProgress: (explicitUserId = undefined) => {
     try {
       if (typeof localStorage === 'undefined') return {};
-      const data = localStorage.getItem(KEY_TOPIC_PROGRESS);
+      const key = getScopedKey(BASE_KEY_TOPIC_PROGRESS, explicitUserId);
+      let data = localStorage.getItem(key);
+
+      // Controlled fallback: If guest has no data yet, check legacy un-scoped key
+      if (!data && !isUserScope() && explicitUserId === undefined) {
+        const legacyData = localStorage.getItem(LEGACY_KEY_TOPIC_PROGRESS);
+        if (legacyData) {
+          data = legacyData;
+        }
+      }
+
       return data ? JSON.parse(data) : {};
     } catch (e) {
-      console.error("Error getting topic progress", e);
+      console.error('Error getting topic progress', e);
       return {};
     }
   },
@@ -32,13 +44,13 @@ export const progressStorage = {
       let pointsAdded = 0;
       let completedModulesAdded = 0;
 
-      if (moduleKey === "reading") {
+      if (moduleKey === 'reading') {
         if (!topicProg.is_reading_completed) {
           topicProg.is_reading_completed = true;
           pointsAdded = 10;
           completedModulesAdded = 1;
         }
-      } else if (moduleKey === "speaking") {
+      } else if (moduleKey === 'speaking') {
         const currentBest = topicProg.max_speaking_score;
         if (score >= currentBest) {
           topicProg.max_speaking_score = score;
@@ -48,7 +60,7 @@ export const progressStorage = {
             completedModulesAdded = 1;
           }
         }
-      } else if (moduleKey === "listening") {
+      } else if (moduleKey === 'listening') {
         const currentBest = topicProg.max_listening_score;
         if (score >= currentBest) {
           topicProg.max_listening_score = score;
@@ -58,13 +70,13 @@ export const progressStorage = {
             completedModulesAdded = 1;
           }
         }
-      } else if (moduleKey === "grammar") {
+      } else if (moduleKey === 'grammar') {
         if (!topicProg.is_grammar_completed) {
           topicProg.is_grammar_completed = true;
           pointsAdded = 10;
           completedModulesAdded = 1;
         }
-      } else if (moduleKey === "writing") {
+      } else if (moduleKey === 'writing') {
         const currentBest = topicProg.max_writing_score;
         if (score >= currentBest) {
           topicProg.max_writing_score = score;
@@ -82,7 +94,8 @@ export const progressStorage = {
       };
 
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(KEY_TOPIC_PROGRESS, JSON.stringify(updatedProgress));
+        const key = getScopedKey(BASE_KEY_TOPIC_PROGRESS);
+        localStorage.setItem(key, JSON.stringify(updatedProgress));
       }
 
       if (pointsAdded > 0 || completedModulesAdded > 0) {
@@ -98,8 +111,10 @@ export const progressStorage = {
 
       return updatedProgress;
     } catch (e) {
-      console.error("Error updating topic progress", e);
+      console.error('Error updating topic progress', e);
       return {};
     }
   }
 };
+
+export default progressStorage;

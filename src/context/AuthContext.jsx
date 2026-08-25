@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api, configureApiClient, setApiAccessToken } from '../services/api';
+import { setStorageScope } from '../utils/storage/storageScope';
+import { hydrateFromServer, flushOutboxQueue } from '../utils/storage/syncEngine';
+import { vocabStorage } from '../utils/storage/vocabStorage';
 
 const AuthContext = createContext(null);
 
@@ -8,12 +11,19 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sync React state and API client in-memory token
+  // Sync React state, API client in-memory token, and Storage Scope
   const handleTokenUpdate = useCallback((newToken, newUser) => {
     setAccessToken(newToken);
     setApiAccessToken(newToken);
     if (newUser !== undefined) {
       setUser(newUser);
+      const userId = newUser?._id || newUser?.id || null;
+      setStorageScope(userId);
+      if (userId) {
+        // Trigger server-to-local hydration & outbox sync
+        hydrateFromServer(vocabStorage.getSavedVocab, vocabStorage.setSavedVocabDirect).catch(() => {});
+        flushOutboxQueue().catch(() => {});
+      }
     }
   }, []);
 
@@ -21,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(null);
     setApiAccessToken(null);
     setUser(null);
+    setStorageScope(null); // Switch back to Guest scope
   }, []);
 
   // Configure API client callback bindings
@@ -40,12 +51,16 @@ export const AuthProvider = ({ children }) => {
       if (result.success && result.accessToken) {
         setAccessToken(result.accessToken);
         setApiAccessToken(result.accessToken);
-        if (result.user) {
-          setUser(result.user);
-        } else {
-          // If user not included, fetch profile via /me
-          const meUser = await api.getMe();
-          if (meUser) setUser(meUser);
+        let currentUser = result.user;
+        if (!currentUser) {
+          currentUser = await api.getMe();
+        }
+        if (currentUser) {
+          setUser(currentUser);
+          const userId = currentUser?._id || currentUser?.id || null;
+          setStorageScope(userId);
+          hydrateFromServer(vocabStorage.getSavedVocab, vocabStorage.setSavedVocabDirect).catch(() => {});
+          flushOutboxQueue().catch(() => {});
         }
         return { success: true };
       } else {
@@ -88,6 +103,10 @@ export const AuthProvider = ({ children }) => {
         setAccessToken(result.accessToken);
         setApiAccessToken(result.accessToken);
         setUser(result.user);
+        const userId = result.user?._id || result.user?.id || null;
+        setStorageScope(userId);
+        hydrateFromServer(vocabStorage.getSavedVocab, vocabStorage.setSavedVocabDirect).catch(() => {});
+        flushOutboxQueue().catch(() => {});
         return { success: true, user: result.user };
       } else {
         return {
