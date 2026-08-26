@@ -3,6 +3,7 @@ import { api, configureApiClient, setApiAccessToken } from '../services/api';
 import { setStorageScope } from '../utils/storage/storageScope';
 import { hydrateFromServer, flushOutboxQueue } from '../utils/storage/syncEngine';
 import { vocabStorage } from '../utils/storage/vocabStorage';
+import { mergeGuestDataToAccount } from '../utils/storage/guestMergeEngine';
 
 const AuthContext = createContext(null);
 
@@ -104,6 +105,13 @@ export const AuthProvider = ({ children }) => {
         setApiAccessToken(result.accessToken);
         setUser(result.user);
         const userId = result.user?._id || result.user?.id || null;
+        if (userId) {
+          try {
+            mergeGuestDataToAccount(userId);
+          } catch (mergeErr) {
+            console.warn('Guest data merge note:', mergeErr.message);
+          }
+        }
         setStorageScope(userId);
         hydrateFromServer(vocabStorage.getSavedVocab, vocabStorage.setSavedVocabDirect).catch(() => {});
         flushOutboxQueue().catch(() => {});

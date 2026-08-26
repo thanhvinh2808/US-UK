@@ -954,7 +954,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 onClick={startVoiceInput}
                 className={`translator-action-chip ${isListening ? 'active' : ''}`}
               >
-                🎤 {isListening ? 'Đang nghe...' : 'Giọng nói'}
+                {isListening ? 'Đang nghe...' : 'Giọng nói'}
               </button>
 
               <button
@@ -972,7 +972,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
                 }}
                 className="translator-action-chip"
               >
-                📋 Dán
+                Dán văn bản
               </button>
             </div>
 
@@ -981,7 +981,7 @@ Trả về CHỈ một chuỗi JSON hợp lệ (không chứa mác code fence \`
               disabled={isLoading || !query.trim()}
               className="translator-primary-btn"
             >
-              {isLoading ? <span className="spinner" /> : <><span>Dịch nghĩa</span> ✨</>}
+              {isLoading ? <span className="spinner" /> : <span>Dịch nghĩa</span>}
             </button>
           </div>
         </div>

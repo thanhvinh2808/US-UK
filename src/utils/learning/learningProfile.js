@@ -57,7 +57,10 @@ export function getLearnerProfile(_explicitTopics = []) {
       }
     });
 
-    const isNewUser = vocabList.length === 0 && mistakes.length === 0 && completedTopicIds.length === 0 && inProgressTopicIds.length === 0;
+    const cefrProgress = storage.getCEFRProgress() || {};
+    const completedCEFRLessons = Array.isArray(cefrProgress.completedLessons) ? cefrProgress.completedLessons : [];
+
+    const isNewUser = vocabList.length === 0 && mistakes.length === 0 && completedTopicIds.length === 0 && inProgressTopicIds.length === 0 && completedCEFRLessons.length === 0;
 
     return {
       vocabularyCount: vocabList.length,
@@ -75,6 +78,8 @@ export function getLearnerProfile(_explicitTopics = []) {
       completedTopicIds,
       inProgressTopicIds,
       topicProgress,
+      cefrProgress,
+      completedCEFRLessonsCount: completedCEFRLessons.length,
       streak: stats.streak || 0,
       points: stats.points || 0,
       level: stats.level || 'A1',

@@ -26,6 +26,15 @@ import {
   broadcastTabMessage,
   subscribeTabMessages
 } from './multiTabSync.js';
+import {
+  checkGuestDataExists,
+  mergeGuestDataToAccount,
+  clearGuestData,
+  calculateStreakFromActivity,
+  getMigrationJournal
+} from './guestMergeEngine.js';
+
+import { cefrProgressStorage, defaultCEFRProgress } from '../cefr/cefrProgressStorage.js';
 
 export {
   calculateSM2,
@@ -36,6 +45,8 @@ export {
   topicStorage,
   progressStorage,
   mistakeStorage,
+  cefrProgressStorage,
+  defaultCEFRProgress,
   setStorageScope,
   getCurrentUserId,
   getCurrentScope,
@@ -50,7 +61,12 @@ export {
   hydrateFromServer,
   onSyncComplete,
   broadcastTabMessage,
-  subscribeTabMessages
+  subscribeTabMessages,
+  checkGuestDataExists,
+  mergeGuestDataToAccount,
+  clearGuestData,
+  calculateStreakFromActivity,
+  getMigrationJournal
 };
 
 /**
@@ -115,7 +131,20 @@ export const storage = {
   getMistakes: mistakeStorage.getMistakes,
   deleteMistake: mistakeStorage.deleteMistake,
   clearMistakes: mistakeStorage.clearMistakes,
-  getWeaknessStats: mistakeStorage.getWeaknessStats
+  getWeaknessStats: mistakeStorage.getWeaknessStats,
+
+  // CEFR Learning Engine Progress
+  getCEFRProgress: cefrProgressStorage.getCEFRProgress,
+  saveCEFRProgress: cefrProgressStorage.saveCEFRProgress,
+  completeCEFRActivity: cefrProgressStorage.completeCEFRActivity,
+  completeCEFRLesson: cefrProgressStorage.completeCEFRLesson,
+
+  // Guest Learning & Account Merge
+  checkGuestDataExists,
+  mergeGuestDataToAccount,
+  clearGuestData,
+  calculateStreakFromActivity,
+  getMigrationJournal
 };
 
 export default storage;

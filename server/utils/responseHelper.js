@@ -2,7 +2,10 @@
  * Standardized API Response Helper
  */
 export const sendSuccess = (res, data, statusCode = 200) => {
-  return res.status(statusCode).json(data);
+  return res.status(statusCode).json({
+    success: true,
+    ...(typeof data === 'object' && data !== null ? data : { data })
+  });
 };
 
 export const sendError = (res, message, statusCode = 500, code = 'API_ERROR') => {

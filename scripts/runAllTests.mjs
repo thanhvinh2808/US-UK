@@ -23,10 +23,16 @@ const testFiles = [
   'tests/securitySuite.test.mjs',
   'tests/storage.test.mjs',
   'tests/translatorFeatures.test.mjs',
-  'tests/visualExcellence.test.mjs'
+  'tests/visualExcellence.test.mjs',
+  'tests/realWorldQaPhase15.test.mjs',
+  'tests/authModalErrorHandling.test.mjs',
+  'tests/unifiedNavigation.test.mjs',
+  'tests/guestLearningMerge.test.mjs',
+  'tests/cefrLearningEngine.test.mjs',
+  'tests/visualLearningContent.test.mjs'
 ];
 
-console.log('================ STARTING COMPLETE TEST SUITE (23 FILES) ================\n');
+console.log('================ STARTING COMPLETE TEST SUITE (29 FILES) ================\n');
 
 let allPassed = true;
 

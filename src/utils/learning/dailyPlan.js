@@ -12,7 +12,6 @@ export function getDailyLearningPlan(profile, topicsList = []) {
     tasks.push({
       id: 'task_due_flashcards',
       type: 'review',
-      icon: '⚡',
       title: `Ôn tập ${profile.dueCount} từ vựng Flashcards đến hạn`,
       subtitle: 'Củng cố trí nhớ dài hạn theo chu kỳ Spaced Repetition (SM-2)',
       badge: 'Ưu tiên cao',
@@ -31,7 +30,6 @@ export function getDailyLearningPlan(profile, topicsList = []) {
     tasks.push({
       id: 'task_weak_vocab',
       type: 'vocabulary',
-      icon: '📙',
       title: `Củng cố ${topForgotten.length} từ vựng hay quên`,
       subtitle: `Bao gồm: ${wordsList}`,
       badge: 'Cần chú ý',
@@ -48,7 +46,6 @@ export function getDailyLearningPlan(profile, topicsList = []) {
     tasks.push({
       id: 'task_fix_mistakes',
       type: 'mistakes',
-      icon: '📌',
       title: `Luyện lại ${profile.mistakeCount} câu trong Ngân hàng câu sai`,
       subtitle: profile.primaryWeakSkill ? `Chủ yếu về kỹ năng: ${profile.primaryWeakSkill}` : 'Sửa các câu trả lời sai trước đây',
       badge: 'Luyện sửa lỗi',
@@ -75,7 +72,7 @@ export function getDailyLearningPlan(profile, topicsList = []) {
     if (!targetTopic) {
       targetTopic = topicsList.find(t => {
         const topId = String(t.id || t._id);
-        return !profile.completedTopicIds.includes(topId);
+        return !(profile.completedTopicIds || []).includes(topId);
       }) || topicsList[0];
     }
 
@@ -83,7 +80,6 @@ export function getDailyLearningPlan(profile, topicsList = []) {
       tasks.push({
         id: 'task_topic_learning',
         type: 'topic',
-        icon: '📚',
         title: isContinuation ? `Tiếp tục chủ đề: ${targetTopic.title || targetTopic.name}` : `Khám phá chủ đề: ${targetTopic.title || targetTopic.name}`,
         subtitle: `Trình độ ${targetTopic.level || 'B1'} • ${targetTopic.description || 'Bài đọc học thuật và bài tập'}`,
         badge: isContinuation ? 'Đang học' : 'Bài mới',
@@ -103,7 +99,6 @@ export function getDailyLearningPlan(profile, topicsList = []) {
     tasks.push({
       id: 'task_onboarding_starter',
       type: 'topic',
-      icon: '🚀',
       title: 'Bắt đầu bài học đầu tiên',
       subtitle: starterTopic ? `Khám phá chủ đề "${starterTopic.title || starterTopic.name}"` : 'Chọn chủ đề yêu thích từ thư viện',
       badge: 'Khởi động',

@@ -99,10 +99,10 @@ export const LandingPage = ({
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                 <button
                   onClick={() => onOpenAuth('register')}
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 group"
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/35 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
                 >
                   <span>Bắt đầu học miễn phí</span>
-                  <span className="group-hover:translate-x-1 transition-transform">🚀</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
 
                 <button
@@ -110,7 +110,6 @@ export const LandingPage = ({
                   className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-base shadow-sm hover:border-slate-300 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Mở ứng dụng học</span>
-                  <span>⚡</span>
                 </button>
               </div>
 
@@ -167,13 +166,13 @@ export const LandingPage = ({
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-left">
                     <span className="text-[10px] font-bold text-slate-400 block">GIỌNG PHÁT ÂM</span>
                     <span className="text-xs font-bold text-indigo-600 flex items-center gap-1 mt-0.5">
-                      <span>🇺🇸 US General</span>
+                      <span>US General</span>
                     </span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-left">
                     <span className="text-[10px] font-bold text-slate-400 block">ĐỘ BỀN TRÍ NHỚ (SM-2)</span>
                     <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                      <span>⭐ Mastered (14 ngày)</span>
+                      <span>Thành thạo (14 ngày)</span>
                     </span>
                   </div>
                 </div>
@@ -200,16 +199,18 @@ export const LandingPage = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
             {[
-              { icon: '🧠', title: 'Spaced Repetition', desc: 'Thuật toán SM-2 khoa học' },
-              { icon: '🎙️', title: 'Giọng đọc US / UK', desc: 'Chuyển đổi âm vị 2 miền' },
-              { icon: '⚡', title: 'Offline-First', desc: 'Học ngay khi không có mạng' },
-              { icon: '📱', title: 'Đồng bộ tức thì', desc: 'Outbox queue đa thiết bị' },
-              { icon: '🔬', title: 'Grammar Lab', desc: 'Phân tích ngữ pháp chuyên sâu' },
-              { icon: '🎯', title: 'Mục tiêu IELTS', desc: 'Cá nhân hóa từ Band 5-9' },
+              { label: 'Spaced Repetition', desc: 'Thuật toán SM-2 khoa học' },
+              { label: 'Giọng đọc US / UK', desc: 'Chuyển đổi âm vị 2 miền' },
+              { label: 'Offline-First', desc: 'Học ngay khi không có mạng' },
+              { label: 'Đồng bộ tức thì', desc: 'Hàng đợi Outbox đa thiết bị' },
+              { label: 'Grammar Lab', desc: 'Phân tích ngữ pháp chuyên sâu' },
+              { label: 'Mục tiêu IELTS', desc: 'Cá nhân hóa từ Band 5-9' },
             ].map((val, idx) => (
               <div key={idx} className="space-y-1.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors reveal-init" style={{ transitionDelay: `${idx * 60}ms` }}>
-                <div className="text-2xl">{val.icon}</div>
-                <h4 className="text-xs font-bold text-slate-800">{val.title}</h4>
+                <div className="w-8 h-8 mx-auto rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                  {idx + 1}
+                </div>
+                <h4 className="text-xs font-bold text-slate-800">{val.label}</h4>
                 <p className="text-[11px] text-slate-500">{val.desc}</p>
               </div>
             ))}
@@ -237,45 +238,45 @@ export const LandingPage = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: '⚡',
+                code: 'SM2',
                 title: 'Flashcards SM-2 Thông Minh',
                 desc: 'Tự động tính toán khoảng cách ngày ôn tập theo mức độ ghi nhớ cá nhân. Đánh bại hoàn toàn đường cong lãng quên.',
                 badge: 'Spaced Repetition',
                 action: 'flashcards'
               },
               {
-                icon: '📙',
+                code: 'VOC',
                 title: 'Sổ Tay Từ Vựng Cá Nhân',
                 desc: 'Lưu trữ, phân loại từ theo bộ thẻ hoặc chủ đề IELTS. Đầy đủ phiên âm IPA, giải nghĩa tiếng Việt và câu ví dụ ngữ cảnh.',
-                badge: 'Vocabulary',
+                badge: 'Từ vựng',
                 action: 'notebook'
               },
               {
-                icon: '🔬',
-                title: 'Grammar Lab AI',
-                desc: 'Phòng thí nghiệm ngữ pháp: Nhập câu bất kỳ để nhận phân tích cấu trúc, xác định thì động từ và gợi ý sửa lỗi trực quan.',
-                badge: 'Grammar',
+                code: 'GRM',
+                title: 'Phòng Thí Nghiệm Ngữ Pháp',
+                desc: 'Nhập câu bất kỳ để nhận phân tích cấu trúc, xác định thì động từ và gợi ý sửa lỗi trực quan.',
+                badge: 'Ngữ pháp',
                 action: 'grammar'
               },
               {
-                icon: '🎙️',
+                code: 'PHO',
                 title: 'Luyện Phát Âm US / UK',
                 desc: 'Chuyển đổi tức thì giữa giọng Anh - Anh và Anh - Mỹ. So sánh các cặp âm tối thiểu (Minimal Pairs) và luyện Shadowing.',
-                badge: 'Phonetics',
+                badge: 'Ngữ âm',
                 action: 'minimal_pairs'
               },
               {
-                icon: '📌',
-                title: 'Ngân Hàng Câu Sai (Mistake Bank)',
+                code: 'MST',
+                title: 'Ngân Hàng Câu Sai',
                 desc: 'Tự động thu thập các câu trả lời sai trong quá trình làm bài để phân tích kỹ năng yếu và đưa ra bài ôn tập phục hồi.',
-                badge: 'Analytics',
+                badge: 'Ôn tập lỗi',
                 action: 'mistake_bank'
               },
               {
-                icon: '🔍',
-                title: 'Tra Từ & Dịch Thuật Thông Minh',
+                code: 'DIC',
+                title: 'Tra Từ & Dịch Thuật',
                 desc: 'Tra cứu nhanh từ vựng với phím tắt Ctrl+K, xem 12 thì chia động từ tự động và ví dụ song ngữ chuẩn xác.',
-                badge: 'AI Lexicon',
+                badge: 'Tra cứu',
                 action: 'translator'
               },
             ].map((feat, idx) => (
@@ -287,8 +288,8 @@ export const LandingPage = ({
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                      {feat.icon}
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 font-mono font-bold flex items-center justify-center text-xs tracking-wider group-hover:scale-105 transition-transform">
+                      {feat.code}
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                       {feat.badge}
@@ -379,7 +380,7 @@ export const LandingPage = ({
               {!demoFlipped ? (
                 <div className="space-y-3 text-center">
                   <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
-                    Mặt trước (Nhấp để lật 🔄)
+                    Mặt trước (Nhấp để lật)
                   </span>
                   <h3 className="text-4xl font-black text-white tracking-tight">
                     ubiquitous
@@ -608,7 +609,7 @@ export const LandingPage = ({
               onClick={() => onOpenAuth('register')}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold text-base shadow-xl shadow-emerald-500/25 hover:-translate-y-0.5 transition-all"
             >
-              Tạo tài khoản học miễn phí 🚀
+              Tạo tài khoản học miễn phí
             </button>
             <button
               onClick={() => onNavigate('news')}

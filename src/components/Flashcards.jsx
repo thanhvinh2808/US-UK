@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import confetti from 'canvas-confetti';
 
 export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToast }) {
-  const [savedVocab, setSavedVocab] = useState(() => storage.getSavedVocab());
+  const [savedVocab] = useState(() => storage.getSavedVocab());
   const [cloudSets, setCloudSets] = useState([]);
   const [gameState, setGameState] = useState('settings'); // settings, playing, finished
   
@@ -173,7 +173,20 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
     // Update SM-2 spaced repetition status in database
     const grade = correct ? 5 : 1; // 5 (Easy/Good) if correct, 1 (Again/Reset) if wrong
     storage.updateWordProgress(currentWord.word, grade);
-    onSavedVocabChange();
+
+    if (!correct) {
+      storage.saveMistake({
+        module: 'flashcards',
+        skill: isSpellingQuestion ? 'Chính tả (Spelling)' : 'Từ vựng (Vocabulary)',
+        question: isSpellingQuestion
+          ? `Chính tả từ: "${currentWord.vietnamese || currentWord.word}"`
+          : (isEngToVi ? `Nghĩa của từ: "${currentWord.word}"` : `Từ tiếng Anh của: "${currentWord.vietnamese}"`),
+        userAnswer: answer,
+        correctAnswer: isSpellingQuestion ? currentWord.word : (isEngToVi ? currentWord.vietnamese : currentWord.word)
+      });
+    }
+
+    if (onSavedVocabChange) onSavedVocabChange();
   };
 
   const handleNextQuestion = () => {
@@ -441,7 +454,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
           {/* Question Text */}
           <div className="question-prompt text-center mb-6">
             <span className="badge-pos mb-2" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--color-primary)', border: 'none' }}>
-              {isSpellingQuestion ? '✍️ Thử thách Viết' : '🔘 Trắc nghiệm chọn'}
+              {isSpellingQuestion ? 'Thử thách Viết' : 'Trắc nghiệm'}
             </span>
             
             <h2 className="mt-2 text-xl font-bold color-text-main leading-relaxed">
@@ -529,7 +542,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
               }}
             >
               <h4 className="font-bold mb-1" style={{ color: isCorrect ? 'var(--color-success)' : 'var(--color-error)' }}>
-                {isCorrect ? '🎉 Trả lời chính xác!' : '😢 Trả lời sai mất rồi'}
+                {isCorrect ? 'Chính xác!' : 'Chưa chính xác'}
               </h4>
               <div className="text-sm color-text-main mt-2">
                 <div>• Từ vựng: <strong>{currentWord.word}</strong> <span className="color-text-muted">{currentWord.ipa}</span></div>
@@ -576,8 +589,8 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
     return (
       <div className="quiz-screen animate-slideup max-w-xl mx-auto mt-6">
         <div className="quiz-card glass p-8 text-center">
-          <span className="icon-huge">{percentage >= 80 ? '🏆' : '👍'}</span>
-          <h2 className="text-gradient mt-4 mb-2">Hoàn thành Trắc nghiệm!</h2>
+          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-base mb-3">✓</div>
+          <h2 className="text-gradient mt-2 mb-2">Hoàn thành Trắc nghiệm!</h2>
           <p className="color-text-muted mb-6">Bạn đã kết thúc lượt ôn tập từ vựng cá nhân.</p>
 
           {/* Radial score progress */}
@@ -592,7 +605,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
           {/* Detail Results Table */}
           <div className="results-summary-table text-left mb-8">
-            <h3 className="text-sm font-semibold mb-3 color-text-main">CHI TIẾT PHÒNG ĐẤU:</h3>
+            <h3 className="text-sm font-semibold mb-3 color-text-main">CHI TIẾT BÀI LÀM:</h3>
             <div className="glass p-3 rounded" style={{ maxHeight: '250px', overflowY: 'auto' }}>
               {resultsList.map((item, idx) => (
                 <div 
@@ -622,7 +635,7 @@ export default function Flashcards({ onNavigateBack, onSavedVocabChange, showToa
 
           <div className="flex gap-3">
             <button className="btn-secondary flex-1 justify-center py-3" onClick={() => setGameState('settings')}>
-              🔄 Luyện lại
+              Luyện tập lại
             </button>
             <button className="btn-primary flex-1 justify-center py-3" onClick={onNavigateBack}>
               Quay về trang chủ

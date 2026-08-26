@@ -68,7 +68,7 @@ export default function MistakeBank({ onNavigateBack }) {
       <div className="page-header glass p-6 mb-6 rounded-xl" style={{ background: 'var(--bg-card)' }}>
         <span className="badge-level level-b1 mb-2 inline-block">ÔN TẬP</span>
         <h1 style={{ fontSize: '1.85rem', fontWeight: '800', margin: '4px 0 0 0' }}>
-          📌 Ngân Hàng Câu Sai
+          Ngân Hàng Câu Sai
         </h1>
         <p className="color-text-muted" style={{ margin: '6px 0 0 0', fontSize: '13px', lineHeight: 1.5 }}>
           Mọi câu bạn từng làm sai ở các bài luyện tập được tự động lưu tại đây, để bạn ôn lại đúng chỗ mình còn yếu thay vì học lan man.
@@ -78,7 +78,7 @@ export default function MistakeBank({ onNavigateBack }) {
       {/* Thống kê điểm yếu theo kỹ năng */}
       {weaknessStats.length > 0 && (
         <div className="glass p-5 mb-6 rounded-xl" style={{ background: 'var(--bg-card)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>📊 Bạn đang yếu nhất ở đâu?</h3>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>Phân tích điểm cần củng cố</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {weaknessStats.map(({ skill, count }) => {
               const maxCount = weaknessStats[0].count;

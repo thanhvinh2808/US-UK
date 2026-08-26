@@ -65,6 +65,15 @@ export const PublicNavbar = ({
         {/* Brand Logo */}
         <div
           onClick={() => handleNavClick('landing')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleNavClick('landing');
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          aria-label="V-English — Về Trang chủ"
           className="flex items-center gap-2.5 cursor-pointer group select-none"
         >
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-500 flex items-center justify-center text-white font-black text-xl shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
@@ -121,9 +130,9 @@ export const PublicNavbar = ({
           </button>
           <button
             onClick={() => handleNavClick('dashboard')}
-            className="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition-colors"
           >
-            <span>🚀</span> Ứng dụng học
+            Ứng dụng học
           </button>
         </nav>
 
@@ -136,7 +145,7 @@ export const PublicNavbar = ({
               className="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-xs font-semibold text-slate-700 flex items-center gap-1.5 shadow-sm transition-all"
               title="Đổi giọng đọc US / UK"
             >
-              <span>{voiceAccent === 'UK' ? '🇬🇧 UK' : '🇺🇸 US'}</span>
+              <span>{voiceAccent === 'UK' ? 'UK' : 'US'}</span>
             </button>
           )}
 
@@ -193,31 +202,31 @@ export const PublicNavbar = ({
               onClick={() => handleNavClick('landing')}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              🏠 Trang chủ
+              Trang chủ
             </button>
             <button
               onClick={() => handleNavClick('landing', 'features')}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              ⚡ Tính năng nổi bật
+              Tính năng nổi bật
             </button>
             <button
               onClick={() => handleNavClick('landing', 'science')}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              🧠 Phương pháp SM-2
+              Phương pháp SM-2
             </button>
             <button
               onClick={() => handleNavClick('news')}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              📰 Tin tức & Bài viết
+              Tin tức & Bài viết
             </button>
             <button
               onClick={() => handleNavClick('dashboard')}
               className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
             >
-              🚀 Mở Workspace học tập
+              Mở không gian học
             </button>
           </div>
 
@@ -261,4 +270,5 @@ export const PublicNavbar = ({
   );
 };
 
+export const LandingNavbar = PublicNavbar;
 export default PublicNavbar;

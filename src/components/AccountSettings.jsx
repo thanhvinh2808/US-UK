@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export const AccountSettings = ({ isOpen, onClose }) => {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const [preferredAccent, setPreferredAccent] = useState(user?.preferredAccent || 'US');
   const [targetBand, setTargetBand] = useState(user?.targetBand || 6.5);
   const [savedSuccess, setSavedSuccess] = useState(false);

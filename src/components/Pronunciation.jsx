@@ -134,6 +134,14 @@ export default function Pronunciation({ topic, onNavigateBack, showToast }) {
     } else {
       playSound('incorrect');
       vibrate([50, 50, 50]);
+      storage.saveMistake({
+        module: 'pronunciation',
+        skill: 'Phát âm (Pronunciation)',
+        question: `Phát âm câu: "${targetText}"`,
+        userAnswer: transcript || '(chưa nghe rõ)',
+        correctAnswer: targetText,
+        topicId: topic?.id
+      });
     }
   };
 

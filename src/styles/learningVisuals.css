@@ -1,0 +1,357 @@
+/* learningVisuals.css - V-English Visual Learning Content Styling (Phase 17B) */
+
+/* =========================================================================
+   1. RESPONSIVE CONTEXT IMAGE CONTAINER & SKELETON PLACEHOLDER
+   ========================================================================= */
+.v-context-image-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: block;
+}
+
+.v-context-image-wrapper.aspect-16-9 {
+  aspect-ratio: 16 / 9;
+}
+
+.v-context-image-wrapper.aspect-4-3 {
+  aspect-ratio: 4 / 3;
+}
+
+.v-context-image-wrapper.aspect-1-1 {
+  aspect-ratio: 1 / 1;
+}
+
+.v-context-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: opacity 0.35s ease, transform 0.4s ease;
+  opacity: 0;
+  display: block;
+}
+
+.v-context-image.loaded {
+  opacity: 1;
+}
+
+.v-context-image-wrapper:hover .v-context-image.loaded {
+  transform: scale(1.02);
+}
+
+/* Skeleton Loading Shimmer */
+.v-image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+  background-size: 200% 100%;
+  animation: vImageShimmer 1.8s infinite ease-in-out;
+}
+
+@keyframes vImageShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Graceful Fallback if image fails or offline */
+.v-image-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  color: #64748b;
+  text-align: center;
+}
+
+.v-image-fallback-icon {
+  width: 2rem;
+  height: 2rem;
+  stroke: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.v-image-fallback-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Context Caption */
+.v-image-caption {
+  font-size: 0.75rem;
+  color: #64748b;
+  padding-top: 0.5rem;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* =========================================================================
+   2. LESSON HERO VISUAL BANNER
+   ========================================================================= */
+.v-lesson-hero-visual {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.v-lesson-hero-media {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .v-lesson-hero-media {
+    height: 260px;
+  }
+}
+
+.v-lesson-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.75) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem;
+}
+
+.v-lesson-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  width: fit-content;
+  margin-bottom: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.v-lesson-hero-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+@media (min-width: 640px) {
+  .v-lesson-hero-title {
+    font-size: 1.5rem;
+  }
+}
+
+.v-lesson-hero-caption {
+  font-size: 0.75rem;
+  color: rgba(241, 245, 249, 0.85);
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+/* =========================================================================
+   3. MODERN VOCABULARY VISUAL CARD
+   ========================================================================= */
+.v-vocab-visual-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.v-vocab-visual-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.08);
+  transform: translateY(-2px);
+}
+
+.v-vocab-card-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  position: relative;
+  background-color: #f8fafc;
+  overflow: hidden;
+}
+
+.v-vocab-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.v-vocab-word-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.v-vocab-word {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.v-vocab-ipa {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.v-vocab-vi {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.v-vocab-example {
+  font-size: 0.75rem;
+  color: #475569;
+  background-color: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border-left: 3px solid #6366f1;
+  line-height: 1.4;
+}
+
+/* =========================================================================
+   4. LESSON ILLUSTRATION & SITUATION SEQUENCES
+   ========================================================================= */
+.v-situation-sequence {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+@media (min-width: 640px) {
+  .v-situation-sequence {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .v-situation-sequence {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.v-sequence-step {
+  background-color: #ffffff;
+  padding: 0.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.v-sequence-time {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6366f1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.v-sequence-action {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.v-sequence-action-vi {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* Family Tree Hierarchy Visual */
+.v-family-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  background-color: #f8fafc;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.v-family-generation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.v-family-gen-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.v-family-members-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.v-family-chip {
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+/* Reduced Motion Safety */
+@media (prefers-reduced-motion: reduce) {
+  .v-context-image {
+    transition: none !important;
+  }
+  .v-context-image-wrapper:hover .v-context-image.loaded {
+    transform: none !important;
+  }
+  .v-image-skeleton {
+    animation: none !important;
+  }
+  .v-vocab-visual-card {
+    transition: none !important;
+  }
+  .v-vocab-visual-card:hover {
+    transform: none !important;
+  }
+}

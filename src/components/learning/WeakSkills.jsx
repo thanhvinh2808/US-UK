@@ -27,10 +27,10 @@ export default function WeakSkills({ weaknessStats = [], mistakeCount = 0, onNav
 
       {!hasMistakes ? (
         <div className="text-center py-8 bg-slate-50/70 rounded-2xl border border-slate-100 space-y-2">
-          <span className="text-3xl">✨</span>
+          <div className="w-8 h-8 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">✓</div>
           <p className="text-xs font-bold text-slate-700">Chưa ghi nhận lỗi sai</p>
           <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
-            Hệ thống sẽ tự động phân tích điểm yếu khi bạn thực hành làm bài đọc, trắc nghiệm ngữ pháp hoặc chính tả.
+            Hệ thống sẽ tự động phân tích điểm cần củng cố khi bạn thực hành làm bài đọc, trắc nghiệm ngữ pháp hoặc chính tả.
           </p>
         </div>
       ) : (

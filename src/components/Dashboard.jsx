@@ -10,6 +10,10 @@ import RecommendationCard from './learning/RecommendationCard';
 import WeakSkills from './learning/WeakSkills';
 import LearningInsights from './learning/LearningInsights';
 import WeeklyProgress from './learning/WeeklyProgress';
+import StreakFlame from './common/StreakFlame';
+import { getNextRecommendedLesson, getCEFRUnits } from '../utils/cefr/cefrEngine';
+import { calculateLevelMastery } from '../utils/cefr/masteryEngine';
+import { getUnitVisual } from '../data/visualLearningData';
 
 export default function Dashboard({ 
   stats = { streak: 1, level: 'A2', points: 0, completedModules: 0 }, 
@@ -74,6 +78,11 @@ export default function Dashboard({
     return 'Chào buổi tối';
   };
 
+  const cefrProg = useMemo(() => storage.getCEFRProgress(), []);
+  const nextCefrLesson = useMemo(() => getNextRecommendedLesson(cefrProg), [cefrProg]);
+  const a1Units = useMemo(() => getCEFRUnits('A1'), []);
+  const a1Mastery = useMemo(() => calculateLevelMastery('A1', a1Units, cefrProg), [a1Units, cefrProg]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-10 animate-fadeIn">
       {/* 1. Hero Greeting Banner */}
@@ -82,35 +91,83 @@ export default function Dashboard({
         
         <div className="relative z-10 space-y-4 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-semibold text-indigo-200">
-            <span>✨ V-English Learning Workspace</span>
+            <span>Không gian học tập V-English</span>
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight">
-            {getGreeting()}, {user?.username || 'Học viên'} 👋
+            {getGreeting()}, {user?.username || 'Học viên'}
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
             {reviewsDue > 0
               ? `Hôm nay bạn có ${reviewsDue} từ vựng trong sổ tay cần ôn tập theo thuật toán Spaced Repetition (SM-2). Hãy hoàn thành mục tiêu ngày nhé!`
-              : 'Tuyệt vời! Bạn đã hoàn thành toàn bộ bài ôn tập từ vựng hôm nay. Hãy tiếp tục khám phá các chủ đề mới bên dưới.'}
+              : 'Tuyệt vời! Bạn đã hoàn thành toàn bộ bài ôn tập từ vựng hôm nay. Hãy tiếp tục theo đuổi lộ trình chuẩn CEFR bên dưới.'}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
-              onClick={() => onNavigate('flashcards')}
-              className="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+              onClick={() => onNavigate('cefr_roadmap')}
+              className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
             >
-              <span>⚡ Ôn tập Flashcards ({reviewsDue})</span>
+              <span>Lộ trình CEFR (A1-C2) →</span>
             </button>
             <button
-              onClick={() => onNavigate('translator')}
-              className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2"
+              onClick={() => onNavigate('flashcards')}
+              className="px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
             >
-              <span>🔍 Tra từ AI [Ctrl+K]</span>
+              <span>Ôn tập Flashcards ({reviewsDue})</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* CEFR Pathway Primary Spotlight Card */}
+      {nextCefrLesson && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-100 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                LỘ TRÌNH CEFR TRỌNG TÂM
+              </span>
+              <span className="text-xs font-bold text-slate-400">
+                {nextCefrLesson.levelId} · {nextCefrLesson.unit.title}
+              </span>
+            </div>
+            <div className="text-xs font-semibold text-slate-500">
+              Tiến độ {nextCefrLesson.levelId}: <strong className="text-indigo-600 font-mono">{a1Mastery}%</strong>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {getUnitVisual(nextCefrLesson.unit.id)?.hero && (
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 border border-slate-100 bg-slate-50 hidden xs:block">
+                  <img
+                    src={getUnitVisual(nextCefrLesson.unit.id).hero.image}
+                    alt={getUnitVisual(nextCefrLesson.unit.id).hero.alt}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <div className="space-y-1">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                  {nextCefrLesson.lesson.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  {nextCefrLesson.lesson.description}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('cefr_lesson', { lessonId: nextCefrLesson.lesson.id, unitId: nextCefrLesson.unit.id })}
+              className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-500/20 whitespace-nowrap transition-colors shrink-0"
+            >
+              Học bài mới ngay →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. Personalized Daily Learning Plan */}
       <TodayPlan
@@ -153,8 +210,8 @@ export default function Dashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider">Chuỗi học (Streak)</span>
-            <span className="text-xl">🔥</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Chuỗi ngày học</span>
+            <StreakFlame streak={safeStats.streak || 0} showLabel={false} />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
             {safeStats.streak || 0} <span className="text-xs font-normal text-slate-500">ngày</span>
@@ -165,7 +222,7 @@ export default function Dashboard({
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Điểm tích lũy</span>
-            <span className="text-xl">⭐</span>
+            <span className="w-2 h-2 rounded-full bg-indigo-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-indigo-600 font-mono">
             {safeStats.points || 0} <span className="text-xs font-normal text-slate-500">XP</span>
@@ -176,7 +233,7 @@ export default function Dashboard({
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Sổ tay từ vựng</span>
-            <span className="text-xl">📚</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
             {savedVocabCount} <span className="text-xs font-normal text-slate-500">từ</span>
@@ -187,7 +244,7 @@ export default function Dashboard({
         <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Ngân hàng câu sai</span>
-            <span className="text-xl">📌</span>
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
             {mistakesCount} <span className="text-xs font-normal text-slate-500">câu</span>

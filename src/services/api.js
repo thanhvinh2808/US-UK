@@ -52,7 +52,7 @@ async function performSilentRefresh() {
 
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.success && data.accessToken) {
+      if (res.ok && data.accessToken && data.success !== false) {
         const newAccessToken = data.accessToken;
         const user = data.user;
         currentAccessToken = newAccessToken;
@@ -93,7 +93,7 @@ async function performSilentRefresh() {
 async function requestWithAuth(url, options = {}, isRetry = false) {
   const headers = { ...(options.headers || {}) };
 
-  // Attach Bearer token if present in memory
+  // Set Authorization header if access token exists
   if (currentAccessToken) {
     headers['Authorization'] = `Bearer ${currentAccessToken}`;
   }
@@ -165,19 +165,36 @@ export const api = {
         body: JSON.stringify({ username, email, password, preferredAccent, targetBand })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
+      const isError = !res.ok || data.success === false;
+      if (isError) {
+        let errorCode = data.error?.code || data.code;
+        if (!errorCode && res.status === 409) {
+          errorCode = 'EMAIL_ALREADY_EXISTS';
+        }
+        errorCode = errorCode || 'REGISTER_ERROR';
+
+        let errorMessage = (typeof data.error === 'string' ? data.error : data.error?.message) || data.message;
+        if (!errorMessage) {
+          errorMessage = res.status === 409
+            ? 'Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.'
+            : 'Đăng ký thất bại. Vui lòng thử lại.';
+        }
+
         return {
           success: false,
           status: res.status,
-          error: data.error || { message: 'Registration failed', code: 'REGISTER_ERROR' }
+          error: {
+            message: errorMessage,
+            code: errorCode
+          }
         };
       }
-      return { success: true, status: res.status, data };
+      return { success: true, status: res.status, data, user: data.user };
     } catch (err) {
       return {
         success: false,
         status: 0,
-        error: { message: err.message || 'Network error', code: 'NETWORK_ERROR' }
+        error: { message: err.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại.', code: 'NETWORK_ERROR' }
       };
     }
   },
@@ -191,11 +208,28 @@ export const api = {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
+      const isError = !res.ok || data.success === false;
+      if (isError) {
+        let errorCode = data.error?.code || data.code;
+        if (!errorCode && res.status === 401) {
+          errorCode = 'INVALID_CREDENTIALS';
+        }
+        errorCode = errorCode || 'LOGIN_ERROR';
+
+        let errorMessage = (typeof data.error === 'string' ? data.error : data.error?.message) || data.message;
+        if (!errorMessage) {
+          errorMessage = res.status === 401
+            ? 'Email hoặc mật khẩu không chính xác.'
+            : 'Đăng nhập thất bại. Vui lòng thử lại.';
+        }
+
         return {
           success: false,
           status: res.status,
-          error: data.error || { message: 'Login failed', code: 'LOGIN_ERROR' }
+          error: {
+            message: errorMessage,
+            code: errorCode
+          }
         };
       }
 
@@ -214,7 +248,7 @@ export const api = {
       return {
         success: false,
         status: 0,
-        error: { message: err.message || 'Network error', code: 'NETWORK_ERROR' }
+        error: { message: err.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại.', code: 'NETWORK_ERROR' }
       };
     }
   },

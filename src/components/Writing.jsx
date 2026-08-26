@@ -83,6 +83,16 @@ export default function Writing({ topic, onNavigateBack }) {
           ? "Chính xác! Bạn chia động từ rất chuẩn." 
           : `Chưa chính xác. Động từ đúng phải là: "${exercise.answer}".`
       });
+      if (!isCorrect) {
+        storage.saveMistake({
+          module: 'writing',
+          skill: 'Ngữ pháp - Điền từ',
+          question: exercise.prompt || `Điền từ vào câu bài "${topic?.title || topic?.topic || 'Viết'}"`,
+          userAnswer: userAnswer || '(để trống)',
+          correctAnswer: exercise.answer,
+          topicId: topic?.id
+        });
+      }
     } 
     else if (exercise.type === 'sentence_ordering') {
       const composed = orderedWords.map(w => w.word).join(' ').trim().toLowerCase().replace(/[.]/g, "");
@@ -97,6 +107,16 @@ export default function Writing({ topic, onNavigateBack }) {
           ? "Chính xác! Cấu trúc câu ghép rất hoàn chỉnh." 
           : `Chưa chính xác. Câu đúng là: "${exercise.answer}"`
       });
+      if (!isCorrect) {
+        storage.saveMistake({
+          module: 'writing',
+          skill: 'Cấu trúc câu (Sentence Ordering)',
+          question: `Sắp xếp câu trong bài "${topic?.title || topic?.topic || 'Viết'}"`,
+          userAnswer: orderedWords.map(w => w.word).join(' ') || '(chưa xếp xong)',
+          correctAnswer: exercise.answer,
+          topicId: topic?.id
+        });
+      }
     } 
     else if (exercise.type === 'free_writing') {
       const result = checkFreeWriting(userAnswer, exercise);
@@ -108,6 +128,16 @@ export default function Writing({ topic, onNavigateBack }) {
           ? `Đạt yêu cầu! Bạn đã viết được ${result.wordCount} từ và tích hợp các từ khóa thành công.` 
           : `Bài viết chưa đạt đủ tiêu chí. Vui lòng rà soát lại số từ hoặc từ khóa bắt buộc.`
       });
+      if (!result.passed) {
+        storage.saveMistake({
+          module: 'writing',
+          skill: 'Luyện viết đoạn (Writing)',
+          question: exercise.prompt || `Viết đoạn văn theo yêu cầu (${exercise.min_words} từ)`,
+          userAnswer: userAnswer || '(để trống)',
+          correctAnswer: `Tối thiểu ${exercise.min_words} từ, chứa các từ khóa: ${(exercise.required_keywords || []).join(', ')}`,
+          topicId: topic?.id
+        });
+      }
     }
   };
 

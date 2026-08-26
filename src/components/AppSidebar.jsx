@@ -1,38 +1,40 @@
 import React from 'react';
+import StreakFlame from './common/StreakFlame';
 
 export default function AppSidebar({ activeScreen, onNavigate, isAdmin, stats = { streak: 0, points: 0 } }) {
   const menuGroups = [
     {
       title: 'HỌC TẬP & LỘ TRÌNH',
       items: [
-        { id: 'dashboard', label: 'Trang chủ Workspace', icon: '🏠' },
-        { id: 'flashcards', label: 'Flashcards SM-2', icon: '⚡' },
-        { id: 'notebook', label: 'Sổ tay từ vựng', icon: '📙' },
-        { id: 'mistake_bank', label: 'Ngân hàng câu sai', icon: '📌' }
+        { id: 'dashboard', label: 'Trang chủ' },
+        { id: 'cefr_roadmap', label: 'Lộ trình CEFR (A1-C2)' },
+        { id: 'flashcards', label: 'Flashcards SM-2' },
+        { id: 'notebook', label: 'Sổ tay từ vựng' },
+        { id: 'mistake_bank', label: 'Ngân hàng câu sai' }
       ]
     },
     {
-      title: 'PHÁT ÂM & AI LEXICON',
+      title: 'PHÁT ÂM & TRA CỨU',
       items: [
-        { id: 'translator', label: 'Tra từ AI [Ctrl+K]', icon: '🔍' },
-        { id: 'minimal_pairs', label: 'Luyện âm Minimal Pairs', icon: '🎙️' }
+        { id: 'translator', label: 'Tra từ & Dịch [Ctrl+K]' },
+        { id: 'minimal_pairs', label: 'Luyện âm Minimal Pairs' }
       ]
     },
     {
       title: 'NGỮ PHÁP & CỤM TỪ',
       items: [
-        { id: 'tenses_handbook', label: '12 Thì Tiếng Anh', icon: '📖' },
-        { id: 'idioms_handbook', label: 'Idioms & Cụm từ', icon: '💡' }
+        { id: 'tenses_handbook', label: 'Cẩm nang 12 thì' },
+        { id: 'idioms_handbook', label: 'Thành ngữ & Cụm từ' }
       ]
     },
     {
-      title: 'KHÁM PHÁ & TIỆN ÍCH',
+      title: 'TIỆN ÍCH KHÁC',
       items: [
-        { id: 'news', label: 'Tin tức & Mẹo học', icon: '📰' },
-        { id: 'mini_games', label: 'Playzone Games', icon: '🕹️' },
-        { id: 'alphabet', label: 'Bảng chữ cái US-UK', icon: '🔤' },
-        ...(isAdmin ? [{ id: 'admin', label: 'Quản trị hệ thống', icon: '⚙️' }] : []),
-        { id: 'landing', label: '✨ Trang giới thiệu Public', icon: '🌐' }
+        { id: 'news', label: 'Tin tức & Mẹo học' },
+        { id: 'mini_games', label: 'Trò chơi từ vựng' },
+        { id: 'alphabet', label: 'Bảng chữ cái US / UK' },
+        ...(isAdmin ? [{ id: 'admin', label: 'Quản trị hệ thống' }] : []),
+        { id: 'landing', label: 'Trang giới thiệu' }
       ]
     }
   ];
@@ -54,13 +56,12 @@ export default function AppSidebar({ activeScreen, onNavigate, isAdmin, stats = 
                     key={item.id}
                     type="button"
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left ${
+                    className={`w-full flex items-center px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 text-left ${
                       isActive
                         ? 'bg-indigo-50 text-indigo-700 font-bold shadow-xs border border-indigo-100/80'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="text-base">{item.icon}</span>
                     <span className="truncate">{item.label}</span>
                   </button>
                 );
@@ -72,11 +73,9 @@ export default function AppSidebar({ activeScreen, onNavigate, isAdmin, stats = 
 
       {/* Mini Streak & Points Badge at bottom */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between px-2 text-xs">
-        <span className="font-bold text-slate-700 flex items-center gap-1">
-          🔥 {stats.streak || 0} ngày
-        </span>
-        <span className="font-bold text-indigo-600 font-mono">
-          ⭐ {stats.points || 0} XP
+        <StreakFlame streak={stats.streak || 0} compact={true} />
+        <span className="font-semibold text-indigo-600 font-mono">
+          {stats.points || 0} XP
         </span>
       </div>
     </div>

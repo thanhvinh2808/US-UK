@@ -9,17 +9,34 @@ export const mistakeStorage = {
     try {
       if (!mistake || typeof mistake !== 'object') return mistakeStorage.getMistakes();
       const list = mistakeStorage.getMistakes();
+
+      const moduleName = mistake.module || 'khac';
+      const skillName = mistake.skill || 'Khác';
+      const questionText = mistake.question || '';
+      const correctAnswerText = mistake.correctAnswer || '';
+      const userAnswerText = mistake.userAnswer || '';
+      const topicId = mistake.topicId || null;
+
+      // Deduplicate: If the exact mistake for this question & module already exists, update and move to top
+      const filteredList = list.filter(m => {
+        if (!m) return false;
+        const sameModule = m.module === moduleName;
+        const sameQuestion = (m.question || '').trim().toLowerCase() === questionText.trim().toLowerCase();
+        const sameCorrect = (m.correctAnswer || '').trim().toLowerCase() === correctAnswerText.trim().toLowerCase();
+        return !(sameModule && sameQuestion && sameCorrect);
+      });
+
       const entry = {
         id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         timestamp: Date.now(),
-        module: mistake.module || 'khac',
-        skill: mistake.skill || 'Khác',
-        question: mistake.question || '',
-        userAnswer: mistake.userAnswer || '',
-        correctAnswer: mistake.correctAnswer || '',
-        topicId: mistake.topicId || null,
+        module: moduleName,
+        skill: skillName,
+        question: questionText,
+        userAnswer: userAnswerText,
+        correctAnswer: correctAnswerText,
+        topicId: topicId,
       };
-      const updated = [entry, ...list].slice(0, MAX_MISTAKES_STORED);
+      const updated = [entry, ...filteredList].slice(0, MAX_MISTAKES_STORED);
       if (typeof localStorage !== 'undefined') {
         const key = getScopedKey(BASE_KEY_MISTAKES);
         localStorage.setItem(key, JSON.stringify(updated));

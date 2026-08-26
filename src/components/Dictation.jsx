@@ -107,6 +107,14 @@ export default function Dictation({ topic, onNavigateBack, showToast }) {
     } else {
       playSound('incorrect');
       vibrate([50, 50, 50]);
+      storage.saveMistake({
+        module: 'dictation',
+        skill: 'Nghe & Điền từ (Dictation)',
+        question: `Nghe và viết lại câu trong bài "${topic?.title || topic?.topic || 'Hội thoại'}"`,
+        userAnswer: userInput || '(để trống)',
+        correctAnswer: targetText,
+        topicId: topic?.id
+      });
     }
   };
 

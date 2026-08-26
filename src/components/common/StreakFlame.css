@@ -1,0 +1,119 @@
+/* StreakFlame.css - V-English Subtle Micro-interaction (Phase 17) */
+
+.v-streak-flame-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  font-feature-settings: "tnum";
+}
+
+.v-streak-flame-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  position: relative;
+  transform-origin: center bottom;
+}
+
+/* Idle State: Gentle, calm ambient flame flicker */
+.v-streak-flame-icon.state-idle svg {
+  animation: vStreakFlameIdle 2.6s ease-in-out infinite alternate;
+  transform-origin: 50% 85%;
+}
+
+@keyframes vStreakFlameIdle {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 1px 2px rgba(245, 158, 11, 0.2));
+  }
+  50% {
+    transform: scale(1.04, 0.98) rotate(-1.5deg);
+    filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));
+  }
+  100% {
+    transform: scale(0.98, 1.03) rotate(1.5deg);
+    filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.25));
+  }
+}
+
+/* Increment State: 500ms soft pulse on streak increase */
+.v-streak-flame-icon.state-increment svg {
+  animation: vStreakFlamePulse 550ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes vStreakFlamePulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0));
+  }
+  40% {
+    transform: scale(1.28);
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  }
+  75% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.3));
+  }
+}
+
+/* Milestone State: Tasteful 7, 14, 30, 60, 100 days recognition */
+.v-streak-flame-icon.state-milestone svg {
+  animation: vStreakFlameMilestone 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes vStreakFlameMilestone {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(245, 158, 11, 0));
+  }
+  50% {
+    transform: scale(1.35) rotate(-3deg);
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.5));
+  }
+  80% {
+    transform: scale(0.96) rotate(1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.4));
+  }
+}
+
+.v-streak-count {
+  font-weight: 700;
+  font-size: 12px;
+  color: #1e293b;
+  transition: transform 300ms ease, color 300ms ease;
+}
+
+.v-streak-count.highlight {
+  color: #d97706;
+  transform: scale(1.08);
+}
+
+.v-streak-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Reduced Motion Accessibility Requirement */
+@media (prefers-reduced-motion: reduce) {
+  .v-streak-flame-icon svg,
+  .v-streak-flame-icon.state-idle svg,
+  .v-streak-flame-icon.state-increment svg,
+  .v-streak-flame-icon.state-milestone svg {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .v-streak-count {
+    transition: none !important;
+  }
+}

@@ -23,8 +23,7 @@ import Alphabet from './components/Alphabet';
 import MistakeBank from './components/MistakeBank';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
-import UserProfileMenu from './components/UserProfileMenu';
-import SyncStatus from './components/SyncStatus';
+import AppNavbar from './components/AppNavbar';
 import AccountSettings from './components/AccountSettings';
 import SessionManager from './components/SessionManager';
 import DataManagement from './components/DataManagement';
@@ -33,6 +32,9 @@ import LandingPage from './components/public/LandingPage';
 import NewsHub from './components/public/NewsHub';
 import ArticleDetail from './components/public/ArticleDetail';
 import AppSidebar from './components/AppSidebar';
+import CEFRRoadmap from './components/cefr/CEFRRoadmap';
+import CEFRUnitView from './components/cefr/CEFRUnitView';
+import CEFRLessonView from './components/cefr/CEFRLessonView';
 import { checkLegacyDataExists, runLegacyMigration } from './utils/data/legacyMigration';
 import './App.css';
 
@@ -129,6 +131,9 @@ function AppContent() {
   });
   const [selectedArticleSlug, setSelectedArticleSlug] = useState('ielts-reading-spaced-repetition');
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [selectedUnitId, setSelectedUnitId] = useState('a1_u1');
+  const [selectedLessonId, setSelectedLessonId] = useState('a1_u1_l1');
+  const [cefrProgress, setCefrProgress] = useState(() => storage.getCEFRProgress());
   
   const [stats, setStats] = useState(() => storage.getUserStats());
   const [progress, setProgress] = useState(() => storage.getTopicProgress());
@@ -238,6 +243,7 @@ function AppContent() {
     setStats(storage.getUserStats());
     setProgress(storage.getTopicProgress());
     setSavedVocabCount(storage.getSavedVocab().length);
+    setCefrProgress(storage.getCEFRProgress());
   };
 
   const handleSelectTopic = (topic) => {
@@ -258,8 +264,12 @@ function AppContent() {
     setActiveScreen('topic_detail');
   };
 
-  const handleNavigate = (screenId) => {
+  const handleNavigate = (screenId, params = null) => {
     setSelectedTopic(null);
+    if (params) {
+      if (params.unitId) setSelectedUnitId(params.unitId);
+      if (params.lessonId) setSelectedLessonId(params.lessonId);
+    }
     setActiveScreen(screenId);
     if (typeof window !== 'undefined') {
       if (screenId === 'landing') {
@@ -276,8 +286,8 @@ function AppContent() {
     }
   };
 
-  const handleNavigateWithClose = (screenId) => {
-    handleNavigate(screenId);
+  const handleNavigateWithClose = (screenId, params = null) => {
+    handleNavigate(screenId, params);
     setIsMobileMenuOpen(false);
   };
 
@@ -331,170 +341,19 @@ function AppContent() {
       {/* 🏛️ Render Authenticated Learning Workspace Layout when in App Mode */}
       {!isPublicScreen && (
         <>
-          {/* Top Modern Header */}
-          <header className="qz-header-fixed">
-            <div className="qz-header-container">
-              {/* Brand Logo & Wordmark */}
-              <div 
-                className="qz-brand cursor-pointer select-none" 
-                onClick={() => handleNavigateWithClose('dashboard')}
-                title="Về Trang chủ Workspace"
-              >
-                <div className="qz-logo-badge font-black">
-                  V
-                </div>
-                <div className="flex flex-col">
-                  <span className="qz-logo-text">V-English</span>
-                  <span className="text-[9px] font-semibold text-indigo-500 uppercase tracking-widest hidden sm:inline -mt-1">
-                    v2.0 Workspace
-                  </span>
-                </div>
-              </div>
-
-              {/* Analog Radio Dual-Dial Voice Knob */}
-              <div className="qz-voice-tuner" onClick={toggleVoiceAccent} title="Nhấn để chuyển giọng Anh / Mỹ">
-                <div className={`qz-tuner-knob ${voiceAccent === 'UK' ? 'pos-uk' : 'pos-us'}`}>
-                  <div className="qz-knob-notch" />
-                </div>
-                <div className="qz-tuner-display">
-                  <span className={`qz-tuner-freq ${voiceAccent === 'US' ? 'active-us' : ''}`}>98.6 US</span>
-                  <span className="qz-tuner-sep">|</span>
-                  <span className={`qz-tuner-freq ${voiceAccent === 'UK' ? 'active-uk' : ''}`}>104.2 UK</span>
-                </div>
-              </div>
-
-              {/* Navigation Links */}
-              <nav className="qz-nav-links">
-                <button
-                  className={`qz-nav-item ${activeScreen === 'dashboard' ? 'active' : ''}`}
-                  onClick={() => handleNavigateWithClose('dashboard')}
-                >
-                  Trang chủ
-                </button>
-                <button
-                  className={`qz-nav-item ${activeScreen === 'flashcards' ? 'active' : ''}`}
-                  onClick={() => handleNavigateWithClose('flashcards')}
-                >
-                  Flashcards
-                </button>
-                <button
-                  className={`qz-nav-item ${activeScreen === 'notebook' ? 'active' : ''}`}
-                  onClick={() => handleNavigateWithClose('notebook')}
-                >
-                  Sổ tay
-                </button>
-                <button
-                  className="qz-nav-item"
-                  onClick={() => handleNavigateWithClose('news')}
-                >
-                  Tin tức & Mẹo
-                </button>
-
-                {/* Explore Dropdown */}
-                <div className="qz-nav-dropdown-wrapper">
-                  <button className="qz-nav-item qz-dropdown-trigger">
-                    Chức năng ▾
-                  </button>
-                  <div className="qz-dropdown-menu">
-                    <div className="qz-dropdown-label">⚡ HỌC TẬP & TỪ VỰNG</div>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('dashboard')}>
-                      📚 Thư viện chủ đề
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('flashcards')}>
-                      ⚡ Flashcards Spaced Repetition
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('notebook')}>
-                      📙 Sổ tay từ vựng
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mistake_bank')}>
-                      📌 Ngân hàng câu sai
-                    </button>
-
-                    <div className="qz-dropdown-label mt-2">🎙️ PHÁT ÂM & AI</div>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('translator')}>
-                      🔍 Tra từ AI [Ctrl+K]
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('minimal_pairs')}>
-                      🎙️ Luyện phát âm Minimal Pairs
-                    </button>
-
-                    <div className="qz-dropdown-label mt-2">📘 NGỮ PHÁP & CỤM TỪ</div>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('tenses_handbook')}>
-                      📖 12 Thì Tiếng Anh
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('idioms_handbook')}>
-                      💡 Idioms & Cụm từ thông dụng
-                    </button>
-
-                    <div className="qz-dropdown-label mt-2">🎮 KHÁC</div>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('landing')}>
-                      ✨ Trang giới thiệu Public
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('mini_games')}>
-                      🕹️ Playzone Mini Games
-                    </button>
-                    <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('alphabet')}>
-                      🔤 Bảng chữ cái US-UK
-                    </button>
-                    {isAdmin && (
-                      <button className="qz-dropdown-item" onClick={() => handleNavigateWithClose('admin')}>
-                        ⚙️ Quản trị hệ thống
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </nav>
-
-              {/* User Actions & Stats */}
-              <div className="qz-user-actions">
-                <div className="qz-stat-pill streak" title="Streak ngày">
-                  🔥 {stats.streak}d
-                </div>
-                <div className="qz-stat-pill xp" title="Điểm XP">
-                  ⭐ {stats.points} XP
-                </div>
-
-                {/* Online / Offline / Sync Status Badge */}
-                <SyncStatus />
-
-                {/* Auth State: User Profile or Login Button */}
-                {isAuthenticated ? (
-                  <UserProfileMenu
-                    onNavigate={handleNavigateWithClose}
-                    showToast={showToast}
-                    voiceAccent={voiceAccent}
-                    onToggleVoiceAccent={toggleVoiceAccent}
-                    onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-                    onOpenSessionManager={() => setIsSessionManagerOpen(true)}
-                    onOpenDataManagement={() => setIsDataManagementOpen(true)}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className="qz-auth-btn"
-                    onClick={() => openAuthModal('login')}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 14px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
-                      color: '#ffffff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <span>👤 Đăng nhập</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </header>
+          {/* Authenticated Workspace AppNavbar */}
+          <AppNavbar
+            activeScreen={activeScreen}
+            onNavigate={handleNavigateWithClose}
+            voiceAccent={voiceAccent}
+            onToggleVoiceAccent={toggleVoiceAccent}
+            stats={stats}
+            onOpenAuthModal={openAuthModal}
+            onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+            onOpenSessionManager={() => setIsSessionManagerOpen(true)}
+            onOpenDataManagement={() => setIsDataManagementOpen(true)}
+            showToast={showToast}
+          />
 
           {/* 🏛️ Main Content Workspace Layout with Responsive 2-Column Grid */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
@@ -519,6 +378,53 @@ function AppContent() {
                     onSelectTopic={handleSelectTopic}
                     onNavigate={handleNavigateWithClose}
                     topics={topicsList}
+                  />
+                )}
+
+                {activeScreen === 'cefr_roadmap' && (
+                  <CEFRRoadmap 
+                    cefrProgress={cefrProgress}
+                    onSelectUnit={(uId) => {
+                      setSelectedUnitId(uId);
+                      handleNavigateWithClose('cefr_unit', { unitId: uId });
+                    }}
+                    onStartLesson={(lId, uId) => {
+                      setSelectedLessonId(lId);
+                      if (uId) setSelectedUnitId(uId);
+                      handleNavigateWithClose('cefr_lesson', { lessonId: lId, unitId: uId });
+                    }}
+                    onNavigateBack={handleBackToDashboard}
+                  />
+                )}
+
+                {activeScreen === 'cefr_unit' && (
+                  <CEFRUnitView 
+                    unitId={selectedUnitId}
+                    cefrProgress={cefrProgress}
+                    onStartLesson={(lId, uId) => {
+                      setSelectedLessonId(lId);
+                      if (uId) setSelectedUnitId(uId);
+                      handleNavigateWithClose('cefr_lesson', { lessonId: lId, unitId: uId });
+                    }}
+                    onNavigateBack={() => handleNavigateWithClose('cefr_roadmap')}
+                  />
+                )}
+
+                {activeScreen === 'cefr_lesson' && (
+                  <CEFRLessonView 
+                    lessonId={selectedLessonId}
+                    unitId={selectedUnitId}
+                    cefrProgress={cefrProgress}
+                    onCompleteLesson={(updated) => {
+                      refreshState();
+                      if (updated) setCefrProgress(updated);
+                    }}
+                    onNavigateNextLesson={(nextLId, nextUId) => {
+                      setSelectedLessonId(nextLId);
+                      if (nextUId) setSelectedUnitId(nextUId);
+                      refreshState();
+                    }}
+                    onNavigateBackToUnit={() => handleNavigateWithClose('cefr_unit')}
                   />
                 )}
 
@@ -623,6 +529,7 @@ function AppContent() {
                   <VocabNotebook 
                     onNavigateBack={handleBackToDashboard}
                     onSavedVocabChange={refreshState}
+                    onNavigateToFlashcards={() => handleNavigateWithClose('flashcards')}
                     showToast={showToast}
                   />
                 )}

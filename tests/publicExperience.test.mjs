@@ -59,7 +59,7 @@ runTest('4. AppSidebar component exists with categorized learning items', () => 
   assert.ok(code.includes('Flashcards SM-2'));
   assert.ok(code.includes('Sổ tay từ vựng'));
   assert.ok(code.includes('Ngân hàng câu sai'));
-  assert.ok(code.includes('Tra từ AI'));
+  assert.ok(code.includes('Tra từ'));
 });
 
 // 5. App Layout Separation (Public vs Workspace)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]{3,30}$/;
@@ -21,6 +21,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
   const [formErrors, setFormErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     setMode(initialMode);
@@ -89,7 +90,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
     return Object.keys(errors).length === 0;
   };
 
-  const mapServerError = (code, defaultMsg) => {
+  const mapServerError = (code, rawErrorMsg, currentMode = 'login') => {
     switch (code) {
       case 'INVALID_CREDENTIALS':
         return 'Email hoặc mật khẩu không chính xác.';
@@ -106,15 +107,37 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       case 'AUTH_RATE_LIMIT_EXCEEDED':
       case 'RATE_LIMIT_EXCEEDED':
         return 'Quá nhiều yêu cầu. Vui lòng thử lại sau giây lát.';
+      case 'NETWORK_ERROR':
+        return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.';
       default:
-        return defaultMsg || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+        break;
     }
+
+    if (rawErrorMsg && typeof rawErrorMsg === 'string') {
+      const lower = rawErrorMsg.toLowerCase();
+      if (lower.includes('email') && (lower.includes('already') || lower.includes('in use') || lower.includes('tồn tại') || lower.includes('sử dụng'))) {
+        return 'Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.';
+      }
+      if (lower.includes('username') && (lower.includes('taken') || lower.includes('already') || lower.includes('tồn tại') || lower.includes('sử dụng'))) {
+        return 'Tên người dùng đã được sử dụng. Vui lòng chọn tên khác.';
+      }
+      if (rawErrorMsg !== 'Login failed' && rawErrorMsg !== 'Registration failed' && rawErrorMsg !== 'REGISTER_ERROR' && rawErrorMsg !== 'LOGIN_ERROR') {
+        return rawErrorMsg;
+      }
+    }
+
+    if (currentMode === 'register') {
+      return 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin và thử lại.';
+    }
+    return 'Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.';
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (isSubmittingRef.current || isSubmitting) return;
     if (!validate()) return;
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setServerError('');
 
@@ -132,7 +155,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           if (onSuccess) onSuccess(result.user);
           onClose();
         } else {
-          setServerError(mapServerError(result.code, result.error));
+          setServerError(mapServerError(result.code, result.error, 'login'));
         }
       } else {
         const result = await register({
@@ -150,12 +173,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           if (onSuccess) onSuccess(result.user);
           onClose();
         } else {
-          setServerError(mapServerError(result.code, result.error));
+          setServerError(mapServerError(result.code, result.error, 'register'));
         }
       }
     } catch (err) {
-      setServerError('Không thể kết nối tới máy chủ. Vui lòng thử lại sau.');
+      setServerError('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -184,7 +208,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
             }`}
-            onClick={() => { setMode('login'); setServerError(''); }}
+            onClick={() => {
+              if (isSubmitting || isSubmittingRef.current) return;
+              setMode('login');
+              setServerError('');
+              setFormErrors({});
+            }}
           >
             Đăng nhập
           </button>
@@ -195,7 +224,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
             }`}
-            onClick={() => { setMode('register'); setServerError(''); }}
+            onClick={() => {
+              if (isSubmitting || isSubmittingRef.current) return;
+              setMode('register');
+              setServerError('');
+              setFormErrors({});
+            }}
           >
             Đăng ký tài khoản
           </button>

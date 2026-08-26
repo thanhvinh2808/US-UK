@@ -6,9 +6,8 @@ export default function LearningInsights({ insights = [] }) {
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
       <div className="flex items-center gap-2">
-        <span className="text-xl">💡</span>
         <h3 className="text-lg font-black text-slate-900 tracking-tight">
-          Góc phân tích học tập (Insights)
+          Phân tích tiến độ học tập (Insights)
         </h3>
       </div>
 

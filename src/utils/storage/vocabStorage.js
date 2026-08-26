@@ -84,11 +84,15 @@ export const vocabStorage = {
         deckName: wordObj.deckName || null,
         lowGradeCount: wordObj.lowGradeCount || 0,
         // SM-2 fields
-        repetitions: wordObj.repetitions !== undefined ? wordObj.repetitions : 0,
+        repetitions: wordObj.repetitions !== undefined ? wordObj.repetitions : (wordObj.repetition !== undefined ? wordObj.repetition : 0),
+        repetition: wordObj.repetition !== undefined ? wordObj.repetition : (wordObj.repetitions !== undefined ? wordObj.repetitions : 0),
         interval: wordObj.interval !== undefined ? wordObj.interval : 1,
-        easinessFactor: wordObj.easinessFactor !== undefined ? wordObj.easinessFactor : 2.5,
-        nextReviewDate: wordObj.nextReviewDate !== undefined ? wordObj.nextReviewDate : Date.now(),
-        status: wordObj.status || (wordObj.repetitions >= 3 ? 'mastered' : 'learning'),
+        easinessFactor: wordObj.easinessFactor !== undefined ? wordObj.easinessFactor : (wordObj.efactor !== undefined ? wordObj.efactor : 2.5),
+        efactor: wordObj.efactor !== undefined ? wordObj.efactor : (wordObj.easinessFactor !== undefined ? wordObj.easinessFactor : 2.5),
+        nextReviewDate: wordObj.nextReviewDate !== undefined ? wordObj.nextReviewDate : (wordObj.nextReview !== undefined ? wordObj.nextReview : Date.now()),
+        nextReview: wordObj.nextReview !== undefined ? wordObj.nextReview : (wordObj.nextReviewDate !== undefined ? wordObj.nextReviewDate : Date.now()),
+        lastReviewed: wordObj.lastReviewed || null,
+        status: wordObj.status || ((wordObj.repetitions || wordObj.repetition || 0) >= 3 ? 'mastered' : 'learning'),
         savedAt: wordObj.savedAt || Date.now()
       };
 

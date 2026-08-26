@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { storage } from '../utils/storage';
 import { speak, speakCompare } from '../utils/sounds';
 
-export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, showToast }) {
+export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, showToast, onNavigateToFlashcards }) {
   const [vocabList, setVocabList] = useState(() => storage.getSavedVocab());
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, learning, mastered, worst
@@ -281,7 +281,7 @@ export default function VocabNotebook({ onNavigateBack, onSavedVocabChange, show
             onClick={() => setFilterStatus('due')}
             style={filterStatus === 'due' ? { background: '#F59E0B', color: '#fff' } : {}}
           >
-            ⚡ Đến hạn ({dueCount})
+            Đến hạn ({dueCount})
           </button>
           <button 
             className={`gallery-filter-pill ${filterStatus === 'learning' ? 'active' : ''}`}
